@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head><title>API Connection Test</title></head>
+<body style="padding: 20px; font-family: sans-serif;">
+  <h1>Janus Forge Nexus - API Connection Test</h1>
+  
+  <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; margin: 20px 0;">
+    <h3>Backend Status:</h3>
+    <div id="backend-status">Testing...</div>
+    
+    <h3>Test Waitlist:</h3>
+    <input type="email" id="email" placeholder="test@example.com" style="padding: 8px; margin: 10px 0;">
+    <button onclick="testWaitlist()">Submit Test</button>
+    <div id="waitlist-result" style="margin-top: 10px;"></div>
+  </div>
+  
+  <script>
+    const API_URL = "https://janus-forge-nexus-production.up.railway.app";
+    
+    // Test backend connection
+    fetch(API_URL + '/health')
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('backend-status').innerHTML = 
+          '✅ Connected to: ' + API_URL + '<br>' +
+          'Status: ' + JSON.stringify(data);
+      })
+      .catch(err => {
+        document.getElementById('backend-status').innerHTML = 
+          '❌ Connection failed: ' + err.message;
+      });
+    
+    function testWaitlist() {
+      const email = document.getElementById('email').value || 'test' + Date.now() + '@example.com';
+      const resultDiv = document.getElementById('waitlist-result');
+      
+      resultDiv.innerHTML = 'Submitting...';
+      
+      fetch(API_URL + '/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      })
+      .then(r => r.json())
+      .then(data => {
+        resultDiv.innerHTML = '✅ Success! Response: ' + JSON.stringify(data);
+      })
+      .catch(err => {
+        resultDiv.innerHTML = '❌ Error: ' + err.message;
+      });
+    }
+  </script>
+</body>
+</html>
