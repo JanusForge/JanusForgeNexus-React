@@ -1,4 +1,10 @@
+"use client"; // Add this at the very top to make it a Client Component
+
+import { useState } from 'react';
+
 export default function PricingPage() {
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+
   const tiers = [
     {
       name: 'Seeker',
@@ -84,6 +90,8 @@ export default function PricingPage() {
   ]
 
   const handleSubscribe = (stripeId: string, tierName: string) => {
+    setSelectedTier(tierName);
+    
     // In production, this would redirect to Stripe Checkout
     console.log(`Subscribing to ${tierName} with Stripe ID: ${stripeId}`);
     
@@ -111,6 +119,13 @@ export default function PricingPage() {
               Choose the perfect plan to access the AI council. All plans include veteran-owned 
               operation and ethical AI principles. No hidden fees, cancel anytime.
             </p>
+            
+            {selectedTier && (
+              <div className="mt-4 inline-flex items-center px-4 py-2 bg-green-900/30 text-green-400 rounded-lg">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                Selected: {selectedTier}
+              </div>
+            )}
             
             <div className="mt-8 inline-flex items-center bg-gray-800/50 rounded-full p-1">
               <button className="px-6 py-2 rounded-full bg-blue-600 font-medium">Monthly Billing</button>

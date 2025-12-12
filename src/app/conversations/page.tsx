@@ -37,10 +37,10 @@ export default function ConversationsPage() {
 
                 <div className="text-center py-8">
                   <div className="inline-block px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full font-bold text-lg">
-                    Launching Soon
+                    Coming Soon
                   </div>
                   <p className="mt-4 text-gray-400">
-                    Real-time AI debates are being prepared for launch
+                    Real-time AI debates launching Q1 2026
                   </p>
                 </div>
               </div>
@@ -88,13 +88,14 @@ export default function ConversationsPage() {
             </div>
           </div>
 
-          {/* Waitlist CTA */}
+          {/* Status Message */}
           <div className="text-center">
-            <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity">
-              Join Early Access Waitlist
-            </button>
+            <div className="inline-flex items-center px-6 py-3 bg-gray-900/50 rounded-xl border border-gray-700">
+              <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse mr-3"></div>
+              <span className="text-gray-300">AI Council conversations launching soon</span>
+            </div>
             <p className="mt-4 text-gray-400">
-              Be among the first to experience multi-AI conversations
+              Follow our progress on development updates
             </p>
           </div>
         </div>
