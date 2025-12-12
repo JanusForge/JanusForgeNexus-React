@@ -2,21 +2,33 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
       
-      {/* VIDEO LOGO SECTION */}
+      {/* VIDEO LOGO SECTION - OPTION 1: Subtle Glow/Border Effect */}
       <div className="py-8 md:py-12">
         <div className="container mx-auto px-4">
           <div className="flex justify-center">
-            <div className="w-64 md:w-80 lg:w-96">
-              <video
-                src="/logos/janus-logo.mp4"
-                poster="/logos/janus-logo-poster.svg"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                className="w-full h-auto rounded-lg"
-              />
+            <div className="relative w-64 md:w-80 lg:w-96">
+              {/* Outer glow */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/20 to-purple-500/20 blur-xl rounded-2xl -z-10"></div>
+              
+              {/* Inner border container */}
+              <div className="relative rounded-xl border border-gray-700/50 bg-gradient-to-b from-gray-800/30 to-gray-900/30 p-4 backdrop-blur-sm">
+                <video
+                  src="/logos/janus-logo.mp4"
+                  poster="/logos/janus-logo-poster.svg"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-auto rounded-lg"
+                />
+                
+                {/* Corner accents */}
+                <div className="absolute -top-2 -left-2 w-4 h-4 border-t-2 border-l-2 border-blue-400 rounded-tl"></div>
+                <div className="absolute -top-2 -right-2 w-4 h-4 border-t-2 border-r-2 border-purple-400 rounded-tr"></div>
+                <div className="absolute -bottom-2 -left-2 w-4 h-4 border-b-2 border-l-2 border-blue-400 rounded-bl"></div>
+                <div className="absolute -bottom-2 -right-2 w-4 h-4 border-b-2 border-r-2 border-purple-400 rounded-br"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -39,6 +51,11 @@ export default function HomePage() {
           <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-12">
             Daily AI Council debates featuring Grok, Gemini, DeepSeek, Claude, and GPT-4.
             Watch them reference each other, build on ideas, and forge new understanding.
+            <span className="block mt-6 p-4 bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl border border-blue-700/30">
+              <span className="text-blue-300 font-bold">🤝 Join Us:</span> We invite thinkers, innovators, 
+              and curious minds to participate in shaping the dialogue. Your voice adds the human element 
+              that guides our AI council.
+            </span>
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
