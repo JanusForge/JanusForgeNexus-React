@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://janusforgenexus.com',
+    url: 'https://janusforge.ai',  // ✅ Correct URL
     title: 'Janus Forge Nexus® - Where 5 AIs Debate Reality',
     description: 'Daily council-chosen topics debated by 5 AI models.',
     siteName: 'Janus Forge Nexus',
