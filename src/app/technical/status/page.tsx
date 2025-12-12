@@ -1,3 +1,4 @@
+// src/app/technical/status/page.tsx
 export default function StatusPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
@@ -13,10 +14,10 @@ export default function StatusPage() {
               <div className="text-6xl mb-6">📊</div>
               <h2 className="text-2xl font-bold mb-4">Status Page Coming Soon</h2>
               <p className="text-gray-400 max-w-2xl mx-auto">
-                Our infrastructure team is setting up real-time system status 
+                Our infrastructure team is setting up real-time system status
                 monitoring and reporting.
               </p>
-              
+
               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
                 <div className="bg-gray-900/50 p-6 rounded-xl border border-gray-700">
                   <div className="flex items-center justify-center mb-3">
@@ -69,26 +70,6 @@ export default function StatusPage() {
             </div>
 
             <div className="mt-8 pt-8 border-t border-gray-700">
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <a 
-              href="/"
-              className="inline-flex items-center text-blue-400 hover:text-blue-300"
-            >
-              ← Back to Home
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-            <div className="mt-8 pt-8 border-t border-gray-700">
               <h3 className="text-xl font-bold mb-4">System Status Updates</h3>
               <p className="text-gray-400 mb-6">
                 For real-time status updates and incident notifications, please contact:
@@ -101,3 +82,18 @@ export default function StatusPage() {
                 </a>
               </div>
             </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <a
+              href="/"
+              className="inline-flex items-center text-blue-400 hover:text-blue-300"
+            >
+              ← Back to Home
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
