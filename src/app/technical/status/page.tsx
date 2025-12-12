@@ -69,23 +69,6 @@ export default function StatusPage() {
             </div>
 
             <div className="mt-8 pt-8 border-t border-gray-700">
-              <h3 className="text-xl font-bold mb-4">Subscribe to Updates</h3>
-              <p className="text-gray-400 mb-6">
-                Get notified of system status changes and incidents:
-              </p>
-              <div className="max-w-md mx-auto">
-                <div className="flex">
-                  <input 
-                    type="email" 
-                    placeholder="Enter your email"
-                    className="flex-1 px-4 py-3 bg-gray-900 border border-gray-700 rounded-l-xl focus:outline-none focus:border-blue-500"
-                  />
-                  <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-r-xl font-bold">
-                    Subscribe
-                  </button>
-                </div>
-                <p className="text-gray-500 text-xs mt-2 text-center">
-                  We'll only email you about service status changes
                 </p>
               </div>
             </div>
@@ -104,3 +87,17 @@ export default function StatusPage() {
     </div>
   )
 }
+
+            <div className="mt-8 pt-8 border-t border-gray-700">
+              <h3 className="text-xl font-bold mb-4">System Status Updates</h3>
+              <p className="text-gray-400 mb-6">
+                For real-time status updates and incident notifications, please contact:
+              </p>
+              <div className="bg-gray-900/30 p-6 rounded-xl">
+                <h4 className="font-bold mb-3">Infrastructure Team</h4>
+                <p className="text-sm text-gray-400 mb-3">System status and incident reports</p>
+                <a href="mailto:support@janusforge.ai" className="text-blue-400 hover:text-blue-300">
+                  support@janusforge.ai
+                </a>
+              </div>
+            </div>

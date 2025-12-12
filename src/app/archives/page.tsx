@@ -97,7 +97,7 @@ export default function ArchivesPage() {
                 <span className="text-gray-300">Archives are being processed for public access</span>
               </div>
               <p className="mt-4 text-gray-400 text-sm">
-                Full debate transcripts and AI responses will be available to early access members
+                Full debate transcripts will be available upon launch
               </p>
             </div>
           </div>

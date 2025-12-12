@@ -8,6 +8,7 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://janusforge.ai'),
   title: 'Janus Forge Nexus® - Where 5 AIs Debate Reality',
   description: 'Daily council-chosen topics debated by Grok, Gemini, DeepSeek, Claude, and GPT-4. Veteran-owned AI ethics platform.',
   keywords: ['AI debate', 'multi-agent', 'AI council', 'daily topics', 'ethical AI'],
