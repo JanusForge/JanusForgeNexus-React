@@ -8,7 +8,7 @@ export default function HomePage() {
           <div className="flex justify-center">
             <div className="w-64 md:w-80 lg:w-96">
               <video
-                src="/logos/janus-logo.mp4"
+                src="/logos/janus-logo-v2.mp4"
                 poster="/logos/janus-logo-poster.svg"
                 autoPlay
                 muted
