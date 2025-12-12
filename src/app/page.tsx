@@ -2,72 +2,21 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
       
-      {/* VIDEO LOGO SECTION - Logo in front of space window */}
+      {/* VIDEO LOGO SECTION - Simple and Clean */}
       <div className="py-8 md:py-12">
         <div className="container mx-auto px-4">
           <div className="flex justify-center">
-            <div className="relative w-80 md:w-96 lg:w-[500px]">
-              
-              {/* Space window background - BEHIND everything */}
-              <div className="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-b from-gray-900 via-gray-800 to-black">
-                {/* Stars */}
-                <div className="absolute inset-0">
-                  {[...Array(40)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-[1px] h-[1px] bg-white rounded-full"
-                      style={{
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                      }}
-                    />
-                  ))}
-                </div>
-                
-                {/* Large moon */}
-                <div className="absolute top-1/4 right-1/4 w-32 h-32 bg-gray-200 rounded-full shadow-2xl">
-                  <div className="absolute top-6 left-6 w-16 h-16 bg-gray-300 rounded-full"></div>
-                  <div className="absolute bottom-10 right-10 w-10 h-10 bg-gray-400 rounded-full"></div>
-                </div>
-                
-                {/* Earth horizon curve at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-blue-900/30 to-transparent"></div>
-              </div>
-              
-              {/* Porthole frame OVER the space background */}
-              <div className="relative rounded-full border-12 border-gray-800/80 bg-gradient-to-b from-gray-900/90 to-black/90 p-6 backdrop-blur-sm">
-                
-                {/* Logo video IN FRONT (solid, not blended) */}
-                <div className="relative rounded-full overflow-hidden">
-                  <video
-                    src="/logos/janus-logo.mp4"
-                    poster="/logos/janus-logo-poster.svg"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    className="w-full h-auto"
-                  />
-                </div>
-                
-                {/* Porthole bolts/screws */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-full border-2 border-gray-700"></div>
-                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-10 h-10 bg-gray-800 rounded-full border-2 border-gray-700"></div>
-                <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-full border-2 border-gray-700"></div>
-                <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2 w-10 h-10 bg-gray-800 rounded-full border-2 border-gray-700"></div>
-                
-                {/* Inner ring detail */}
-                <div className="absolute inset-4 rounded-full border-4 border-gray-700/30"></div>
-              </div>
-              
-              {/* Outer glow effect */}
-              <div className="absolute -inset-12 bg-gradient-to-r from-blue-400/5 via-transparent to-purple-400/5 rounded-full blur-3xl -z-10"></div>
-              
-              {/* Optional: "Viewport" text */}
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-700 text-sm font-mono">
-                VIEWPORT ACTIVE
-              </div>
+            <div className="w-64 md:w-80 lg:w-96">
+              <video
+                src="/logos/janus-logo.mp4"
+                poster="/logos/janus-logo-poster.svg"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="w-full h-auto rounded-lg shadow-xl"
+              />
             </div>
           </div>
         </div>
