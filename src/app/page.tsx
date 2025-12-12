@@ -2,63 +2,71 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
       
-      {/* VIDEO LOGO SECTION - OPTION 1: Spaceship Porthole with Moon */}
+      {/* VIDEO LOGO SECTION - Spaceship Porthole with Moon */}
       <div className="py-8 md:py-12">
         <div className="container mx-auto px-4">
           <div className="flex justify-center">
             <div className="relative w-80 md:w-96 lg:w-[500px]">
               
-              {/* Space background with stars and moon */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-gray-900 via-gray-800 to-black">
-                {/* Stars */}
-                <div className="absolute inset-0">
-                  {[...Array(20)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-1 h-1 bg-white rounded-full animate-pulse"
-                      style={{
-                        top: `${Math.random() * 100}%`,
-                        left: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 2}s`,
-                      }}
-                    />
-                  ))}
-                </div>
-                
-                {/* Moon */}
-                <div className="absolute top-1/4 left-1/4 w-16 h-16 bg-gray-300 rounded-full">
-                  <div className="absolute top-1/4 left-1/4 w-8 h-8 bg-gray-400 rounded-full"></div>
-                  <div className="absolute bottom-1/4 right-1/4 w-4 h-4 bg-gray-500 rounded-full"></div>
-                </div>
-              </div>
-              
-              {/* Porthole ring */}
-              <div className="relative rounded-full border-8 border-gray-700 bg-gradient-to-b from-gray-800 to-gray-900 p-6">
-                <div className="absolute inset-2 rounded-full border-4 border-gray-600/50"></div>
-                
+              {/* Outer porthole frame */}
+              <div className="relative rounded-full border-12 border-gray-800 bg-gradient-to-b from-gray-900 to-black p-8">
                 {/* Inner glass effect */}
-                <div className="relative rounded-full overflow-hidden backdrop-blur-sm bg-gradient-to-br from-gray-900/60 to-gray-800/40">
-                  <video
-                    src="/logos/janus-logo.mp4"
-                    poster="/logos/janus-logo-poster.svg"
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    className="w-full h-auto mix-blend-screen"
-                  />
+                <div className="relative rounded-full overflow-hidden bg-gradient-to-br from-gray-900/80 to-black/80 backdrop-blur-sm">
+                  
+                  {/* Space background with moon */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-800 to-black">
+                    {/* Stars */}
+                    <div className="absolute inset-0">
+                      {[...Array(30)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="absolute w-[1px] h-[1px] bg-white rounded-full animate-pulse"
+                          style={{
+                            top: `${Math.random() * 100}%`,
+                            left: `${Math.random() * 100}%`,
+                            animationDelay: `${Math.random() * 3}s`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                    
+                    {/* Moon - larger and more visible */}
+                    <div className="absolute top-1/4 right-1/4 w-24 h-24 bg-gray-200 rounded-full shadow-lg">
+                      <div className="absolute top-4 left-4 w-12 h-12 bg-gray-300 rounded-full"></div>
+                      <div className="absolute bottom-8 right-8 w-8 h-8 bg-gray-400 rounded-full"></div>
+                      <div className="absolute top-10 right-10 w-6 h-6 bg-gray-500 rounded-full"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Video logo overlay */}
+                  <div className="relative">
+                    <video
+                      src="/logos/janus-logo.mp4"
+                      poster="/logos/janus-logo-poster.svg"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      className="w-full h-auto mix-blend-lighten opacity-95"
+                    />
+                    {/* Subtle overlay to blend with space */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-blue-900/10 via-transparent to-purple-900/10"></div>
+                  </div>
                 </div>
                 
-                {/* Porthole bolts/screws */}
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-gray-700 rounded-full border-2 border-gray-600"></div>
-                <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-gray-700 rounded-full border-2 border-gray-600"></div>
-                <div className="absolute top-1/2 -left-4 transform -translate-y-1/2 w-8 h-8 bg-gray-700 rounded-full border-2 border-gray-600"></div>
-                <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 w-8 h-8 bg-gray-700 rounded-full border-2 border-gray-600"></div>
+                {/* Porthole bolts */}
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-gray-800 rounded-full border-2 border-gray-700"></div>
+                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-10 h-10 bg-gray-800 rounded-full border-2 border-gray-700"></div>
+                <div className="absolute top-1/2 left-0 transform -translate-y-1/2 -translate-x-1/2 w-10 h-10 bg-gray-800 rounded-full border-2 border-gray-700"></div>
+                <div className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-1/2 w-10 h-10 bg-gray-800 rounded-full border-2 border-gray-700"></div>
+                
+                {/* Inner metal ring */}
+                <div className="absolute inset-4 rounded-full border-4 border-gray-700/50"></div>
               </div>
               
-              {/* Subtle glow */}
-              <div className="absolute -inset-8 bg-gradient-to-r from-blue-400/10 to-purple-400/10 blur-2xl rounded-full -z-10"></div>
+              {/* Glow effect */}
+              <div className="absolute -inset-12 bg-gradient-to-r from-blue-400/10 via-transparent to-purple-400/10 rounded-full blur-3xl -z-10"></div>
             </div>
           </div>
         </div>
@@ -74,7 +82,7 @@ export default function HomePage() {
             Where 5 AIs Debate Reality
           </h2>
 
-          {/* Veteran banner moved here (not attached to logo) */}
+          {/* Veteran banner */}
           <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-bold text-lg mb-8">
             🎖️ Veteran Owned & Operated
           </div>
