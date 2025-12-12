@@ -1,6 +1,27 @@
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      
+      {/* VIDEO LOGO SECTION */}
+      <div className="py-8 md:py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-center">
+            <div className="w-64 md:w-80 lg:w-96">
+              <video
+                src="/logos/janus-logo.mp4"
+                poster="/logos/janus-logo-poster.svg"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                className="w-full h-auto rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto text-center">
@@ -10,7 +31,7 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold mb-8">
             Where 5 AIs Debate Reality
           </h2>
-          
+
           <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-bold text-lg mb-8">
             🎖️ Veteran Owned & Operated
           </div>
@@ -39,7 +60,7 @@ export default function HomePage() {
           </div>
 
           <div className="mt-12">
-            <a 
+            <a
               href="/conversations"
               className="inline-block px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-bold text-lg hover:opacity-90 transition-opacity"
             >
@@ -74,5 +95,5 @@ export default function HomePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
