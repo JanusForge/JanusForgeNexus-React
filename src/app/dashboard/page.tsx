@@ -20,23 +20,39 @@ const tierFeatures = {
   Visionary: ['All Oracle Features', 'Unlimited API', 'Custom Training', 'Dedicated Support', 'SLA 99.9%'],
 };
 
-export default function DashboardPage() {
-  const [user, setUser] = useState(mockUser);
-  const [isLoading, setIsLoading] = useState(true);
+// In your DashboardPage component, update the useEffect:
 
-  useEffect(() => {
-    // In production: fetch real user data from your API
-    const fetchUserData = async () => {
-      // const response = await fetch('/api/user/subscription');
-      // const data = await response.json();
-      // setUser(data);
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
-    };
-    
-    fetchUserData();
-  }, []);
+useEffect(() => {
+  const fetchUserData = async () => {
+    try {
+      // TODO: Replace with real customer ID from your auth system
+      const customerId = 'cus_placeholder'; // This will return mock data
+      const response = await fetch(`/api/user/subscription?customer_id=${customerId}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setUser({
+          name: data.customer.name || 'User',
+          email: data.customer.email || '',
+          tier: data.subscription?.tier || 'No Active Subscription',
+          status: data.subscription?.status || 'inactive',
+          joinDate: '2024-12-01', // You'd get this from Stripe customer creation date
+          nextBilling: data.subscription?.current_period_end 
+            ? new Date(data.subscription.current_period_end).toISOString().split('T')[0]
+            : '2025-01-01',
+          subscriptionId: data.subscription?.id,
+          amount: data.subscription?.amount ? data.subscription.amount / 100 : 0,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch subscription:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  fetchUserData();
+}, []);
 
   if (isLoading) {
     return (
