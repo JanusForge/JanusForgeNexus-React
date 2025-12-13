@@ -11,6 +11,8 @@ const mockUser = {
   status: 'active',
   joinDate: '2024-12-01',
   nextBilling: '2025-01-01',
+  subscriptionId: '', // Add this
+  amount: 9, // Add this - $9.00
 };
 
 // Mock subscription features based on tier
@@ -42,7 +44,7 @@ export default function DashboardPage() {
             nextBilling: data.subscription?.current_period_end
               ? new Date(data.subscription.current_period_end).toISOString().split('T')[0]
               : '2025-01-01',
-            subscriptionId: data.subscription?.id,
+            subscriptionId: data.subscription?.id || '',
             amount: data.subscription?.amount ? data.subscription.amount / 100 : 0,
           });
         }
@@ -103,7 +105,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-4 md:mt-0">
                   <span className="text-3xl font-bold">
-                    {user.tier === 'Council' ? '$9' : user.tier === 'Oracle' ? '$29' : '$99'}
+                    ${user.amount || (user.tier === 'Council' ? '9' : user.tier === 'Oracle' ? '29' : '99')}
                     <span className="text-lg text-gray-400">/month</span>
                   </span>
                 </div>
@@ -242,4 +244,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-EOF
