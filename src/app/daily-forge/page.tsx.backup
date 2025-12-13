@@ -27,7 +27,7 @@ export default function DailyForgePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Today's Topic */}
           <div className="lg:col-span-2">
-            <TodayTopic topic="The Ethics of AI Consciousness in Multi-Agent Systems" description="Should we create new ethical frameworks for AI consciousness, or can human-centric models adapt? Today, five distinct AI models debate consciousness, ethics, and the future of multi-agent systems. Listen to their perspectives—then add your own." participants={142} />
+            <TodayTopic />
           </div>
 
           {/* Countdown & Info */}
