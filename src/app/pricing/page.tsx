@@ -71,15 +71,31 @@ export default function PricingPage() {
   ];
 
   const handleSubscribe = (stripeId: string, tierName: string) => {
-    setSelectedTier(tierName);
-    console.log(`Subscribing to ${tierName} with Stripe ID: ${stripeId}`);
-    fetch('/api/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ priceId: stripeId })
-    }).then(res => res.json())
-      .then(data => window.location.href = data.url);
-  };
+  setSelectedTier(tierName);
+  console.log(`Subscribing to ${tierName} with Stripe ID: ${stripeId}`);
+  fetch('/api/create-checkout-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ priceId: stripeId })
+  })
+  .then(res => {
+    console.log('Full Response:', res); // Log the response object
+    return res.json();
+  })
+  .then(data => {
+    console.log('Parsed Data:', data); // This will show if 'url' is undefined
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      console.error('No URL in response. Full data:', data);
+      alert('Failed to create checkout. Error: ' + (data.error || 'Unknown'));
+    }
+  })
+  .catch(error => {
+    console.error('Network fetch error:', error);
+    alert('Network error. Please try again.');
+  });
+};
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
