@@ -7,25 +7,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function GET(request: NextRequest) {
   try {
-    // In production: Get customer ID from your auth/session
-    // For now, we'll use a query param for testing
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customer_id') || 'cus_placeholder';
     
-    // If you have a user session system, you'd fetch their Stripe customer ID from your DB
-    // const customerId = await getCustomerIdFromSession();
-    
     if (customerId === 'cus_placeholder') {
-      // Return mock data for testing
       return NextResponse.json({
         success: true,
         isMock: true,
         subscription: {
           tier: 'Council',
           status: 'active',
-          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           cancel_at_period_end: false,
-          amount: 900, // $9.00 in cents
+          amount: 900,
         },
         customer: {
           email: 'cassandra@janusforge.ai',
@@ -34,7 +28,6 @@ export async function GET(request: NextRequest) {
       });
     }
     
-    // Real Stripe fetch logic
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       limit: 1,
@@ -54,12 +47,14 @@ export async function GET(request: NextRequest) {
     const subscription = subscriptions.data[0];
     const priceId = subscription.items.data[0].price.id;
     
-    // Map price ID to tier name
     const tierMap: Record<string, string> = {
       'price_1ScOX7Gg8RUnSFObmqiclPbt': 'Council',
       'price_1SVxLeGg8RUnSFObKobkPrcE': 'Oracle',
       'price_1SVxMEGg8RUnSFObB08Qfs7I': 'Visionary',
     };
+    
+    // Type assertion to fix TypeScript error
+    const subscriptionAny = subscription as any;
     
     return NextResponse.json({
       success: true,
@@ -67,7 +62,7 @@ export async function GET(request: NextRequest) {
         id: subscription.id,
         tier: tierMap[priceId] || 'Unknown',
         status: subscription.status,
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        current_period_end: new Date(subscriptionAny.current_period_end * 1000).toISOString(),
         cancel_at_period_end: subscription.cancel_at_period_end,
         amount: subscription.items.data[0].price.unit_amount,
       },
