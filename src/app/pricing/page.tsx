@@ -27,7 +27,7 @@ export default function PricingPage() {
     },
     {
       name: 'Oracle',
-      stripeId: 'price_1SaijPGg8RUnSFObDPNSX21H',
+      stripeId: 'price_1SVxLeGg8RUnSFObKobkPrcE',
       price: '$29',
       period: '/month',
       description: 'Full AI council participation',
