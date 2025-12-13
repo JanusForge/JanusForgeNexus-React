@@ -16,7 +16,8 @@
     "lucide-react": "^0.559.0",
     "next": "13.5.11",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "stripe": "^20.0.0"
   },
   "devDependencies": {
     "@tanstack/react-query-devtools": "^5.91.1",

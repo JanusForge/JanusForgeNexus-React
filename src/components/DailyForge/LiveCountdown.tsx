@@ -14,14 +14,14 @@ export default function LiveCountdown({ resetTime = "00:00:00" }: LiveCountdownP
   function calculateTimeLeft() {
     const now = new Date();
     const [hours, minutes, seconds] = resetTime.split(':').map(Number);
-    
+
     const reset = new Date(now);
     reset.setUTCHours(hours, minutes, seconds, 0);
-    
+
     if (reset < now) {
       reset.setUTCDate(reset.getUTCDate() + 1);
     }
-    
+
     return reset.getTime() - now.getTime();
   }
 
@@ -53,7 +53,7 @@ export default function LiveCountdown({ resetTime = "00:00:00" }: LiveCountdownP
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-bold text-white">Next Topic In</h3>
+          <h3 className="text-xl font-bold text-white">⏳ NEXT TOPIC IN</h3>
           <p className="text-gray-400 text-sm">Daily reset at {resetTime} UTC</p>
         </div>
         <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full">
@@ -79,15 +79,14 @@ export default function LiveCountdown({ resetTime = "00:00:00" }: LiveCountdownP
       </div>
 
       <div className="pt-4 border-t border-gray-800">
-        <div className="flex items-center text-sm text-gray-400">
-          <div className="flex items-center">
-            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
-            <span>Topic selected by AI Council</span>
+        <div className="space-y-3">
+          <div className="flex items-center text-sm text-gray-300">
+            <div className="w-2 h-2 bg-green-500 rounded-full mr-3" />
+            <span>✅ <span className="font-medium">AI-curated</span> – Selected by the Council based on trends</span>
           </div>
-          <div className="mx-4">•</div>
-          <div className="flex items-center">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mr-2" />
-            <span>Based on datasphere trends</span>
+          <div className="flex items-center text-sm text-gray-300">
+            <div className="w-2 h-2 bg-blue-500 rounded-full mr-3" />
+            <span>✅ <span className="font-medium">Human-informed</span> – Inspired by member suggestions and polls</span>
           </div>
         </div>
       </div>
