@@ -20,39 +20,41 @@ const tierFeatures = {
   Visionary: ['All Oracle Features', 'Unlimited API', 'Custom Training', 'Dedicated Support', 'SLA 99.9%'],
 };
 
-// In your DashboardPage component, update the useEffect:
+export default function DashboardPage() {
+  const [user, setUser] = useState(mockUser);
+  const [isLoading, setIsLoading] = useState(true);
 
-useEffect(() => {
-  const fetchUserData = async () => {
-    try {
-      // TODO: Replace with real customer ID from your auth system
-      const customerId = 'cus_placeholder'; // This will return mock data
-      const response = await fetch(`/api/user/subscription?customer_id=${customerId}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setUser({
-          name: data.customer.name || 'User',
-          email: data.customer.email || '',
-          tier: data.subscription?.tier || 'No Active Subscription',
-          status: data.subscription?.status || 'inactive',
-          joinDate: '2024-12-01', // You'd get this from Stripe customer creation date
-          nextBilling: data.subscription?.current_period_end 
-            ? new Date(data.subscription.current_period_end).toISOString().split('T')[0]
-            : '2025-01-01',
-          subscriptionId: data.subscription?.id,
-          amount: data.subscription?.amount ? data.subscription.amount / 100 : 0,
-        });
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // TODO: Replace with real customer ID from your auth system
+        const customerId = 'cus_placeholder'; // This will return mock data
+        const response = await fetch(`/api/user/subscription?customer_id=${customerId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setUser({
+            name: data.customer.name || 'User',
+            email: data.customer.email || '',
+            tier: data.subscription?.tier || 'No Active Subscription',
+            status: data.subscription?.status || 'inactive',
+            joinDate: '2024-12-01', // You'd get this from Stripe customer creation date
+            nextBilling: data.subscription?.current_period_end
+              ? new Date(data.subscription.current_period_end).toISOString().split('T')[0]
+              : '2025-01-01',
+            subscriptionId: data.subscription?.id,
+            amount: data.subscription?.amount ? data.subscription.amount / 100 : 0,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch subscription:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to fetch subscription:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  fetchUserData();
-}, []);
+    };
+
+    fetchUserData();
+  }, []);
 
   if (isLoading) {
     return (
@@ -116,7 +118,7 @@ useEffect(() => {
                   </div>
                   <p className="text-sm text-gray-400 mt-1">Since {new Date(user.joinDate).toLocaleDateString()}</p>
                 </div>
-                
+
                 <div className="bg-gray-900/50 p-4 rounded-xl">
                   <h3 className="font-bold text-gray-300 mb-2">Next Billing</h3>
                   <p className="text-xl font-bold">{new Date(user.nextBilling).toLocaleDateString()}</p>
@@ -168,7 +170,7 @@ useEffect(() => {
                     <p className="text-sm text-gray-400">Join live debates</p>
                   </div>
                 </Link>
-                
+
                 <Link href="/daily-forge" className="flex items-center p-3 bg-gray-900/30 hover:bg-gray-900/50 rounded-lg transition-all duration-200 group">
                   <div className="w-10 h-10 bg-purple-900/30 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-900/50">
                     <span className="text-purple-400">🔥</span>
@@ -178,7 +180,7 @@ useEffect(() => {
                     <p className="text-sm text-gray-400">Today's AI council</p>
                   </div>
                 </Link>
-                
+
                 <Link href="/archives" className="flex items-center p-3 bg-gray-900/30 hover:bg-gray-900/50 rounded-lg transition-all duration-200 group">
                   <div className="w-10 h-10 bg-green-900/30 rounded-lg flex items-center justify-center mr-3 group-hover:bg-green-900/50">
                     <span className="text-green-400">📚</span>
@@ -188,7 +190,7 @@ useEffect(() => {
                     <p className="text-sm text-gray-400">Past conversations</p>
                   </div>
                 </Link>
-                
+
                 <Link href="/pricing" className="flex items-center p-3 bg-gray-900/30 hover:bg-gray-900/50 rounded-lg transition-all duration-200 group">
                   <div className="w-10 h-10 bg-orange-900/30 rounded-lg flex items-center justify-center mr-3 group-hover:bg-orange-900/50">
                     <span className="text-orange-400">⚡</span>
@@ -237,7 +239,7 @@ useEffect(() => {
           </div>
         </div>
       </div>
-     </div>
-
-
-
+    </div>
+  );
+}
+EOF
