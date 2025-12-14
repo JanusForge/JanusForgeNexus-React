@@ -279,6 +279,138 @@ export default function ArchitecturePage() {
           </div>
         </div>
 
+        {/* DASHBOARD ROADMAP SECTION - NEW ADDITION */}
+        <div className="mb-20">
+          <h2 className="text-2xl font-bold text-white mb-8">Dashboard Roadmap</h2>
+          <p className="text-gray-300 mb-8 max-w-3xl">
+            The core user dashboard is progressing from a functional prototype to a fully live, personalized experience. The diagram below outlines our clear development path to connect user subscriptions, authentication, and real-time data.
+          </p>
+
+          <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8">
+            {/* Diagram Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">From Prototype to Personalization</h3>
+              <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-900/30 text-blue-400 text-sm">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+                Active Development
+              </span>
+            </div>
+
+            {/* Diagram Placeholder */}
+            <div className="mb-8 p-6 border-2 border-dashed border-gray-700 rounded-xl bg-gradient-to-br from-black/40 to-gray-900/20 text-center">
+              <p className="text-lg font-semibold text-white mb-2">🚀 Dashboard Development Pipeline</p>
+              <p className="text-gray-400 mb-4">This area visually maps the transition from static mockup to live system.</p>
+              <div className="inline-flex flex-wrap justify-center gap-2">
+                <span className="px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full text-xs">Static Mockup</span>
+                <span className="text-gray-500">→</span>
+                <span className="px-3 py-1 bg-purple-900/30 text-purple-300 rounded-full text-xs">Auth & DB Setup</span>
+                <span className="text-gray-500">→</span>
+                <span className="px-3 py-1 bg-green-900/30 text-green-300 rounded-full text-xs">Stripe Integration</span>
+                <span className="text-gray-500">→</span>
+                <span className="px-3 py-1 bg-orange-900/30 text-orange-300 rounded-full text-xs">Live Dashboard</span>
+              </div>
+            </div>
+
+            {/* Phase Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-b from-gray-900/50 to-black/30 p-6 rounded-xl border border-gray-800">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 flex items-center justify-center mr-3">
+                    <span className="font-bold text-white">1</span>
+                  </div>
+                  <h4 className="font-bold text-white">Phase 1: Foundation</h4>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>User Authentication System</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>PostgreSQL User Database</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>Stripe Billing Integration</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-gradient-to-b from-gray-900/50 to-black/30 p-6 rounded-xl border border-gray-800">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center mr-3">
+                    <span className="font-bold text-white">2</span>
+                  </div>
+                  <h4 className="font-bold text-white">Phase 2: Core Integration</h4>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>Dynamic Data API Endpoints</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>Stripe Customer Portal Hook</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>Tier-Based Feature Gates</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-gradient-to-b from-gray-900/50 to-black/30 p-6 rounded-xl border border-gray-800">
+                <div className="flex items-center mb-4">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-600 to-emerald-500 flex items-center justify-center mr-3">
+                    <span className="font-bold text-white">3</span>
+                  </div>
+                  <h4 className="font-bold text-white">Phase 3: Live & Personalized</h4>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>Real-time User Data in UI</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>Functional Subscription Mgmt.</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-1.5 mr-2 flex-shrink-0"></div>
+                    <span>Live User Activity Feed</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* User Benefit Summary */}
+            <div className="mt-8 pt-8 border-t border-gray-800">
+              <h4 className="font-bold text-white mb-4">🎯 User Benefits</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start">
+                  <div className="w-6 h-6 rounded-full bg-blue-900/30 flex items-center justify-center mr-3 flex-shrink-0">
+                    <span className="text-blue-400 text-sm">✓</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Secure Personal Dashboard</p>
+                    <p className="text-sm text-gray-400">Your subscription data, tier, and usage in one place.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-6 h-6 rounded-full bg-blue-900/30 flex items-center justify-center mr-3 flex-shrink-0">
+                    <span className="text-blue-400 text-sm">✓</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">Self-Service Management</p>
+                    <p className="text-sm text-gray-400">Update payment methods or change plans anytime.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* END DASHBOARD ROADMAP SECTION */}
+
         {/* Project Structure */}
         <div>
           <h2 className="text-2xl font-bold text-white mb-8">Project Structure</h2>
