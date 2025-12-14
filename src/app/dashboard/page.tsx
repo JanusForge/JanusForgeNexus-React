@@ -2,54 +2,127 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase';
+import { 
+  FiUser, 
+  FiCreditCard, 
+  FiCalendar, 
+  FiDollarSign, 
+  FiActivity,
+  FiTrendingUp,
+  FiUsers,
+  FiSettings,
+  FiHelpCircle,
+  FiLogOut,
+  FiCheck,
+  FiArrowUp,
+  FiBarChart2,
+  FiStar,
+  FiZap,
+  FiShield,
+  FiGlobe,
+  FiCpu
+} from 'react-icons/fi';
 
-// Mock user data - In reality, you'd fetch this from your backend/Stripe
-const mockUser = {
-  name: 'Cassandra Williamson',
-  email: 'cassandra@janusforge.ai',
-  tier: 'Council',
-  status: 'active',
-  joinDate: '2024-12-01',
-  nextBilling: '2025-01-01',
-  subscriptionId: '', // Add this
-  amount: 9, // Add this - $9.00
-};
-
-// Mock subscription features based on tier
+// Tier features
 const tierFeatures = {
-  Council: ['5 AI Models Access', 'Daily Debate Archive', 'Topic Voting', 'Email Support'],
-  Oracle: ['All Council Features', 'Grok AI Access', 'Advanced Analytics', 'API Access (Limited)', 'Priority Chat'],
-  Visionary: ['All Oracle Features', 'Unlimited API', 'Custom Training', 'Dedicated Support', 'SLA 99.9%'],
+  council: [
+    { icon: <FiCpu />, text: '5 AI Models Access' },
+    { icon: <FiBarChart2 />, text: 'Daily Debate Archive' },
+    { icon: <FiUsers />, text: 'Topic Voting Rights' },
+    { icon: <FiHelpCircle />, text: 'Email Support' }
+  ],
+  oracle: [
+    { icon: <FiCpu />, text: 'All Council Features' },
+    { icon: <FiZap />, text: 'Grok AI Access' },
+    { icon: <FiTrendingUp />, text: 'Advanced Analytics Dashboard' },
+    { icon: <FiGlobe />, text: 'API Access (Limited)' },
+    { icon: <FiActivity />, text: 'Priority Chat Support' }
+  ],
+  visionary: [
+    { icon: <FiCpu />, text: 'All Oracle Features' },
+    { icon: <FiShield />, text: 'Unlimited API Requests' },
+    { icon: <FiStar />, text: 'Custom Model Training' },
+    { icon: <FiUser />, text: 'Dedicated Account Manager' },
+    { icon: <FiCheck />, text: 'SLA 99.9% Uptime' }
+  ],
 };
 
 export default function DashboardPage() {
-  const [user, setUser] = useState(mockUser);
+  const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRealData, setIsRealData] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [revenueData] = useState([
+    { month: 'Jan', revenue: 3200 },
+    { month: 'Feb', revenue: 4200 },
+    { month: 'Mar', revenue: 5100 },
+    { month: 'Apr', revenue: 5800 },
+    { month: 'May', revenue: 6200 },
+    { month: 'Jun', revenue: 7300 },
+  ]);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // TODO: Replace with real customer ID from your auth system
-        const customerId = 'cus_placeholder'; // This will return mock data
-        const response = await fetch(`/api/user/subscription?customer_id=${customerId}`);
-        const data = await response.json();
+        const supabase = createClient();
+        
+        // For Phase 1: Always fetch the Cassandra user
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select(`
+            *,
+            subscriptions (*)
+          `)
+          .eq('email', 'cassandra@janusforge.ai')
+          .single();
 
-        if (data.success) {
+        if (userError) throw userError;
+
+        if (userData) {
+          const activeSub = userData.subscriptions?.find((s: any) => 
+            s.status === 'active' || s.status === 'trialing'
+          );
+          
+          const userTier = activeSub?.tier || userData.tier || 'free';
+          
           setUser({
-            name: data.customer.name || 'User',
-            email: data.customer.email || '',
-            tier: data.subscription?.tier || 'No Active Subscription',
-            status: data.subscription?.status || 'inactive',
-            joinDate: '2024-12-01', // You'd get this from Stripe customer creation date
-            nextBilling: data.subscription?.current_period_end
-              ? new Date(data.subscription.current_period_end).toISOString().split('T')[0]
-              : '2025-01-01',
-            subscriptionId: data.subscription?.id || '',
-            amount: data.subscription?.amount ? data.subscription.amount / 100 : 0,
+            name: userData.name || 'User',
+            email: userData.email || '',
+            tier: userTier.charAt(0).toUpperCase() + userTier.slice(1),
+            rawTier: userTier,
+            status: activeSub?.status || userData.status || 'inactive',
+            joinDate: new Date(userData.created_at).toISOString().split('T')[0],
+            nextBilling: activeSub?.current_period_end 
+              ? new Date(activeSub.current_period_end).toISOString().split('T')[0]
+              : '2026-01-13',
+            subscriptionId: activeSub?.stripe_subscription_id || '',
+            amount: activeSub?.amount ? activeSub.amount / 100 : 0,
+            userId: userData.id,
+            stripeCustomerId: userData.stripe_customer_id,
           });
+          
+          setIsRealData(true);
+          console.log('✅ Loaded real user data from Supabase');
         }
-      } catch (error) {
-        console.error('Failed to fetch subscription:', error);
+      } catch (err) {
+        console.error('Failed to fetch real user data:', err);
+        
+        // Fallback to mock data
+        setUser({
+          name: 'Cassandra Williamson',
+          email: 'cassandra@janusforge.ai',
+          tier: 'Council',
+          rawTier: 'council',
+          status: 'active',
+          joinDate: '2024-12-01',
+          nextBilling: '2026-01-13',
+          subscriptionId: 'sub_cus_JF_001',
+          amount: 9,
+          userId: '1',
+          stripeCustomerId: 'cus_JF_001',
+        });
+        setIsRealData(false);
       } finally {
         setIsLoading(false);
       }
@@ -58,12 +131,25 @@ export default function DashboardPage() {
     fetchUserData();
   }, []);
 
+  const handleUpgrade = (tier: string) => {
+    alert(`Upgrade to ${tier} tier selected! This would redirect to Stripe checkout.`);
+  };
+
+  const handleCancelSubscription = () => {
+    if (confirm('Are you sure you want to cancel your subscription?')) {
+      alert('Subscription cancellation request sent.');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-300">Loading your dashboard...</p>
+          <p className="text-sm text-gray-500 mt-2">
+            {isRealData ? 'Fetching real user data' : 'Using demo data'}
+          </p>
         </div>
       </div>
     );
@@ -71,6 +157,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      {/* Data Source Indicator */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className={`px-3 py-1.5 rounded-full text-xs font-medium ${isRealData ? 'bg-green-900/30 text-green-400 border border-green-800' : 'bg-yellow-900/30 text-yellow-400 border border-yellow-800'}`}>
+          {isRealData ? '✅ Live Data' : '⚠️ Demo Data'}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="border-b border-gray-800">
         <div className="container mx-auto px-4 py-6">
@@ -79,165 +172,268 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                 Dashboard
               </h1>
-              <p className="text-gray-400 mt-1">Welcome back, {user.name}</p>
+              <p className="text-gray-400 mt-1">Welcome back, {user?.name}</p>
             </div>
-            <div className="mt-4 md:mt-0">
+            <div className="mt-4 md:mt-0 flex items-center space-x-4">
               <div className="inline-flex items-center px-4 py-2 bg-gray-800/50 rounded-full border border-gray-700">
-                <div className={`w-2 h-2 rounded-full mr-2 ${user.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                <span className="text-sm font-medium">{user.tier} Tier • {user.status}</span>
+                <div className={`w-2 h-2 rounded-full mr-2 ${user?.status === 'active' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                <span className="text-sm font-medium">{user?.tier} Tier • {user?.status}</span>
               </div>
+              <button className="p-2 hover:bg-gray-800 rounded-full transition-colors">
+                <FiSettings className="w-5 h-5 text-gray-400" />
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Subscription Details */}
+          {/* Left Column - User Info & Stats */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Subscription Card */}
-            <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Your Subscription</h2>
-                  <p className="text-gray-400">Manage your plan and billing</p>
-                </div>
-                <div className="mt-4 md:mt-0">
-                  <span className="text-3xl font-bold">
-                    ${user.amount || (user.tier === 'Council' ? '9' : user.tier === 'Oracle' ? '29' : '99')}
-                    <span className="text-lg text-gray-400">/month</span>
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-gray-900/50 p-4 rounded-xl">
-                  <h3 className="font-bold text-gray-300 mb-2">Status</h3>
-                  <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full mr-2 ${user.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-xl font-bold capitalize">{user.status}</span>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">Monthly Revenue</p>
+                    <p className="text-2xl font-bold mt-2">${user?.amount || 0}</p>
                   </div>
-                  <p className="text-sm text-gray-400 mt-1">Since {new Date(user.joinDate).toLocaleDateString()}</p>
+                  <FiDollarSign className="w-8 h-8 text-green-400" />
                 </div>
-
-                <div className="bg-gray-900/50 p-4 rounded-xl">
-                  <h3 className="font-bold text-gray-300 mb-2">Next Billing</h3>
-                  <p className="text-xl font-bold">{new Date(user.nextBilling).toLocaleDateString()}</p>
-                  <p className="text-sm text-gray-400 mt-1">Auto-renewal enabled</p>
+                <div className="mt-4 flex items-center text-sm">
+                  <FiTrendingUp className="w-4 h-4 text-green-400 mr-1" />
+                  <span className="text-green-400">+12.5%</span>
+                  <span className="text-gray-500 ml-2">from last month</span>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:opacity-90 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200">
-                  Manage Subscription
-                </button>
-                <button className="flex-1 border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white font-bold py-3 px-6 rounded-lg transition-all duration-200">
-                  Update Payment Method
-                </button>
-                <button className="flex-1 border border-red-800/50 text-red-400 hover:text-red-300 hover:border-red-700 font-bold py-3 px-6 rounded-lg transition-all duration-200">
-                  Cancel Plan
-                </button>
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">Next Billing</p>
+                    <p className="text-2xl font-bold mt-2">{user?.nextBilling}</p>
+                  </div>
+                  <FiCalendar className="w-8 h-8 text-blue-400" />
+                </div>
+                <p className="text-gray-500 text-sm mt-2">Auto-renewal enabled</p>
+              </div>
+
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">Account Status</p>
+                    <p className="text-2xl font-bold mt-2 capitalize">{user?.status}</p>
+                  </div>
+                  <FiUser className="w-8 h-8 text-purple-400" />
+                </div>
+                <div className="mt-4">
+                  <div className="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-green-500 h-2 rounded-full" 
+                      style={{ width: user?.status === 'active' ? '100%' : '50%' }}
+                    ></div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Features Card */}
-            <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700">
-              <h2 className="text-2xl font-bold mb-6">Your {user.tier} Tier Features</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {tierFeatures[user.tier as keyof typeof tierFeatures]?.map((feature, index) => (
-                  <div key={index} className="flex items-start p-3 bg-gray-900/30 rounded-lg">
-                    <svg className="w-5 h-5 text-green-400 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    <span>{feature}</span>
+            {/* Revenue Chart */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">Revenue Overview</h2>
+                <select className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-1 text-sm">
+                  <option>Last 6 months</option>
+                  <option>Last year</option>
+                  <option>All time</option>
+                </select>
+              </div>
+              <div className="h-64 flex items-end space-x-2">
+                {revenueData.map((item, index) => (
+                  <div key={index} className="flex-1 flex flex-col items-center">
+                    <div 
+                      className="w-full bg-gradient-to-t from-blue-500 to-blue-600 rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
+                      style={{ height: `${(item.revenue / 8000) * 100}%` }}
+                    ></div>
+                    <span className="text-gray-400 text-sm mt-2">{item.month}</span>
+                    <span className="text-xs text-gray-500">${item.revenue}</span>
                   </div>
                 ))}
               </div>
             </div>
+
+            {/* Subscription Details */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 className="text-xl font-bold mb-6">Subscription Details</h2>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <div className="flex items-center">
+                    <FiCreditCard className="w-5 h-5 text-gray-400 mr-3" />
+                    <div>
+                      <p className="font-medium">Current Plan</p>
+                      <p className="text-sm text-gray-400">{user?.tier} Tier</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium">${user?.amount}/month</p>
+                    <p className="text-sm text-gray-400">Billed monthly</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                  <div className="flex items-center">
+                    <FiCalendar className="w-5 h-5 text-gray-400 mr-3" />
+                    <div>
+                      <p className="font-medium">Next Billing Date</p>
+                      <p className="text-sm text-gray-400">{user?.nextBilling}</p>
+                    </div>
+                  </div>
+                  <button className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm transition-colors">
+                    Change Date
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center py-3">
+                  <div className="flex items-center">
+                    <FiUser className="w-5 h-5 text-gray-400 mr-3" />
+                    <div>
+                      <p className="font-medium">Customer ID</p>
+                      <p className="text-sm text-gray-400">{user?.stripeCustomerId || 'Not available'}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleCancelSubscription}
+                    className="px-4 py-2 bg-red-900/30 hover:bg-red-800/50 text-red-400 rounded-lg text-sm transition-colors border border-red-800"
+                  >
+                    Cancel Subscription
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Right Column - Quick Links & Stats */}
+          {/* Right Column - Tier Features & Upgrade */}
           <div className="space-y-8">
-            {/* Quick Actions */}
-            <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700">
-              <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
-              <div className="space-y-3">
-                <Link href="/conversations" className="flex items-center p-3 bg-gray-900/30 hover:bg-gray-900/50 rounded-lg transition-all duration-200 group">
-                  <div className="w-10 h-10 bg-blue-900/30 rounded-lg flex items-center justify-center mr-3 group-hover:bg-blue-900/50">
-                    <span className="text-blue-400">💬</span>
+            {/* Current Tier Features */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 className="text-xl font-bold mb-6">Your {user?.tier} Tier Features</h2>
+              <div className="space-y-4">
+                {(tierFeatures[user?.rawTier as keyof typeof tierFeatures] || tierFeatures.council).map((feature, index) => (
+                  <div key={index} className="flex items-center p-3 bg-gray-900/50 rounded-lg">
+                    <div className="text-blue-400 mr-3">
+                      {feature.icon}
+                    </div>
+                    <span>{feature.text}</span>
                   </div>
-                  <div>
-                    <p className="font-medium">AI Conversations</p>
-                    <p className="text-sm text-gray-400">Join live debates</p>
-                  </div>
-                </Link>
-
-                <Link href="/daily-forge" className="flex items-center p-3 bg-gray-900/30 hover:bg-gray-900/50 rounded-lg transition-all duration-200 group">
-                  <div className="w-10 h-10 bg-purple-900/30 rounded-lg flex items-center justify-center mr-3 group-hover:bg-purple-900/50">
-                    <span className="text-purple-400">🔥</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Daily Forge</p>
-                    <p className="text-sm text-gray-400">Today's AI council</p>
-                  </div>
-                </Link>
-
-                <Link href="/archives" className="flex items-center p-3 bg-gray-900/30 hover:bg-gray-900/50 rounded-lg transition-all duration-200 group">
-                  <div className="w-10 h-10 bg-green-900/30 rounded-lg flex items-center justify-center mr-3 group-hover:bg-green-900/50">
-                    <span className="text-green-400">📚</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Debate Archives</p>
-                    <p className="text-sm text-gray-400">Past conversations</p>
-                  </div>
-                </Link>
-
-                <Link href="/pricing" className="flex items-center p-3 bg-gray-900/30 hover:bg-gray-900/50 rounded-lg transition-all duration-200 group">
-                  <div className="w-10 h-10 bg-orange-900/30 rounded-lg flex items-center justify-center mr-3 group-hover:bg-orange-900/50">
-                    <span className="text-orange-400">⚡</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">Upgrade Plan</p>
-                    <p className="text-sm text-gray-400">Access more features</p>
-                  </div>
-                </Link>
+                ))}
               </div>
             </div>
 
-            {/* Account Summary */}
-            <div className="bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700">
-              <h2 className="text-xl font-bold mb-6">Account</h2>
+            {/* Upgrade Options */}
+            <div className="bg-gradient-to-br from-gray-900 to-black rounded-xl p-6 border border-gray-700">
+              <h2 className="text-xl font-bold mb-6">Upgrade Your Plan</h2>
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-400">Email</p>
-                  <p className="font-medium">{user.email}</p>
+                <div className={`p-4 rounded-lg border-2 ${user?.rawTier === 'oracle' ? 'border-blue-500 bg-blue-900/20' : 'border-gray-700 hover:border-gray-600 transition-colors'}`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg">Oracle Tier</h3>
+                      <p className="text-gray-400 text-sm">Advanced features for power users</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-xl">$29<span className="text-gray-400 text-sm">/month</span></p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleUpgrade('oracle')}
+                    className={`w-full mt-4 py-2 rounded-lg font-medium ${user?.rawTier === 'oracle' ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+                    disabled={user?.rawTier === 'oracle'}
+                  >
+                    {user?.rawTier === 'oracle' ? 'Current Plan' : 'Upgrade to Oracle'}
+                  </button>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-400">Member Since</p>
-                  <p className="font-medium">{new Date(user.joinDate).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-400">Customer ID</p>
-                  <p className="font-mono text-sm bg-black/30 p-2 rounded">cus_••••••••</p>
+
+                <div className={`p-4 rounded-lg border-2 ${user?.rawTier === 'visionary' ? 'border-purple-500 bg-purple-900/20' : 'border-gray-700 hover:border-gray-600 transition-colors'}`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg">Visionary Tier</h3>
+                      <p className="text-gray-400 text-sm">Enterprise-grade with full access</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-xl">$99<span className="text-gray-400 text-sm">/month</span></p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleUpgrade('visionary')}
+                    className={`w-full mt-4 py-2 rounded-lg font-medium ${user?.rawTier === 'visionary' ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
+                    disabled={user?.rawTier === 'visionary'}
+                  >
+                    {user?.rawTier === 'visionary' ? 'Current Plan' : 'Upgrade to Visionary'}
+                  </button>
                 </div>
               </div>
-              <div className="mt-6 pt-6 border-t border-gray-800">
-                <button className="w-full border border-gray-700 hover:border-gray-600 text-gray-300 hover:text-white font-medium py-3 px-6 rounded-lg transition-all duration-200">
-                  Account Settings
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <button className="p-3 bg-gray-900/50 hover:bg-gray-800 rounded-lg flex flex-col items-center justify-center transition-colors">
+                  <FiActivity className="w-6 h-6 text-blue-400 mb-2" />
+                  <span className="text-sm">View Usage</span>
                 </button>
+                <button className="p-3 bg-gray-900/50 hover:bg-gray-800 rounded-lg flex flex-col items-center justify-center transition-colors">
+                  <FiUsers className="w-6 h-6 text-green-400 mb-2" />
+                  <span className="text-sm">Invite Team</span>
+                </button>
+                <button className="p-3 bg-gray-900/50 hover:bg-gray-800 rounded-lg flex flex-col items-center justify-center transition-colors">
+                  <FiSettings className="w-6 h-6 text-yellow-400 mb-2" />
+                  <span className="text-sm">Settings</span>
+                </button>
+                <button className="p-3 bg-gray-900/50 hover:bg-gray-800 rounded-lg flex flex-col items-center justify-center transition-colors">
+                  <FiHelpCircle className="w-6 h-6 text-purple-400 mb-2" />
+                  <span className="text-sm">Support</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Account Info */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <h2 className="text-xl font-bold mb-4">Account Information</h2>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-gray-400 text-sm">Email</p>
+                  <p className="font-medium">{user?.email}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Member Since</p>
+                  <p className="font-medium">{user?.joinDate}</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">User ID</p>
+                  <p className="font-medium text-sm font-mono">{user?.userId}</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Recent Activity (Placeholder) */}
-        <div className="mt-8 bg-gray-800/30 backdrop-blur-lg rounded-2xl p-6 border border-gray-700">
-          <h2 className="text-2xl font-bold mb-6">Recent Activity</h2>
-          <div className="text-center py-12 text-gray-500">
-            <div className="text-4xl mb-4">📊</div>
-            <p>Your activity will appear here soon</p>
-            <p className="text-sm mt-2">Debates joined, topics submitted, etc.</p>
+        {/* Footer Note */}
+        <div className="mt-12 pt-8 border-t border-gray-800">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="text-gray-500 text-sm">
+              <p>JanusForge AI Platform • v2.1.4 • {isRealData ? 'Connected to production database' : 'Using demonstration data'}</p>
+            </div>
+            <div className="flex items-center space-x-4 mt-4 md:mt-0">
+              <Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">
+                Terms
+              </Link>
+              <Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">
+                Privacy
+              </Link>
+              <Link href="/support" className="text-gray-400 hover:text-white text-sm transition-colors">
+                Support
+              </Link>
+            </div>
           </div>
         </div>
       </div>
