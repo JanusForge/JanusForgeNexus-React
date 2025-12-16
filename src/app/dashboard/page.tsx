@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '../../../lib/supabase-client';
-import { 
-  FiUser, 
-  FiCreditCard, 
-  FiCalendar, 
-  FiDollarSign, 
+import {
+  FiUser,
+  FiCreditCard,
+  FiCalendar,
+  FiDollarSign,
   FiActivity,
   FiTrendingUp,
   FiUsers,
@@ -23,6 +22,7 @@ import {
   FiGlobe,
   FiCpu
 } from 'react-icons/fi';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 // Tier features
 const tierFeatures = {
@@ -49,10 +49,10 @@ const tierFeatures = {
 };
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<any>(null);
+  const { user: authUser, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isRealData, setIsRealData] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [user, setUser] = useState<any>(null);
   const [revenueData] = useState([
     { month: 'Jan', revenue: 3200 },
     { month: 'Feb', revenue: 4200 },
@@ -65,51 +65,79 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const supabase = createClient();
-        
-        // For Phase 1: Always fetch the Cassandra user
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select(`
-            *,
-            subscriptions (*)
-          `)
-          .eq('email', 'cassandra@janusforge.ai')
-          .single();
-
-        if (userError) throw userError;
-
-        if (userData) {
-          const activeSub = userData.subscriptions?.find((s: any) => 
-            s.status === 'active' || s.status === 'trialing'
-          );
-          
-          const userTier = activeSub?.tier || userData.tier || 'free';
-          
+        // If we have a user from AuthProvider (demo mode), use it
+        if (authUser) {
+          console.log('Using auth user from AuthProvider:', authUser.email);
           setUser({
-            name: userData.name || 'User',
-            email: userData.email || '',
-            tier: userTier.charAt(0).toUpperCase() + userTier.slice(1),
-            rawTier: userTier,
-            status: activeSub?.status || userData.status || 'inactive',
-            joinDate: new Date(userData.created_at).toISOString().split('T')[0],
-            nextBilling: activeSub?.current_period_end 
-              ? new Date(activeSub.current_period_end).toISOString().split('T')[0]
-              : '2026-01-13',
-            subscriptionId: activeSub?.stripe_subscription_id || '',
-            amount: activeSub?.amount ? activeSub.amount / 100 : 0,
-            userId: userData.id,
-            stripeCustomerId: userData.stripe_customer_id,
+            name: authUser.name || 'User',
+            email: authUser.email || '',
+            tier: authUser.tier?.charAt(0).toUpperCase() + authUser.tier?.slice(1) || 'Free',
+            rawTier: authUser.tier || 'free',
+            status: 'active',
+            joinDate: '2024-12-01',
+            nextBilling: '2026-01-13',
+            subscriptionId: 'sub_demo_' + Date.now(),
+            amount: authUser.tier === 'visionary' ? 99 : authUser.tier === 'oracle' ? 29 : 9,
+            userId: authUser.id,
+            stripeCustomerId: authUser.stripe_customer_id || 'cus_demo',
           });
-          
-          setIsRealData(true);
-          console.log('✅ Loaded real user data from Supabase');
+          setIsRealData(false);
+          setIsLoading(false);
+          return;
+        }
+
+        // Otherwise try to fetch from Supabase
+        console.log('Trying to fetch from Supabase...');
+        try {
+          const module = await import('@/lib/supabase-client');
+          const supabase = module.createClient();
+
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select(`
+              *,
+              subscriptions (*)
+            `)
+            .eq('email', 'cassandra@janusforge.ai')
+            .single();
+
+          if (userError) throw userError;
+
+          if (userData) {
+            const activeSub = userData.subscriptions?.find((s: any) =>
+              s.status === 'active' || s.status === 'trialing'
+            );
+
+            const userTier = activeSub?.tier || userData.tier || 'free';
+
+            setUser({
+              name: userData.name || 'User',
+              email: userData.email || '',
+              tier: userTier.charAt(0).toUpperCase() + userTier.slice(1),
+              rawTier: userTier,
+              status: activeSub?.status || userData.status || 'inactive',
+              joinDate: new Date(userData.created_at).toISOString().split('T')[0],
+              nextBilling: activeSub?.current_period_end
+                ? new Date(activeSub.current_period_end).toISOString().split('T')[0]
+                : '2026-01-13',
+              subscriptionId: activeSub?.stripe_subscription_id || '',
+              amount: activeSub?.amount ? activeSub.amount / 100 : 0,
+              userId: userData.id,
+              stripeCustomerId: userData.stripe_customer_id,
+            });
+
+            setIsRealData(true);
+            console.log('✅ Loaded real user data from Supabase');
+          }
+        } catch (supabaseError) {
+          console.log('Supabase not available or error:', supabaseError);
+          throw supabaseError;
         }
       } catch (err) {
-        console.error('Failed to fetch real user data:', err);
+        console.error('Failed to fetch user data:', err);
         
-        // Fallback to mock data
-        setUser({
+        // Fallback to demo data
+        const demoUser = {
           name: 'Cassandra Williamson',
           email: 'cassandra@janusforge.ai',
           tier: 'Council',
@@ -119,9 +147,11 @@ export default function DashboardPage() {
           nextBilling: '2026-01-13',
           subscriptionId: 'sub_cus_JF_001',
           amount: 9,
-          userId: '1',
+          userId: 'demo-1',
           stripeCustomerId: 'cus_JF_001',
-        });
+        };
+        
+        setUser(demoUser);
         setIsRealData(false);
       } finally {
         setIsLoading(false);
@@ -129,7 +159,7 @@ export default function DashboardPage() {
     };
 
     fetchUserData();
-  }, []);
+  }, [authUser]);
 
   const handleUpgrade = (tier: string) => {
     alert(`Upgrade to ${tier} tier selected! This would redirect to Stripe checkout.`);
@@ -141,7 +171,12 @@ export default function DashboardPage() {
     }
   };
 
-  if (isLoading) {
+  const handleLogout = async () => {
+    await signOut();
+    window.location.href = '/';
+  };
+
+  if (isLoading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
         <div className="text-center">
@@ -181,6 +216,14 @@ export default function DashboardPage() {
               </div>
               <button className="p-2 hover:bg-gray-800 rounded-full transition-colors">
                 <FiSettings className="w-5 h-5 text-gray-400" />
+              </button>
+              {/* LOGOUT BUTTON ADDED HERE */}
+              <button
+                onClick={handleLogout}
+                className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+                title="Logout"
+              >
+                <FiLogOut className="w-5 h-5 text-gray-400" />
               </button>
             </div>
           </div>
@@ -229,8 +272,8 @@ export default function DashboardPage() {
                 </div>
                 <div className="mt-4">
                   <div className="w-full bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-green-500 h-2 rounded-full" 
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
                       style={{ width: user?.status === 'active' ? '100%' : '50%' }}
                     ></div>
                   </div>
@@ -251,7 +294,7 @@ export default function DashboardPage() {
               <div className="h-64 flex items-end space-x-2">
                 {revenueData.map((item, index) => (
                   <div key={index} className="flex-1 flex flex-col items-center">
-                    <div 
+                    <div
                       className="w-full bg-gradient-to-t from-blue-500 to-blue-600 rounded-t-lg transition-all hover:opacity-80 cursor-pointer"
                       style={{ height: `${(item.revenue / 8000) * 100}%` }}
                     ></div>
@@ -301,7 +344,7 @@ export default function DashboardPage() {
                       <p className="text-sm text-gray-400">{user?.stripeCustomerId || 'Not available'}</p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={handleCancelSubscription}
                     className="px-4 py-2 bg-red-900/30 hover:bg-red-800/50 text-red-400 rounded-lg text-sm transition-colors border border-red-800"
                   >
@@ -343,7 +386,7 @@ export default function DashboardPage() {
                       <p className="font-bold text-xl">$29<span className="text-gray-400 text-sm">/month</span></p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleUpgrade('oracle')}
                     className={`w-full mt-4 py-2 rounded-lg font-medium ${user?.rawTier === 'oracle' ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
                     disabled={user?.rawTier === 'oracle'}
@@ -362,7 +405,7 @@ export default function DashboardPage() {
                       <p className="font-bold text-xl">$99<span className="text-gray-400 text-sm">/month</span></p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => handleUpgrade('visionary')}
                     className={`w-full mt-4 py-2 rounded-lg font-medium ${user?.rawTier === 'visionary' ? 'bg-purple-900/50 text-purple-300' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
                     disabled={user?.rawTier === 'visionary'}
