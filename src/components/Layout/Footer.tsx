@@ -9,7 +9,7 @@ export default function Footer() {
               Janus Forge Nexus<sup className="text-xs">®</sup>
             </h3>
             <p className="text-gray-400 text-sm mb-4">
-              Where 5 AIs debate reality. Veteran owned and operated with integrity.
+              Where Multiple AIs and human can chat with each other.
             </p>
             <div className="flex items-center">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2"></div>
