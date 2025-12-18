@@ -162,7 +162,7 @@ export default function Footer() {
               </div>
               <p className="text-gray-500 text-sm">
                 © {new Date().getFullYear()} Janus Forge Accelerators LLC, a Kentucky Limited Liability Company,
-                bda Janus Forge Nexus. The Next Evolution of AI discourse.
+                bda Janus Forge Nexus.
               </p>
             </div>
           </div>
