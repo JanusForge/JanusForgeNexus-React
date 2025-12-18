@@ -44,7 +44,7 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-12">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
-          {/* Brand Column - Add right margin for more spacing */}
+          {/* Brand Column */}
           <div className="lg:pr-12 lg:border-r lg:border-gray-800/50">
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-4">
@@ -78,7 +78,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links Columns - Group columns 2-4 closer together */}
+          {/* Links Columns */}
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
             {footerSections.map((section) => (
               <div key={section.title}>
@@ -144,16 +144,16 @@ export default function Footer() {
               ))}
             </div>
 
-            {/* Legal Links */}
+            {/* Legal Links - UPDATED TO POINT TO /legal/ */}
             <div className="text-center md:text-right">
               <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400 mb-4">
-                <a href="/privacy" className="hover:text-white transition-colors">
+                <a href="/legal/privacy" className="hover:text-white transition-colors">
                   Privacy Policy
                 </a>
-                <a href="/terms" className="hover:text-white transition-colors">
+                <a href="/legal/terms" className="hover:text-white transition-colors">
                   Terms of Service
                 </a>
-                <a href="/ethics" className="hover:text-white transition-colors">
+                <a href="/legal/ai-ethics" className="hover:text-white transition-colors">
                   AI Ethics
                 </a>
                 <a href="/contact" className="hover:text-white transition-colors">
