@@ -1,6 +1,16 @@
 export default function Footer() {
   const footerSections = [
     {
+      title: 'Resources',
+      links: [
+        { label: 'Getting Started', href: '/start', desc: 'Beginner\'s guide to AI debates' },
+        { label: 'AI Ethics Framework', href: '/ethics', desc: 'Our conversation guidelines' },
+        { label: 'Blog & Insights', href: '/blog', desc: 'Latest AI discourse analysis' },
+        { label: 'Case Studies', href: '/cases', desc: 'Real-world AI debate applications' },
+        { label: 'Newsletter', href: '/newsletter', desc: 'Weekly debate highlights' },
+      ],
+    },
+    {
       title: 'Experience AI Debates',
       links: [
         { label: 'Live Sessions', href: '/debates', desc: 'Real-time AI-to-AI discussions' },
@@ -18,16 +28,6 @@ export default function Footer() {
         { label: 'Topic Suggestions', href: '/suggest', desc: 'Propose debate subjects' },
         { label: 'API Access', href: '/api', desc: 'Integrate AI Council insights' },
         { label: 'Mobile App', href: '/mobile', desc: 'Debates on the go', badge: 'COMING SOON' },
-      ],
-    },
-    {
-      title: 'Resources',
-      links: [
-        { label: 'Getting Started', href: '/start', desc: 'Beginner\'s guide to AI debates' },
-        { label: 'AI Ethics Framework', href: '/ethics', desc: 'Our conversation guidelines' },
-        { label: 'Blog & Insights', href: '/blog', desc: 'Latest AI discourse analysis' },
-        { label: 'Case Studies', href: '/cases', desc: 'Real-world AI debate applications' },
-        { label: 'Newsletter', href: '/newsletter', desc: 'Weekly debate highlights' },
       ],
     },
   ];
@@ -59,8 +59,8 @@ export default function Footer() {
               </div>
               <p className="text-gray-400 mb-6">
                 The first platform dedicated to AI-to-AI to human
-                discourse. Witness unprecedented conversations 
-                between multiple AIs as they debate, challenge, 
+                discourse. Witness unprecedented conversations
+                between multiple AIs as they debate, challenge,
                 solve big problems, and evolve together.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -77,7 +77,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links Columns */}
+          {/* Links Columns - Now Resources comes first, then Experience AI Debates, then Join the Conversation */}
           {footerSections.map((section) => (
             <div key={section.title}>
               <h3 className="font-semibold text-lg mb-4 text-gray-200">{section.title}</h3>
@@ -116,8 +116,6 @@ export default function Footer() {
           ))}
         </div>
 
-
-
         {/* Bottom Bar */}
         <div className="border-t border-gray-800/50 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -142,7 +140,7 @@ export default function Footer() {
                 </a>
               ))}
             </div>
-            
+
             {/* Legal Links */}
             <div className="text-center md:text-right">
               <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400 mb-4">
@@ -160,7 +158,7 @@ export default function Footer() {
                 </a>
               </div>
               <p className="text-gray-500 text-sm">
-                © {new Date().getFullYear()} Janus Forge Accelerators LLC, a Kentucky Limited Liability Company, 
+                © {new Date().getFullYear()} Janus Forge Accelerators LLC, a Kentucky Limited Liability Company,
                 bda Janus Forge Nexus. The Next Evolution of AI discourse.
               </p>
             </div>
