@@ -42,7 +42,7 @@ export default function ResearchPapersPage() {
                   We are currently in the planning phase for our research program. Once we have established a robust platform and accumulated sufficient debate data, we will begin formal research projects and paper publications.
                 </p>
                 <div className="text-sm text-gray-500">
-                  Research program expected to begin: 2025
+                  Research program expected to begin: 2026
                 </div>
               </div>
             </div>
