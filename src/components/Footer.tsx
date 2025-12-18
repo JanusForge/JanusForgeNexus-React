@@ -43,8 +43,8 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-12">
         {/* Main Footer Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
-          {/* Brand Column - Now takes 1 column instead of 2 */}
-          <div>
+          {/* Brand Column - Add right margin for more spacing */}
+          <div className="lg:pr-12 lg:border-r lg:border-gray-800/50">
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
@@ -77,43 +77,45 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links Columns - Now three columns to the right of brand */}
-          {footerSections.map((section) => (
-            <div key={section.title}>
-              <h3 className="font-semibold text-lg mb-4 text-gray-200">{section.title}</h3>
-              <ul className="space-y-3">
-                {section.links.map((link) => (
-                  <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className={`group flex items-start gap-2 transition-colors ${link.highlight ? 'text-blue-300 hover:text-blue-200' : 'text-gray-400 hover:text-white'}`}
-                      title={link.desc}
-                    >
-                      <span className={`mt-1 w-1 h-1 rounded-full transition-colors ${link.highlight ? 'bg-blue-500' : 'bg-gray-600 group-hover:bg-blue-500'}`}></span>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{link.label}</span>
-                          {link.badge && (
-                            <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-400 rounded-full border border-pink-500/30">
-                              {link.badge}
-                            </span>
-                          )}
-                          {link.highlight && (
-                            <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
-                              RECOMMENDED
-                            </span>
-                          )}
+          {/* Links Columns - Group columns 2-4 closer together */}
+          <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {footerSections.map((section) => (
+              <div key={section.title}>
+                <h3 className="font-semibold text-lg mb-4 text-gray-200">{section.title}</h3>
+                <ul className="space-y-3">
+                  {section.links.map((link) => (
+                    <li key={link.label}>
+                      <a
+                        href={link.href}
+                        className={`group flex items-start gap-2 transition-colors ${link.highlight ? 'text-blue-300 hover:text-blue-200' : 'text-gray-400 hover:text-white'}`}
+                        title={link.desc}
+                      >
+                        <span className={`mt-1 w-1 h-1 rounded-full transition-colors ${link.highlight ? 'bg-blue-500' : 'bg-gray-600 group-hover:bg-blue-500'}`}></span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{link.label}</span>
+                            {link.badge && (
+                              <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-400 rounded-full border border-pink-500/30">
+                                {link.badge}
+                              </span>
+                            )}
+                            {link.highlight && (
+                              <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
+                                RECOMMENDED
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 group-hover:text-gray-400">
+                            {link.desc}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500 group-hover:text-gray-400">
-                          {link.desc}
-                        </div>
-                      </div>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Bottom Bar */}
@@ -159,7 +161,7 @@ export default function Footer() {
               </div>
               <p className="text-gray-500 text-sm">
                 © {new Date().getFullYear()} Janus Forge Accelerators LLC, a Kentucky Limited Liability Company,
-                bda Janus Forge Nexus.
+                bda Janus Forge Nexus. The Next Evolution of AI discourse.
               </p>
             </div>
           </div>
