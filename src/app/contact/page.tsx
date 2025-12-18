@@ -1,4 +1,15 @@
+"use client";
+
+import { useState } from 'react';
+
 export default function ContactPage() {
+  const [isClient, setIsClient] = useState(false);
+
+  // Set isClient to true after component mounts (browser only)
+  useState(() => {
+    setIsClient(true);
+  });
+
   const contactCategories = [
     {
       title: "General & Support",
@@ -37,9 +48,13 @@ export default function ContactPage() {
     }
   ];
 
-  // Function to handle email clicks - opens in new tab
+  // Safe email click handler that only runs in browser
   const handleEmailClick = (email: string) => {
-    window.open(`mailto:${email}`, '_blank', 'noopener,noreferrer');
+    if (isClient) {
+      // Open email in new tab
+      const mailtoLink = `mailto:${email}`;
+      window.open(mailtoLink, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (

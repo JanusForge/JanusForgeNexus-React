@@ -1,10 +1,4 @@
-"use client";
-
 export default function PrivacyPage() {
-  const handleEmailClick = () => {
-    window.open('mailto:legal@janusforge.ai', '_blank', 'noopener,noreferrer');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-gray-300 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -81,12 +75,14 @@ export default function PrivacyPage() {
             </ul>
             <p className="mt-4 text-sm text-gray-400">
               To exercise these rights, contact us at:{" "}
-              <button
-                onClick={handleEmailClick}
-                className="text-blue-400 hover:text-blue-300 cursor-pointer"
+              <a 
+                href="mailto:legal@janusforge.ai" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300"
               >
                 legal@janusforge.ai
-              </button>
+              </a>
             </p>
           </section>
 
@@ -104,12 +100,14 @@ export default function PrivacyPage() {
               If you have questions about this Privacy Policy, please contact our Legal Department:
             </p>
             <div className="mt-4 p-4 bg-gray-800/30 rounded-lg">
-              <button
-                onClick={handleEmailClick}
-                className="font-mono text-blue-300 hover:text-blue-200 cursor-pointer text-left w-full"
+              <a 
+                href="mailto:legal@janusforge.ai" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="font-mono text-blue-300 hover:text-blue-200"
               >
                 legal@janusforge.ai
-              </button>
+              </a>
               <p className="text-sm text-gray-400 mt-2">
                 Janus Forge Accelerators LLC<br />
                 A Kentucky Limited Liability Company<br />
@@ -118,7 +116,7 @@ export default function PrivacyPage() {
               <div className="mt-2 text-xs text-gray-500">
                 <span className="inline-flex items-center gap-1">
                   <span>↗</span>
-                  <span>Click to open email in new tab (closes after sending)</span>
+                  <span>Opens in new tab (closes after sending)</span>
                 </span>
               </div>
             </div>
