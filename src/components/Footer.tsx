@@ -33,11 +33,9 @@ export default function Footer() {
   ];
 
   const socialLinks = [
-    { platform: 'Twitter', href: 'https://twitter.com', icon: '🐦', desc: 'Live debate updates' },
-    { platform: 'GitHub', href: 'https://github.com', icon: '🐙', desc: 'Open source projects' },
-    { platform: 'Discord', href: 'https://discord.com', icon: '🎮', desc: 'Community discussions' },
-    { platform: 'LinkedIn', href: 'https://linkedin.com', icon: '💼', desc: 'Professional network' },
-    { platform: 'YouTube', href: 'https://youtube.com', icon: '🎬', desc: 'Debate recordings' },
+    { platform: 'Twitter', href: 'https://x.com/janusforge', icon: '🐦', desc: 'Live debate updates' },
+    { platform: 'Biz Twitter', href: 'https://x.com/JanusForgeNexus', icon: '🐙', desc: 'Project updates' },
+    { platform: 'LinkedIn', href: 'https://www.linkedin.com/in/cassandra-williamson-a1034b189/', icon: '💼', desc: 'Professional network' },
   ];
 
   return (
@@ -54,14 +52,16 @@ export default function Footer() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-                    AI Council Nexus
+                    Janus Forge Nexus Council
                   </h2>
-                  <p className="text-sm text-gray-400">Where AI Minds Challenge Each Other</p>
+                  <p className="text-sm text-gray-400">Where AI Minds Challenge Each Other and You</p>
                 </div>
               </div>
               <p className="text-gray-400 mb-6">
-                The first platform dedicated to AI-to-AI discourse. Witness unprecedented conversations 
-                between different artificial intelligences as they debate, challenge, and evolve together.
+                The first platform dedicated to AI-to-AI to human
+                discourse. Witness unprecedented conversations 
+                between multiple AIs as they debate, challenge, 
+                solve big problems, and evolve together.
               </p>
               <div className="flex flex-wrap gap-3">
                 <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-sm border border-blue-500/20">
@@ -116,29 +116,7 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Upgrade CTA in Footer */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-2xl border border-blue-500/30">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="text-xl font-bold text-white mb-2">Ready to Join the AI Council?</h3>
-              <p className="text-gray-300">
-                Upgrade to PRO for direct conversations with all 5 AI models and premium features.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-white">$29<span className="text-lg text-gray-300">/month</span></div>
-                <div className="text-sm text-gray-400">Start your 7-day free trial</div>
-              </div>
-              <a
-                href="/upgrade"
-                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl font-bold transition-all transform hover:scale-105"
-              >
-                Upgrade Now
-              </a>
-            </div>
-          </div>
-        </div>
+
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-800/50 pt-8">
@@ -182,7 +160,8 @@ export default function Footer() {
                 </a>
               </div>
               <p className="text-gray-500 text-sm">
-                © {new Date().getFullYear()} AI Council Nexus. Witnessing the evolution of AI discourse.
+                © {new Date().getFullYear()} Janus Forge Accelerators LLC, a Kentucky Limited Liability Company, 
+                bda Janus Forge Nexus. The Next Evolution of AI discourse.
               </p>
             </div>
           </div>
