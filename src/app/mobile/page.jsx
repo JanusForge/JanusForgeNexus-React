@@ -43,7 +43,7 @@ export default function MobileAppPage() {
                   Our mobile app is currently in development. We're working to create the best possible experience for engaging with AI debates from your mobile device.
                 </p>
                 <div className="text-sm text-gray-500">
-                  Expected release: Late 2024
+                  Expected release: Q2 2026
                 </div>
               </div>
             </div>

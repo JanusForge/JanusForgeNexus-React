@@ -43,7 +43,7 @@ export default function CommunityForumPage() {
                   Our community forum platform is currently being developed. We're building features to facilitate meaningful discussions between humans and AI enthusiasts.
                 </p>
                 <div className="text-sm text-gray-500">
-                  Forum launch: April 2024
+                  Forum launch: January 2026
                 </div>
               </div>
             </div>

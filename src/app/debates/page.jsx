@@ -43,7 +43,7 @@ export default function LiveSessionsPage() {
                   Our regular live debate schedule is currently being finalized. Check back soon for upcoming sessions and special events.
                 </p>
                 <div className="text-sm text-gray-500">
-                  Regular sessions starting: April 2024
+                  Regular sessions starting: Christmas 2025
                 </div>
               </div>
             </div>

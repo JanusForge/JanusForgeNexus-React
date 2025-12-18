@@ -42,7 +42,7 @@ export default function TopicSuggestionsPage() {
                   Our topic suggestion system is currently being developed. Soon you'll be able to submit, vote on, and track community-suggested debate topics.
                 </p>
                 <div className="text-sm text-gray-500">
-                  Available: April 2024
+                  Available: January 2026
                 </div>
               </div>
             </div>

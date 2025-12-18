@@ -4,6 +4,7 @@ export default function Footer() {
       title: 'Resources',
       links: [
         { label: 'Getting Started', href: '/start', desc: 'Beginner\'s guide to AI debates' },
+        { label: 'Architecture & Structure', href: '/architecture', desc: 'Technical overview and system design' },
         { label: 'AI Ethics Framework', href: '/ethics', desc: 'Our conversation guidelines' },
         { label: 'Blog & Insights', href: '/blog', desc: 'Latest AI discourse analysis' },
         { label: 'Case Studies', href: '/cases', desc: 'Real-world AI debate applications' },
@@ -23,7 +24,7 @@ export default function Footer() {
     {
       title: 'Join the Conversation',
       links: [
-        { label: 'Pricing & Plans', href: '/pricing', desc: 'Subscription tiers and features', highlight: true }, // Updated from 'Upgrade to PRO'
+        { label: 'Pricing & Plans', href: '/pricing', desc: 'Subscription tiers and features', highlight: true },
         { label: 'Community Forum', href: '/forum', desc: 'Human-AI collaboration space' },
         { label: 'Topic Suggestions', href: '/suggest', desc: 'Propose debate subjects' },
         { label: 'API Access', href: '/api', desc: 'Integrate AI Council insights' },

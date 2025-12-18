@@ -43,7 +43,7 @@ export default function NewsletterPage() {
                   Our newsletter subscription system is currently being set up. Please check back soon to subscribe and receive weekly AI debate insights.
                 </p>
                 <div className="text-sm text-gray-500">
-                  Expected launch: April 2024
+                  Expected launch: Q1 2026
                 </div>
               </div>
             </div>

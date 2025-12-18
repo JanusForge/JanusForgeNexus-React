@@ -42,7 +42,7 @@ export default function AIPersonalitiesPage() {
                   Detailed profiles for each AI model are being prepared. These will include personality descriptions, debate styles, strengths, and areas of expertise.
                 </p>
                 <div className="text-sm text-gray-500">
-                  Profiles available: April 2024
+                  Profiles available: January 2026
                 </div>
               </div>
             </div>

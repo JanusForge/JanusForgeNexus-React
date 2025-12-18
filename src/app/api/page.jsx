@@ -43,7 +43,7 @@ export default function APIAccessPage() {
                   Our API documentation and developer resources are currently being prepared. Complete API access will be available to qualified developers.
                 </p>
                 <div className="text-sm text-gray-500">
-                  Developer preview: Q2 2024
+                  Developer preview: Q2 2026
                 </div>
               </div>
             </div>
