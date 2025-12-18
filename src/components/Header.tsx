@@ -1,174 +1,156 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Menu, X, Zap } from 'lucide-react'; // Make sure Menu and X are imported
 import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const { user, loading, signOut } = useAuth();
-  const pathname = usePathname();
+  const { user } = useAuth();
 
-  const handleLogout = async () => {
-    await signOut();
-    window.location.href = '/';
-  };
-
-  // Function to determine dashboard route based on email
-  const getDashboardRoute = () => {
-    if (!user?.email) return '/dashboard';
-    return user.email === 'admin-access@janusforge.ai' ? '/admin' : '/dashboard';
-  };
-
-  // Function to determine user role
-  const getUserRole = () => {
-    if (!user?.email) return 'User';
-    return user.email === 'admin-access@janusforge.ai' ? 'Administrator' : 'User';
-  };
+  const mainNavItems = [
+    {
+      href: '/',
+      label: 'Dashboard',
+      desc: 'User Specific Dashboard',
+      active: true
+    },
+    {
+      href: '/archive',
+      label: 'Archives',
+      desc: 'Historical AI Dialogues'
+    },
+    {
+      href: '/pricing',
+      label: 'Pricing',
+      desc: 'Subscription Tiers'
+    },
+  ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-              <span className="text-xl font-bold text-white">JF</span>
-            </div>
-            <div>
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Janus Forge
-              </span>
-              <span className="text-xs text-gray-400 block">Nexus</span>
-            </div>
-          </Link>
+    <header className="sticky top-0 z-50 bg-gray-900/95 backdrop-blur-xl border-b border-gray-800/50 shadow-2xl">
+      <div className="w-full px-6 lg:px-8 xl:px-12">
+        <div className="flex items-center justify-between h-20">
+          {/* Logo & Brand */}
+          <div className="flex items-center gap-5 min-w-0">
+            {/* Mobile Menu Toggle Button - Hidden on large screens */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="lg:hidden p-3 hover:bg-gray-800/50 rounded-xl transition-all"
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/features" className="text-gray-300 hover:text-white transition-colors">
-              Features
-            </Link>
-            <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors">
-              Pricing
-            </Link>
-            <Link href="/docs" className="text-gray-300 hover:text-white transition-colors">
-              Documentation
-            </Link>
-
-            {!loading && user ? (
-              <div className="relative">
-                <button 
-                  className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  onBlur={() => setTimeout(() => setIsDropdownOpen(false), 100)}
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-white">
-                      {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
-                    </span>
-                  </div>
-                  <span>{user.name || user.email?.split('@')[0]}</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {/* Click-based Dropdown */}
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-xl shadow-xl border border-gray-700 z-50">
-                    <div className="py-2">
-                      <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
-                        {getUserRole()}
-                      </div>
-                      <Link
-                        href={getDashboardRoute()}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        Dashboard
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors"
-                      >
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                )}
+            <Link href="/" className="flex items-center gap-4 group min-w-0">
+              {/* Animated Logo Container */}
+              <div className="relative flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center group-hover:from-blue-500 group-hover:via-purple-500 group-hover:to-pink-500 transition-all duration-300 shadow-lg group-hover:shadow-blue-500/20">
+                  <Zap className="w-6 h-6" />
+                </div>
+                {/* Glow effect */}
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-400/20 to-purple-400/20 blur-xl group-hover:blur-2xl transition-all duration-500"></div>
               </div>
-            ) : !loading ? (
+
+              <div className="hidden md:block min-w-0">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent whitespace-nowrap">
+                    Janus Forge Nexus®
+                  </h1>
+                </div>
+                <p className="text-sm text-gray-400 whitespace-nowrap">
+                  Where Realtime AI to AI Conversations meet Human Intelligence
+                </p>
+              </div>
+            </Link>
+          </div>
+
+          {/* Desktop Navigation - Hidden on mobile, shown on xl screens */}
+          <nav className="hidden xl:flex items-center gap-4">
+            {mainNavItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`group relative px-4 py-3 rounded-xl transition-all ${item.active ? 'bg-gray-800/50' : 'hover:bg-gray-800/30'}`}
+                title={item.desc}
+              >
+                <div className="flex flex-col min-w-0">
+                  <span className="font-semibold text-sm whitespace-nowrap">{item.label}</span>
+                </div>
+                {/* Active indicator */}
+                {item.active && (
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/4 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-t-full"></div>
+                )}
+              </Link>
+            ))}
+          </nav>
+
+          {/* User Actions - Simplified to Login Only */}
+          <div className="flex items-center gap-4">
+            {/* Login Button */}
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="px-5 py-3 bg-gray-800/50 hover:bg-gray-800 rounded-xl font-medium text-sm transition-colors whitespace-nowrap"
+              >
+                Dashboard
+              </Link>
+            ) : (
               <Link
                 href="/login"
-                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-white font-semibold transition-all duration-300 transform hover:-translate-y-0.5"
+                className="px-5 py-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 rounded-xl border border-blue-500/30 text-blue-300 font-medium text-sm transition-all whitespace-nowrap hover:border-blue-400/50"
               >
                 Login
               </Link>
-            ) : (
-              <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             )}
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden text-gray-300 hover:text-white"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
+          </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Only shows when isMenuOpen is true */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-gray-800">
-            <div className="flex flex-col space-y-4">
-              <Link href="/features" className="text-gray-300 hover:text-white transition-colors">
-                Features
-              </Link>
-              <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors">
-                Pricing
-              </Link>
-              <Link href="/docs" className="text-gray-300 hover:text-white transition-colors">
-                Documentation
-              </Link>
-
-              {!loading && user ? (
-                <>
-                  <div className="text-sm text-gray-400 px-2">
-                    {getUserRole()}
+          <div className="lg:hidden border-t border-gray-800/50 py-6 animate-in slide-in-from-top duration-300">
+            {/* Mobile Navigation */}
+            <div className="space-y-2">
+              {mainNavItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center p-4 hover:bg-gray-800/50 rounded-xl transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <div>
+                    <div className="font-semibold">{item.label}</div>
+                    <div className="text-sm text-gray-400">{item.desc}</div>
                   </div>
-                  <Link
-                    href={getDashboardRoute()}
-                    className="text-gray-300 hover:text-white transition-colors"
-                  >
-                    Dashboard
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="text-left text-red-400 hover:text-red-300 transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : !loading ? (
+                </Link>
+              ))}
+            </div>
+
+            {/* Mobile Login Section */}
+            <div className="mt-8 pt-6 border-t border-gray-800/50 px-2">
+              {user ? (
+                <Link
+                  href="/dashboard"
+                  className="flex items-center gap-4 p-4 bg-gray-800/30 rounded-xl hover:bg-gray-800/50 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center font-semibold text-lg">
+                    {user.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <div className="font-bold text-lg">{user.name || 'Council Member'}</div>
+                    <div className="text-sm text-gray-400">Go to Dashboard</div>
+                  </div>
+                </Link>
+              ) : (
                 <Link
                   href="/login"
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-white font-semibold text-center"
+                  className="block px-5 py-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-xl font-semibold text-center hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-purple-600/30 hover:border-blue-400/50 transition-all"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   Login
                 </Link>
-              ) : (
-                <div className="text-center">
-                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                </div>
               )}
             </div>
           </div>

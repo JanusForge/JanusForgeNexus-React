@@ -267,8 +267,8 @@ export default function PricingPage() {
                   a: 'Yes, cancel anytime from your account dashboard. No cancellation fees.'
                 },
                 {
-                  q: 'Is this veteran-owned?',
-                  a: 'Yes, Janus Forge Nexus is proudly veteran owned and operated by US Navy & Marine Veteran Cassandra Williamson.'
+                  q: 'Who operates Janus Forge?',
+                  a: 'Janus Forge Nexus is operated by a team of AI experts and ethicists committed to responsible AI development.'
                 },
               ].map((faq, index) => (
                 <div key={index} className="bg-gray-800/30 rounded-xl p-6 text-left border border-gray-700">

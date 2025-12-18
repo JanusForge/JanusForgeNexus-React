@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Favicon Test</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #111; color: white; }
+        .test-item { margin: 10px 0; padding: 10px; background: #222; border-radius: 5px; }
+        .success { color: #4CAF50; }
+        .fail { color: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>Favicon Test</h1>
+    <p>Check browser tab for favicon. Also test direct links:</p>
+    
+    <div class="test-item">
+        <h3>Test Links:</h3>
+        <ul>
+            <li><a href="/favicon.ico" target="_blank">/favicon.ico</a></li>
+            <li><a href="/favicon.svg" target="_blank">/favicon.svg</a></li>
+            <li><a href="/favicon-96x96.png" target="_blank">/favicon-96x96.png</a></li>
+            <li><a href="/apple-touch-icon.png" target="_blank">/apple-touch-icon.png</a></li>
+        </ul>
+    </div>
+    
+    <div class="test-item">
+        <h3>Status:</h3>
+        <p id="status">Testing...</p>
+    </div>
+    
+    <script>
+        // Test if favicons are accessible
+        const favicons = [
+            '/favicon.ico',
+            '/favicon.svg', 
+            '/favicon-96x96.png',
+            '/apple-touch-icon.png'
+        ];
+        
+        let loadedCount = 0;
+        
+        favicons.forEach(url => {
+            const img = new Image();
+            img.onload = () => {
+                loadedCount++;
+                updateStatus();
+            };
+            img.onerror = () => {
+                updateStatus();
+            };
+            img.src = url;
+        });
+        
+        function updateStatus() {
+            const status = document.getElementById('status');
+            if (loadedCount === favicons.length) {
+                status.innerHTML = '<span class="success">✅ All favicons loaded successfully!</span>';
+            } else {
+                status.innerHTML = `<span>Loaded ${loadedCount} of ${favicons.length} favicons...</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

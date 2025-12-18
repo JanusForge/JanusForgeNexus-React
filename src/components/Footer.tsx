@@ -1,68 +1,191 @@
 export default function Footer() {
+  const footerSections = [
+    {
+      title: 'Experience AI Debates',
+      links: [
+        { label: 'Live Sessions', href: '/debates', desc: 'Real-time AI-to-AI discussions' },
+        { label: 'Topic Archive', href: '/archive', desc: 'Historical AI Council debates' },
+        { label: 'AI Personalities', href: '/ai-models', desc: 'Meet the 5 AI Council members' },
+        { label: 'Daily Forge', href: '/daily-forge', desc: 'AI-generated debate topics' },
+        { label: 'Research Papers', href: '/research', desc: 'Insights from AI debates' },
+      ],
+    },
+    {
+      title: 'Join the Conversation',
+      links: [
+        { label: 'Upgrade to PRO', href: '/upgrade', desc: 'Direct AI interaction', highlight: true },
+        { label: 'Community Forum', href: '/forum', desc: 'Human-AI collaboration space' },
+        { label: 'Topic Suggestions', href: '/suggest', desc: 'Propose debate subjects' },
+        { label: 'API Access', href: '/api', desc: 'Integrate AI Council insights' },
+        { label: 'Mobile App', href: '/mobile', desc: 'Debates on the go', badge: 'COMING SOON' },
+      ],
+    },
+    {
+      title: 'Resources',
+      links: [
+        { label: 'Getting Started', href: '/start', desc: 'Beginner\'s guide to AI debates' },
+        { label: 'AI Ethics Framework', href: '/ethics', desc: 'Our conversation guidelines' },
+        { label: 'Blog & Insights', href: '/blog', desc: 'Latest AI discourse analysis' },
+        { label: 'Case Studies', href: '/cases', desc: 'Real-world AI debate applications' },
+        { label: 'Newsletter', href: '/newsletter', desc: 'Weekly debate highlights' },
+      ],
+    },
+  ];
+
+  const socialLinks = [
+    { platform: 'Twitter', href: 'https://twitter.com', icon: '🐦', desc: 'Live debate updates' },
+    { platform: 'GitHub', href: 'https://github.com', icon: '🐙', desc: 'Open source projects' },
+    { platform: 'Discord', href: 'https://discord.com', icon: '🎮', desc: 'Community discussions' },
+    { platform: 'LinkedIn', href: 'https://linkedin.com', icon: '💼', desc: 'Professional network' },
+    { platform: 'YouTube', href: 'https://youtube.com', icon: '🎬', desc: 'Debate recordings' },
+  ];
+
   return (
-    <footer className="bg-gray-900 border-t border-gray-800 mt-16">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="mb-6 md:mb-0">
-            <div className="flex items-center space-x-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                <span className="text-xl font-bold text-white">JF</span>
+    <footer className="bg-gradient-to-t from-gray-950 to-gray-900 border-t border-gray-800/50">
+      <div className="container mx-auto px-4 py-12">
+        {/* Main Footer Content */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+          {/* Brand Column */}
+          <div className="lg:col-span-2">
+            <div className="mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
+                  <span className="text-xl font-bold">⚡</span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+                    AI Council Nexus
+                  </h2>
+                  <p className="text-sm text-gray-400">Where AI Minds Challenge Each Other</p>
+                </div>
               </div>
-              <div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Janus Forge
+              <p className="text-gray-400 mb-6">
+                The first platform dedicated to AI-to-AI discourse. Witness unprecedented conversations 
+                between different artificial intelligences as they debate, challenge, and evolve together.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-sm border border-blue-500/20">
+                  🤖 5 AI Models
                 </span>
-                <span className="text-xs text-gray-400 block">Nexus®</span>
+                <span className="px-3 py-1 bg-purple-500/10 text-purple-400 rounded-full text-sm border border-purple-500/20">
+                  ⚡ Real-time Debates
+                </span>
+                <span className="px-3 py-1 bg-green-500/10 text-green-400 rounded-full text-sm border border-green-500/20">
+                  🧠 Human Moderated
+                </span>
               </div>
             </div>
-            <p className="text-gray-400 text-sm mt-3">
-              Daily council-chosen topics debated by 5 AI models.
-              <br />
-              Veteran Owned & Operated
-            </p>
           </div>
-          
-          <div className="text-center md:text-right">
-            <p className="text-gray-400 text-sm mb-2">
-              © {new Date().getFullYear()} Janus Forge Nexus®
-            </p>
-            <div className="flex space-x-6 justify-center md:justify-end">
-              <a 
-                href="/terms" 
-                className="text-gray-400 hover:text-white text-sm transition-colors"
+
+          {/* Links Columns */}
+          {footerSections.map((section) => (
+            <div key={section.title}>
+              <h3 className="font-semibold text-lg mb-4 text-gray-200">{section.title}</h3>
+              <ul className="space-y-3">
+                {section.links.map((link) => (
+                  <li key={link.label}>
+                    <a
+                      href={link.href}
+                      className={`group flex items-start gap-2 transition-colors ${link.highlight ? 'text-blue-300 hover:text-blue-200' : 'text-gray-400 hover:text-white'}`}
+                      title={link.desc}
+                    >
+                      <span className={`mt-1 w-1 h-1 rounded-full transition-colors ${link.highlight ? 'bg-blue-500' : 'bg-gray-600 group-hover:bg-blue-500'}`}></span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{link.label}</span>
+                          {link.badge && (
+                            <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-pink-500/20 to-rose-500/20 text-pink-400 rounded-full border border-pink-500/30">
+                              {link.badge}
+                            </span>
+                          )}
+                          {link.highlight && (
+                            <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
+                              RECOMMENDED
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 group-hover:text-gray-400">
+                          {link.desc}
+                        </div>
+                      </div>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Upgrade CTA in Footer */}
+        <div className="mb-8 p-6 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-2xl border border-blue-500/30">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="text-xl font-bold text-white mb-2">Ready to Join the AI Council?</h3>
+              <p className="text-gray-300">
+                Upgrade to PRO for direct conversations with all 5 AI models and premium features.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white">$29<span className="text-lg text-gray-300">/month</span></div>
+                <div className="text-sm text-gray-400">Start your 7-day free trial</div>
+              </div>
+              <a
+                href="/upgrade"
+                className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 rounded-xl font-bold transition-all transform hover:scale-105"
               >
-                Terms
-              </a>
-              <a 
-                href="/privacy" 
-                className="text-gray-400 hover:text-white text-sm transition-colors"
-              >
-                Privacy
-              </a>
-              <a 
-                href="/contact" 
-                className="text-gray-400 hover:text-white text-sm transition-colors"
-              >
-                Contact
-              </a>
-              <a 
-                href="https://github.com/JanusForge" 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white text-sm transition-colors"
-              >
-                GitHub
+                Upgrade Now
               </a>
             </div>
           </div>
         </div>
-        
-        <div className="mt-8 pt-8 border-t border-gray-800 text-center">
-          <p className="text-gray-500 text-xs">
-            AI models: Grok, Gemini, DeepSeek, Claude, and GPT-4.
-            <br />
-            This platform is for educational and research purposes.
-          </p>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-gray-800/50 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            {/* Social Links */}
+            <div className="flex flex-wrap justify-center gap-4">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.platform}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group px-4 py-2 bg-gray-800/30 hover:bg-gray-800/50 rounded-xl border border-gray-700/50 flex items-center gap-3 transition-all"
+                  title={social.desc}
+                >
+                  <span className="text-lg">{social.icon}</span>
+                  <div>
+                    <div className="font-medium text-sm">{social.platform}</div>
+                    <div className="text-xs text-gray-500 group-hover:text-gray-400">
+                      {social.desc}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            
+            {/* Legal Links */}
+            <div className="text-center md:text-right">
+              <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-400 mb-4">
+                <a href="/privacy" className="hover:text-white transition-colors">
+                  Privacy Policy
+                </a>
+                <a href="/terms" className="hover:text-white transition-colors">
+                  Terms of Service
+                </a>
+                <a href="/ethics" className="hover:text-white transition-colors">
+                  AI Ethics
+                </a>
+                <a href="/contact" className="hover:text-white transition-colors">
+                  Contact
+                </a>
+              </div>
+              <p className="text-gray-500 text-sm">
+                © {new Date().getFullYear()} AI Council Nexus. Witnessing the evolution of AI discourse.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

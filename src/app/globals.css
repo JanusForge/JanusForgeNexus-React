@@ -2,48 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
-}
-
-body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
-  min-height: 100vh;
-}
-
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: #1f2937;
+  background: rgba(31, 41, 55, 0.4);
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #f97316, #8b5cf6);
+  background: rgba(75, 85, 99, 0.6);
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #ea580c, #7c3aed);
+  background: rgba(107, 114, 128, 0.8);
 }
 
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(90deg, #f97316, #8b5cf6, #3b82f6);
-  background-size: 200% auto;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: gradient 3s ease infinite;
+/* Smooth transitions */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-@keyframes gradient {
+/* Typing animation */
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* New animations for LogoVideo component */
+@keyframes gradient-x {
   0%, 100% {
     background-position: 0% 50%;
   }
@@ -51,73 +45,56 @@ body {
     background-position: 100% 50%;
   }
 }
-/* Add to your existing globals.css */
-@keyframes glow {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0.8; }
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-@keyframes glow-slow {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
+@keyframes spin-slow-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
 }
 
-@keyframes gradient-x {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
-.animate-glow {
-  animation: glow 3s ease-in-out infinite;
-}
-
-.animate-glow-slow {
-  animation: glow-slow 4s ease-in-out infinite;
-}
-
-.animate-gradient-x {
-  background-size: 200% auto;
-  animation: gradient-x 3s ease infinite;
-}
-/* Add to your existing globals.css */
-@keyframes glow {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.6; }
-}
-
-@keyframes glow-slow {
-  0%, 100% { opacity: 0.1; }
-  50% { opacity: 0.3; }
-}
-
-@keyframes gradient-x {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes scan {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-
-.animate-glow {
-  animation: glow 4s ease-in-out infinite;
-}
-
-.animate-glow-slow {
-  animation: glow-slow 8s ease-in-out infinite;
+.animate-bounce {
+  animation: bounce 0.6s infinite;
 }
 
 .animate-gradient-x {
-  background-size: 200% auto;
+  background-size: 200% 200%;
   animation: gradient-x 3s ease infinite;
 }
 
-.animate-scan {
-  animation: scan 20s linear infinite;
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
 }
 
-/* Smooth transitions */
-* {
-  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+.animate-spin-slow-reverse {
+  animation: spin-slow-reverse 15s linear infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Smooth video loading */
+video {
+  transition: opacity 0.3s ease-in-out;
 }

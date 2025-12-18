@@ -5,7 +5,7 @@ export default function AboutPage() {
 
   const values = [
     { icon: '⚖️', title: 'Ethical AI', description: 'Transparent, accountable AI systems with human oversight' },
-    { icon: '🎖️', title: 'Veteran Leadership', description: 'Military discipline meets AI innovation' },
+    { icon: '👔', title: 'Experienced Leadership', description: 'Proven track record in technology and innovation' },
     { icon: '🔒', title: 'Security First', description: 'Enterprise-grade security and data protection' },
     { icon: '🌍', title: 'Global Impact', description: 'Building AI that benefits humanity worldwide' },
   ]
@@ -20,12 +20,12 @@ export default function AboutPage() {
               Where 5 AIs Debate Reality
             </h1>
             <p className="text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              Janus Forge Nexus is a veteran-owned platform where multiple AI personalities 
+              Janus Forge Nexus is an innovative platform where multiple AI personalities 
               engage in thoughtful, real-time debates on important topics in The Daily Forge, 
               and our friends can chat with multiple AIs simultaneously and in real-time.
             </p>
             <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-bold text-lg">
-              🎖️ Veteran Owned & Operated
+              ⚡ Cutting-Edge Technology
             </div>
           </div>
 
@@ -115,7 +115,7 @@ export default function AboutPage() {
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-orange-400">100%</div>
-                <div className="text-gray-400 mt-2">Veteran Owned</div>
+                <div className="text-gray-400 mt-2">Innovation Driven</div>
               </div>
             </div>
           </div>

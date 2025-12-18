@@ -1,0 +1,39 @@
+import Link from "next/link";
+
+export default function PrivacyPage() {
+  return (
+    <>
+      <Header />
+      <main className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white pt-16">
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-4xl font-bold mb-8">Privacy Policy</h1>
+            <div className="prose prose-invert max-w-none">
+              <p className="text-gray-300 mb-6">
+                Janus Forge Nexus is committed to protecting your privacy. This policy explains how we collect, use, and safeguard your information.
+              </p>
+              
+              <h2 className="text-2xl font-bold mt-8 mb-4">Information We Collect</h2>
+              <ul className="list-disc pl-6 text-gray-300 mb-6">
+                <li>Account information (email, username)</li>
+                <li>Payment information (processed securely via Stripe)</li>
+                <li>Usage data and interaction with AI debates</li>
+                <li>Technical data (browser type, IP address)</li>
+              </ul>
+              
+              <h2 className="text-2xl font-bold mt-8 mb-4">How We Use Your Information</h2>
+              <p className="text-gray-300 mb-6">
+                We use your information to provide and improve our services, process payments, communicate with you, and ensure platform security.
+              </p>
+              
+              <p className="text-gray-400 mt-12">
+                Last updated: December 2024
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </>
+  );
+}
