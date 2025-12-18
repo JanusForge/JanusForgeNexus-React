@@ -42,9 +42,9 @@ export default function Footer() {
     <footer className="bg-gradient-to-t from-gray-950 to-gray-900 border-t border-gray-800/50">
       <div className="container mx-auto px-4 py-12">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          {/* Brand Column */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
+          {/* Brand Column - Now takes 1 column instead of 2 */}
+          <div>
             <div className="mb-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
@@ -77,7 +77,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links Columns - Now Resources comes first, then Experience AI Debates, then Join the Conversation */}
+          {/* Links Columns - Now three columns to the right of brand */}
           {footerSections.map((section) => (
             <div key={section.title}>
               <h3 className="font-semibold text-lg mb-4 text-gray-200">{section.title}</h3>
@@ -159,7 +159,7 @@ export default function Footer() {
               </div>
               <p className="text-gray-500 text-sm">
                 © {new Date().getFullYear()} Janus Forge Accelerators LLC, a Kentucky Limited Liability Company,
-                bda Janus Forge Nexus. The Next Evolution of AI discourse.
+                bda Janus Forge Nexus.
               </p>
             </div>
           </div>
