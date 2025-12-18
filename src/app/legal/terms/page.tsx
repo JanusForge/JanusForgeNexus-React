@@ -1,4 +1,10 @@
+"use client";
+
 export default function TermsPage() {
+  const handleEmailClick = () => {
+    window.open('mailto:legal@janusforge.ai', '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-gray-300 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -123,10 +129,21 @@ export default function TermsPage() {
           <section className="bg-gray-900/50 p-6 rounded-xl border border-gray-800/50">
             <h2 className="text-2xl font-bold mb-4 text-purple-300">11. Contact Information</h2>
             <div className="mt-4 p-4 bg-gray-800/30 rounded-lg">
-              <p className="font-mono text-purple-300">legal@janusforge.ai</p>
+              <button
+                onClick={handleEmailClick}
+                className="font-mono text-purple-300 hover:text-purple-200 cursor-pointer text-left w-full"
+              >
+                legal@janusforge.ai
+              </button>
               <p className="text-sm text-gray-400 mt-2">
                 For questions about these Terms, contact our Legal Department.
               </p>
+              <div className="mt-2 text-xs text-gray-500">
+                <span className="inline-flex items-center gap-1">
+                  <span>↗</span>
+                  <span>Click to open email in new tab (closes after sending)</span>
+                </span>
+              </div>
             </div>
           </section>
         </div>

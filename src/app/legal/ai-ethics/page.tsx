@@ -1,4 +1,10 @@
+"use client";
+
 export default function AiethicsPage() {
+  const handleEmailClick = () => {
+    window.open('mailto:legal@janusforge.ai', '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-gray-300 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -130,7 +136,15 @@ export default function AiethicsPage() {
               </div>
               <div>
                 <h3 className="font-bold text-lg mb-1">Reporting Mechanisms</h3>
-                <p className="text-gray-400">We encourage reporting of ethical concerns via <span className="text-cyan-300">legal@janusforge.ai</span>.</p>
+                <p className="text-gray-400">
+                  We encourage reporting of ethical concerns via{" "}
+                  <button
+                    onClick={handleEmailClick}
+                    className="text-cyan-300 hover:text-cyan-200 cursor-pointer"
+                  >
+                    legal@janusforge.ai
+                  </button>
+                </p>
               </div>
             </div>
           </div>
@@ -156,8 +170,20 @@ export default function AiethicsPage() {
             bda Janus Forge Nexus.
           </p>
           <p className="mt-2">
-            For ethics-related inquiries: <a href="mailto:legal@janusforge.ai" className="text-cyan-400 hover:text-cyan-300">legal@janusforge.ai</a>
+            For ethics-related inquiries:{" "}
+            <button
+              onClick={handleEmailClick}
+              className="text-cyan-400 hover:text-cyan-300 cursor-pointer"
+            >
+              legal@janusforge.ai
+            </button>
           </p>
+          <div className="mt-2 text-xs text-gray-500">
+            <span className="inline-flex items-center gap-1">
+              <span>↗</span>
+              <span>Email opens in new tab (closes after sending)</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>

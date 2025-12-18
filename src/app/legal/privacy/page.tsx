@@ -1,4 +1,10 @@
+"use client";
+
 export default function PrivacyPage() {
+  const handleEmailClick = () => {
+    window.open('mailto:legal@janusforge.ai', '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-gray-300 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -75,9 +81,12 @@ export default function PrivacyPage() {
             </ul>
             <p className="mt-4 text-sm text-gray-400">
               To exercise these rights, contact us at:{" "}
-              <a href="mailto:legal@janusforge.ai" className="text-blue-400 hover:text-blue-300">
+              <button
+                onClick={handleEmailClick}
+                className="text-blue-400 hover:text-blue-300 cursor-pointer"
+              >
                 legal@janusforge.ai
-              </a>
+              </button>
             </p>
           </section>
 
@@ -95,12 +104,23 @@ export default function PrivacyPage() {
               If you have questions about this Privacy Policy, please contact our Legal Department:
             </p>
             <div className="mt-4 p-4 bg-gray-800/30 rounded-lg">
-              <p className="font-mono text-blue-300">legal@janusforge.ai</p>
+              <button
+                onClick={handleEmailClick}
+                className="font-mono text-blue-300 hover:text-blue-200 cursor-pointer text-left w-full"
+              >
+                legal@janusforge.ai
+              </button>
               <p className="text-sm text-gray-400 mt-2">
                 Janus Forge Accelerators LLC<br />
                 A Kentucky Limited Liability Company<br />
                 Doing Business As: Janus Forge Nexus
               </p>
+              <div className="mt-2 text-xs text-gray-500">
+                <span className="inline-flex items-center gap-1">
+                  <span>↗</span>
+                  <span>Click to open email in new tab (closes after sending)</span>
+                </span>
+              </div>
             </div>
           </section>
         </div>

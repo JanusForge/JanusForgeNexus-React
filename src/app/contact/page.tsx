@@ -37,6 +37,11 @@ export default function ContactPage() {
     }
   ];
 
+  // Function to handle email clicks - opens in new tab
+  const handleEmailClick = (email: string) => {
+    window.open(`mailto:${email}`, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white pt-16">
       <div className="container mx-auto px-4 py-16">
@@ -46,8 +51,12 @@ export default function ContactPage() {
             Contact Janus Forge Nexus
           </h1>
           <p className="text-xl text-gray-300 mb-8">
-            Get in touch with the right team for your inquiry. We're here to help.
+            Get in touch with the right team for your inquiry. Click any email to compose a message in a new tab.
           </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-full border border-blue-500/20">
+            <span className="text-blue-400">📧</span>
+            <span className="text-sm text-blue-300">Emails open in a new tab</span>
+          </div>
         </div>
 
         {/* Contact Categories */}
@@ -65,22 +74,53 @@ export default function ContactPage() {
               
               <div className="space-y-4">
                 {category.contacts.map((contact, idx) => (
-                  <div 
+                  <button
                     key={idx}
-                    className="p-4 bg-gray-900/50 rounded-xl border border-gray-800/50 hover:border-gray-700/50 transition-all"
+                    onClick={() => handleEmailClick(contact.email)}
+                    className="w-full text-left p-4 bg-gray-900/50 rounded-xl border border-gray-800/50 hover:border-blue-500/50 hover:bg-gray-800/50 transition-all group cursor-pointer"
                   >
-                    <p className="text-sm text-gray-400 mb-1">{contact.label}</p>
-                    <a 
-                      href={`mailto:${contact.email}`}
-                      className="text-lg font-mono text-blue-300 hover:text-blue-200 transition-colors break-all"
-                    >
-                      {contact.email}
-                    </a>
-                  </div>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-sm text-gray-400 mb-1">{contact.label}</p>
+                        <div className="font-mono text-blue-300 group-hover:text-blue-200 transition-colors break-all">
+                          {contact.email}
+                        </div>
+                      </div>
+                      <span className="text-gray-500 group-hover:text-blue-400 transition-colors ml-2">↗</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
+                      <span>Click to open email in new tab</span>
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Email Instructions */}
+        <div className="max-w-2xl mx-auto bg-gray-800/20 rounded-xl p-6 border border-gray-700/50 mb-8">
+          <h3 className="text-lg font-bold mb-3 text-white flex items-center gap-2">
+            <span>💡</span> How Our Email System Works
+          </h3>
+          <ul className="space-y-2 text-gray-300">
+            <li className="flex items-start gap-2">
+              <span className="text-green-400">✓</span>
+              <span><strong>New Tab:</strong> Clicking any email opens your default email client in a new browser tab</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-400">✓</span>
+              <span><strong>Auto-Close:</strong> When you send your email, the tab will close automatically</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-400">✓</span>
+              <span><strong>Return to Site:</strong> You'll return to this page after sending</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-400">✓</span>
+              <span><strong>Subject Line:</strong> We recommend including a clear subject for faster response</span>
+            </li>
+          </ul>
         </div>
 
         {/* Response Guidelines */}
