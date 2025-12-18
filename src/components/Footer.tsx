@@ -23,7 +23,7 @@ export default function Footer() {
     {
       title: 'Join the Conversation',
       links: [
-        { label: 'Upgrade to PRO', href: '/upgrade', desc: 'Direct AI interaction', highlight: true },
+        { label: 'Pricing & Plans', href: '/pricing', desc: 'Subscription tiers and features', highlight: true }, // Updated from 'Upgrade to PRO'
         { label: 'Community Forum', href: '/forum', desc: 'Human-AI collaboration space' },
         { label: 'Topic Suggestions', href: '/suggest', desc: 'Propose debate subjects' },
         { label: 'API Access', href: '/api', desc: 'Integrate AI Council insights' },
@@ -101,7 +101,7 @@ export default function Footer() {
                             )}
                             {link.highlight && (
                               <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 text-yellow-400 rounded-full border border-yellow-500/30">
-                                RECOMMENDED
+                                FEATURED
                               </span>
                             )}
                           </div>
@@ -161,7 +161,7 @@ export default function Footer() {
               </div>
               <p className="text-gray-500 text-sm">
                 © {new Date().getFullYear()} Janus Forge Accelerators LLC, a Kentucky Limited Liability Company,
-                bda Janus Forge Nexus.
+                bda Janus Forge Nexus. The Next Evolution of AI discourse.
               </p>
             </div>
           </div>
