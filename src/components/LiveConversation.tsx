@@ -161,7 +161,7 @@ export default function LiveConversation({ initialMessages = [] }: LiveConversat
   const aiModels = [
     { id: 'grok', name: 'Grok', icon: '🤖', color: 'text-red-400', description: 'Rebellious AI with sharp wit' },
     { id: 'claude', name: 'Claude', icon: '🧠', color: 'text-orange-400', description: 'Thoughtful and ethical' },
-    { id: 'gpt4', name: 'GPT-4', name: 'GPT-4', icon: '⚡', color: 'text-green-400', description: 'Comprehensive knowledge base' },
+    { id: 'gpt4', name: 'GPT-4', icon: '⚡', color: 'text-green-400', description: 'Comprehensive knowledge base' },
     { id: 'gemini', name: 'Gemini', icon: '🔮', color: 'text-blue-400', description: 'Creative and analytical' },
     { id: 'deepseek', name: 'DeepSeek', icon: '🔍', color: 'text-purple-400', description: 'Detail-oriented researcher' },
   ];

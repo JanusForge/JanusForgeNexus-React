@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
-// Initialize Stripe with the secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-11-17.clover', // Updated to latest version
-});
-
 export async function POST(request: Request) {
   try {
     const { priceId } = await request.json();
@@ -18,6 +13,27 @@ export async function POST(request: Request) {
     }
 
     console.log('Creating checkout session for priceId:', priceId);
+
+    // Check if Stripe API key is available
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    
+    if (!stripeSecretKey) {
+      console.warn('Stripe API key not configured, using demo mode');
+      // Return a demo checkout URL
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const tierName = getTierNameFromPriceId(priceId);
+      const demoSessionId = 'cs_demo_' + Date.now();
+      
+      return NextResponse.json({ 
+        url: `${baseUrl}/pricing/success?session_id=${demoSessionId}&tier=${tierName}&demo=true`,
+        demo_mode: true,
+      });
+    }
+
+    // Initialize Stripe with the secret key
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2025-11-17.clover',
+    });
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({

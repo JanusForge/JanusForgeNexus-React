@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 interface AuthUser {
   id: string;
@@ -38,7 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usingDemoMode, setUsingDemoMode] = useState(false);
 
   // Check for demo user in localStorage
-  const getDemoUser = () => {
+  const getDemoUser = (): AuthUser | null => {
     try {
       const demoUser = localStorage.getItem('demo_user');
       if (demoUser) {
@@ -49,66 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     return null;
   };
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      // First check for demo user
-      const demoUser = getDemoUser();
-      if (demoUser) {
-        setUser(demoUser);
-        setUsingDemoMode(true);
-        setLoading(false);
-        return;
-      }
-
-      // Try to use Supabase if available
-      try {
-        const { createClient } = require('@/lib/supabase-client');
-        const supabase = createClient();
-        setSupabaseAvailable(true);
-        
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-
-        if (session?.user) {
-          await fetchUserProfile(supabase, session.user.email!);
-        }
-      } catch (error) {
-        console.log('Supabase auth initialization failed, using demo mode:', error);
-        setSupabaseAvailable(false);
-        setUsingDemoMode(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Set up auth state listener only if Supabase is available
-    if (supabaseAvailable) {
-      try {
-        const { createClient } = require('@/lib/supabase-client');
-        const supabase = createClient();
-        
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            setSession(session);
-
-            if (session?.user) {
-              await fetchUserProfile(supabase, session.user.email!);
-            } else {
-              setUser(null);
-            }
-            setLoading(false);
-          }
-        );
-
-        return () => subscription.unsubscribe();
-      } catch (error) {
-        console.log('Failed to set up auth listener:', error);
-      }
-    }
-  }, [supabaseAvailable]);
 
   const fetchUserProfile = async (supabase: any, email: string) => {
     try {
@@ -146,20 +86,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    const initializeAuth = async () => {
+      // First check for demo user
+      const demoUser = getDemoUser();
+      if (demoUser) {
+        setUser(demoUser);
+        setUsingDemoMode(true);
+        setLoading(false);
+        return;
+      }
+
+      // Try to use Supabase if available
+      try {
+        const { createClient } = require('@/lib/supabase-client');
+        const supabase = createClient();
+        setSupabaseAvailable(true);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+
+        if (session?.user) {
+          await fetchUserProfile(supabase, session.user.email!);
+        }
+      } catch (error) {
+        console.log('Supabase auth initialization failed, using demo mode:', error);
+        setSupabaseAvailable(false);
+        setUsingDemoMode(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
+
+  useEffect(() => {
+    // Set up auth state listener only if Supabase is available
+    if (supabaseAvailable) {
+      try {
+        const { createClient } = require('@/lib/supabase-client');
+        const supabase = createClient();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event: AuthChangeEvent, session: Session | null) => {
+            setSession(session);
+
+            if (session?.user) {
+              await fetchUserProfile(supabase, session.user.email!);
+            } else {
+              setUser(null);
+            }
+            setLoading(false);
+          }
+        );
+
+        return () => subscription.unsubscribe();
+      } catch (error) {
+        console.log('Failed to set up auth listener:', error);
+      }
+    }
+  }, [supabaseAvailable]);
+
   const signIn = async (email: string, password: string) => {
     // First check if it's a demo credential
     const isDemoAdmin = email === 'admin-access@janusforge.ai' && password === 'MyFourKids&8Grandkid';
     const isDemoUser = email === 'cassandra@janusforge.ai' && password === 'password';
-    
+
     if (isDemoAdmin || isDemoUser) {
-      const demoUser = {
+      const demoUser: AuthUser = {
         id: 'demo-' + Date.now(),
         email: email,
         name: isDemoAdmin ? 'Admin User' : 'Cassandra Williamson',
         tier: isDemoAdmin ? 'visionary' : 'council',
         is_admin: isDemoAdmin,
       };
-      
+
       localStorage.setItem('demo_user', JSON.stringify(demoUser));
       setUser(demoUser);
       setUsingDemoMode(true);
@@ -170,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { createClient } = require('@/lib/supabase-client');
       const supabase = createClient();
-      
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -192,7 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Clear demo user
     localStorage.removeItem('demo_user');
     setUsingDemoMode(false);
-    
+
     // Try Supabase sign out if available
     try {
       const { createClient } = require('@/lib/supabase-client');
@@ -201,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.log('Supabase sign out failed (may be in demo mode)');
     }
-    
+
     setUser(null);
     setSession(null);
   };
