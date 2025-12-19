@@ -1,49 +1,37 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Janus Forge Nexus Logo</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+        body { margin: 0; padding: 0; background: #000; }
+        .video-placeholder {
+            width: 256px;
+            height: 256px;
+            background: linear-gradient(45deg, #3b82f6, #8b5cf6, #ec4899);
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            overflow: hidden;
+            animation: gradient 3s ease infinite;
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3);
         }
-        .logo-container {
-            text-align: center;
-            color: white;
-            font-family: Arial, sans-serif;
+        .janus-icon {
+            font-size: 80px;
+            animation: float 3s ease-in-out infinite;
         }
-        .logo {
-            font-size: 120px;
-            margin-bottom: 20px;
-            animation: pulse 2s infinite;
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-        h1 {
-            font-size: 32px;
-            margin: 0;
-        }
-        p {
-            font-size: 18px;
-            opacity: 0.8;
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
     </style>
 </head>
 <body>
-    <div class="logo-container">
-        <div class="logo">⚡</div>
-        <h1>Janus Forge Nexus</h1>
-        <p>Where 5 AIs Debate Reality</p>
+    <div class="video-placeholder">
+        <div class="janus-icon">⚔️</div>
     </div>
 </body>
 </html>
