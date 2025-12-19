@@ -4,9 +4,11 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { TIER_CONFIGS, TOKEN_PACKAGES, type UserTier } from '@/config/tiers';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function PricingPage() {
   const { user, upgradeTier } = useAuth();
+  const router = useRouter();
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [selectedTier, setSelectedTier] = useState<UserTier | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -204,7 +206,6 @@ export default function PricingPage() {
                   <button
                     onClick={() => {
                       if (user) {
-                        // In reality, this would open purchase modal
                         setMessage({ 
                           type: 'success', 
                           text: `Redirecting to purchase ${pkg.tokens} tokens...` 

@@ -128,25 +128,25 @@ export const TOKEN_PACKAGES = [
   },
 ];
 
-// Calculate token costs for different AI models (YOUR ACTUAL COSTS)
+// Calculate token costs for different AI models
 export const AI_TOKEN_COSTS = {
   'gpt-4': {
     provider: 'OpenAI',
     input: 0.00003,    // $0.03 per 1K tokens
     output: 0.00006,   // $0.06 per 1K tokens
-    yourCostPerToken: 0.000045, // Average
+    yourCostPerToken: 0.000045,
   },
   'claude-3': {
     provider: 'Anthropic',
     input: 0.000015,   // $0.015 per 1K
     output: 0.000075,  // $0.075 per 1K
-    yourCostPerToken: 0.000045, // Average
+    yourCostPerToken: 0.000045,
   },
   'gemini-pro': {
     provider: 'Google',
     input: 0.0000005,  // $0.0005 per 1K
     output: 0.0000015, // $0.0015 per 1K
-    yourCostPerToken: 0.000001, // Very cheap!
+    yourCostPerToken: 0.000001,
   },
   'grok': {
     provider: 'xAI',
@@ -158,21 +158,21 @@ export const AI_TOKEN_COSTS = {
     provider: '深度求索',
     input: 0.00000014, // $0.00014 per 1K
     output: 0.00000028,// $0.00028 per 1K
-    yourCostPerToken: 0.00000021, // Extremely cheap!
+    yourCostPerToken: 0.00000021,
   },
 };
 
 // Utility functions
 export function calculateTokenCost(model: string, inputTokens: number, outputTokens: number): number {
   const costs = AI_TOKEN_COSTS[model as keyof typeof AI_TOKEN_COSTS];
-  if (!costs) return (inputTokens + outputTokens) * 0.00002; // Default
+  if (!costs) return (inputTokens + outputTokens) * 0.00002;
   
   return (inputTokens * costs.input) + (outputTokens * costs.output);
 }
 
 export function calculateUserProfit(tier: UserTier, tokensSold: number): number {
   const config = TIER_CONFIGS[tier];
-  const yourCost = tokensSold * 0.00002; // Average $0.02 per 1K
+  const yourCost = tokensSold * 0.00002;
   return config.price - yourCost;
 }
 

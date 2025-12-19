@@ -105,11 +105,7 @@ export default function HomePage() {
           {popularTiers.map(([tierKey, tier]) => (
             <div
               key={tierKey}
-              className={`rounded-2xl p-6 border transition-all hover:scale-105 ${
-                tierKey === 'pro'
-                  ? 'border-purple-500 bg-gray-900/80'
-                  : 'border-gray-800/50 bg-gray-900/50'
-              }`}
+              className={\`rounded-2xl p-6 border transition-all hover:scale-105 \${tierKey === 'pro' ? 'border-purple-500 bg-gray-900/80' : 'border-gray-800/50 bg-gray-900/50'}\`}
             >
               {tierKey === 'pro' && (
                 <div className="text-center mb-4">
@@ -121,7 +117,7 @@ export default function HomePage() {
 
               <h3 className="text-2xl font-bold mb-2">{tier.name}</h3>
               <div className="mb-6">
-                <div className="text-4xl font-bold mb-1">${tier.price}</div>
+                <div className="text-4xl font-bold mb-1">\${tier.price}</div>
                 <div className="text-gray-400">per month</div>
               </div>
 
@@ -136,11 +132,7 @@ export default function HomePage() {
 
               <button
                 onClick={() => router.push('/pricing')}
-                className={`w-full py-3 rounded-lg font-medium ${
-                  tierKey === 'pro'
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
-                    : 'bg-gray-800 hover:bg-gray-700'
-                }`}
+                className={\`w-full py-3 rounded-lg font-medium \${tierKey === 'pro' ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : 'bg-gray-800 hover:bg-gray-700'}\`}
               >
                 {user?.tier === tierKey ? 'Current Plan' : 'Choose Plan'}
               </button>
