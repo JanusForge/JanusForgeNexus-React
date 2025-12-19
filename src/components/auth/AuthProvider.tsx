@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
+  name?: string;
   email: string;
   isAdmin: boolean;
 }
@@ -38,8 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (email: string) => {
+    const name = email.split('@')[0];
     const isAdmin = email === 'admin-access@janusforge.ai';
-    const userData = { email, isAdmin };
+    const userData = { email, name, isAdmin };
     setUser(userData);
     localStorage.setItem('janusforge_user_email', email);
     localStorage.setItem('janusforge_user_isAdmin', String(isAdmin));
