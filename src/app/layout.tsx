@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
-import Navbar from '@/components/layout/Navbar';
+import Header from '@/components/Header';  // Changed from Navbar to Header
 import Footer from '@/components/layout/Footer';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -38,8 +38,8 @@ export default function RootLayout({
       <body className={`${inter.className} bg-gray-950 text-white`}>
         <AuthProvider>
           <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-1">
+            <Header />  {/* Changed from <Navbar /> to <Header /> */}
+            <main className="flex-1 pt-16"> {/* Added pt-16 to account for fixed header */}
               {children}
             </main>
             <Footer />
