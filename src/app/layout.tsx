@@ -14,12 +14,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
-      <body className={\`\${inter.className} bg-gray-950 text-white\`}>
+      <body className={`${inter.className} bg-gray-950 text-white`}>
         <AuthProvider>
           <div className="min-h-screen flex flex-col">
             <Navbar />

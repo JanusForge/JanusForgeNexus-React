@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TIER_CONFIGS, TOKEN_PACKAGES } from '@/config/tiers';
 
+// Mock data for demonstration
 const mockUsers = [
   { id: 1, email: 'user1@example.com', tier: 'pro', tokens_remaining: 750, tokens_used: 250, createdAt: '2024-01-15' },
   { id: 2, email: 'user2@example.com', tier: 'basic', tokens_remaining: 125, tokens_used: 125, createdAt: '2024-01-20' },
@@ -42,6 +43,7 @@ export default function AdminDashboard() {
     return null;
   }
 
+  // Calculate stats
   const totalUsers = mockUsers.length;
   const totalRevenue = mockTokenPurchases.reduce((sum, purchase) => sum + purchase.amount, 0);
   const averageTokensUsed = mockUsers.reduce((sum, user) => sum + user.tokens_used, 0) / totalUsers;
@@ -54,6 +56,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -68,6 +71,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
             <div className="text-gray-400 text-sm mb-2">Total Users</div>
@@ -76,7 +80,7 @@ export default function AdminDashboard() {
           
           <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
             <div className="text-gray-400 text-sm mb-2">Total Revenue</div>
-            <div className="text-3xl font-bold text-green-400">\${totalRevenue.toFixed(2)}</div>
+            <div className="text-3xl font-bold text-green-400">${totalRevenue.toFixed(2)}</div>
           </div>
           
           <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
@@ -91,6 +95,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* User Management */}
           <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold">User Management</h2>
@@ -117,7 +122,12 @@ export default function AdminDashboard() {
                         <div className="text-xs text-gray-500">{user.createdAt}</div>
                       </td>
                       <td className="py-3 px-2">
-                        <span className={\`px-2 py-1 rounded-full text-xs \${user.tier === 'pro' ? 'bg-purple-500/20 text-purple-300' : user.tier === 'enterprise' ? 'bg-amber-500/20 text-amber-300' : user.tier === 'basic' ? 'bg-blue-500/20 text-blue-300' : 'bg-gray-500/20 text-gray-300'}\`}>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          user.tier === 'pro' ? 'bg-purple-500/20 text-purple-300' :
+                          user.tier === 'enterprise' ? 'bg-amber-500/20 text-amber-300' :
+                          user.tier === 'basic' ? 'bg-blue-500/20 text-blue-300' :
+                          'bg-gray-500/20 text-gray-300'
+                        }`}>
                           {TIER_CONFIGS[user.tier as keyof typeof TIER_CONFIGS]?.name || user.tier}
                         </span>
                       </td>
@@ -158,7 +168,7 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-green-400 font-bold">\${purchase.amount}</div>
+                      <div className="text-green-400 font-bold">${purchase.amount}</div>
                       <div className="text-xs text-gray-500">{purchase.date}</div>
                     </div>
                   </div>
@@ -184,7 +194,7 @@ export default function AdminDashboard() {
                         <div 
                           className="h-full rounded-full"
                           style={{ 
-                            width: \`\${percentage}%\`,
+                            width: `${percentage}%`,
                             background: tierConfig?.color === 'purple' ? 'linear-gradient(to right, #9333ea, #3b82f6)' :
                                       tierConfig?.color === 'amber' ? 'linear-gradient(to right, #f59e0b, #f97316)' :
                                       tierConfig?.color === 'blue' ? 'linear-gradient(to right, #3b82f6, #06b6d4)' :

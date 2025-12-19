@@ -126,7 +126,7 @@ export default function TokenUsage({ estimatedTokens, onStartDebate }: TokenUsag
         <div className="h-2 bg-gray-800/50 rounded-full overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-300"
-            style={{ width: \`\${Math.min(100, (estimatedTokens / remainingTokens) * 100)}%\` }}
+            style={{ width: `${Math.min(100, (estimatedTokens / remainingTokens) * 100)}%` }}
           ></div>
         </div>
       </div>

@@ -77,7 +77,11 @@ export default function ProfilePage() {
         </div>
 
         {message && (
-          <div className={\`p-4 rounded-lg mb-6 \${message.type === 'success' ? 'bg-green-500/10 border border-green-500/20 text-green-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'}\`}>
+          <div className={`p-4 rounded-lg mb-6 ${
+            message.type === 'success' 
+              ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+              : 'bg-red-500/10 border border-red-500/20 text-red-400'
+          }`}>
             {message.text}
           </div>
         )}
@@ -194,7 +198,7 @@ export default function ProfilePage() {
                   <div className="h-2 bg-gray-800/50 rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
-                      style={{ width: \`\${Math.min(100, (user.tokens_used / currentTier.monthly_tokens) * 100)}%\` }}
+                      style={{ width: `${Math.min(100, (user.tokens_used / currentTier.monthly_tokens) * 100)}%` }}
                     ></div>
                   </div>
                   <div className="text-right text-sm text-gray-400 mt-1">
@@ -295,7 +299,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-medium">{currentTier.name}</div>
                   <div className="text-green-400 font-bold">
-                    {user.tier === 'free' ? 'Free' : \`\$\${currentTier.price}/mo\`}
+                    {user.tier === 'free' ? 'Free' : `$${currentTier.price}/mo`}
                   </div>
                 </div>
                 <div className="text-sm text-gray-400">
