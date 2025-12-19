@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TIER_CONFIGS, TOKEN_PACKAGES } from '@/config/tiers';
 
+// Admin dashboard needs to be dynamic as it shows live data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Mock data for demonstration
 const mockUsers = [
   { id: 1, email: 'user1@example.com', tier: 'pro', tokens_remaining: 750, tokens_used: 250, createdAt: '2024-01-15' },

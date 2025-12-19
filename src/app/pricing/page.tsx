@@ -6,6 +6,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Pricing page can be static for the most part, but needs user context
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // Revalidate every hour for pricing changes
+
 export default function PricingPage() {
   const { user, upgradeTier } = useAuth();
   const router = useRouter();

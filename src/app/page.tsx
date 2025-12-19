@@ -5,6 +5,10 @@ import { TIER_CONFIGS } from '@/config/tiers';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+// Homepage can be mostly static but needs auth context
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // Revalidate homepage every hour
+
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();

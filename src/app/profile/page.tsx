@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { TIER_CONFIGS } from '@/config/tiers';
 
+// User profile needs to be dynamic as it shows personal data
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const router = useRouter();
