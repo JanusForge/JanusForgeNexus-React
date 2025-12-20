@@ -11,17 +11,17 @@ export const metadata: Metadata = {
   // ADD THIS LINE - Fixes the warning and enables proper social media images
   metadataBase: new URL('https://janusforge.ai'),
   
-  title: 'JanusForge - AI-Powered Debate Platform',
+  title: 'Janus Forge Nexus - AI-Powered Debate Platform',
   description: 'Create, participate, and analyze debates with multiple AI models. Experience dual-perspective AI debates.',
   keywords: ['AI debate', 'artificial intelligence', 'debate platform', 'critical thinking', 'token system'],
   
   // Improved Open Graph for better social media sharing
   openGraph: {
-    title: 'JanusForge - AI-Powered Debate Platform',
+    title: 'Janus Forge Nexus - AI-Powered Debate Platform',
     description: 'Where perspectives collide and wisdom emerges',
     type: 'website',
     url: 'https://janusforge.ai',
-    siteName: 'JanusForge Nexus',
+    siteName: 'Janus Forge Nexus',
     images: [
       {
         url: '/logos/janus-logo-placeholder.svg', // Or your actual social image
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   // Add Twitter card metadata for Twitter sharing
   twitter: {
     card: 'summary_large_image',
-    title: 'JanusForge - AI-Powered Debate Platform',
+    title: 'Janus Forge Nexus - AI-Powered Debate Platform',
     description: 'Where perspectives collide and wisdom emerges',
     images: ['/logos/janus-logo-placeholder.svg'], // Same as Open Graph
   },
@@ -49,6 +49,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* FAVICON LINKS - ADDED */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />         
+
         {/* Preconnect to video hosting if needed */}
         <link rel="preconnect" href="https://assets.janusforge.ai" />
 
