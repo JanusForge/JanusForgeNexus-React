@@ -79,7 +79,7 @@ export default function HomePage() {
                 <h1 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Janus Forge Nexus
                 </h1>
-                <p className="text-xl md:text-2xl text-gray-300 mb-6">
+                <p className="text-xl md:text-xl text-gray-300 mb-6">
                   A Multi-AI with Human Realtime Conversation Platform
                   <span className="block text-lg text-purple-400 mt-2">
                     Where perspectives collide and wisdom emerges
