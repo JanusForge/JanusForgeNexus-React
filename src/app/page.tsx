@@ -57,8 +57,8 @@ export default function HomePage() {
                       onLoadedData={() => setIsVideoLoaded(true)}
                       poster="/api/placeholder/256/256"
                     >
-                      <source src="/janus-logo-animation.mp4" type="video/mp4" />
-                      <source src="/janus-logo-animation.webm" type="video/webm" />
+                      <source src="/logos/nexus-video-logo.mp4" type="video/mp4" />
+                      <source src="/logos/nexus-video-logo.mp4" type="video/webm" />
                       {/* Fallback image */}
                       <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
                         <div className="text-center">

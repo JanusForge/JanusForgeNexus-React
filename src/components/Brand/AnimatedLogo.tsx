@@ -10,7 +10,7 @@ interface AnimatedLogoProps {
 
 export default function AnimatedLogo({ 
   size = 'xl',
-  videoSrc = '/logos/janus-logo.mp4'
+  videoSrc = '/logos/nexus-video-logo.mp4'
 }: AnimatedLogoProps) {
   const [isPlaying, setIsPlaying] = useState(true);
   const [hasError, setHasError] = useState(false);

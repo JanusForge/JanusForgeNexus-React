@@ -156,7 +156,7 @@ export default function LogoVideo() {
             poster="/janus-logo-placeholder.svg"
           >
             {/* Only reference MP4 file */}
-            <source src="/janus-logo-video.mp4" type="video/mp4" />
+            <source src="/logos/nexus-video-logo.mp4" type="video/mp4" />
             {/* Fallback image if video format not supported */}
             <img 
               src="/janus-logo-placeholder.svg" 
