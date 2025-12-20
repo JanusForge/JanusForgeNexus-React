@@ -297,47 +297,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Features Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Why Choose JanusForge?</h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Experience debates like never before with our powerful AI platform
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50 hover:border-purple-500/30 transition-all group">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-xl">⚔️</span>
-            </div>
-            <h3 className="text-xl font-bold mb-2">Dual Perspective AI</h3>
-            <p className="text-gray-400">
-              Named after Janus, the two-faced Roman god, our AI presents both sides of every argument with balanced intelligence.
-            </p>
-          </div>
-
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50 hover:border-green-500/30 transition-all group">
-            <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-xl">⚖️</span>
-            </div>
-            <h3 className="text-xl font-bold mb-2">Fair Token System</h3>
-            <p className="text-gray-400">
-              Transparent pay-as-you-go token system. Monthly plans + flexible token packages for when you need extra capacity.
-            </p>
-          </div>
-
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50 hover:border-amber-500/30 transition-all group">
-            <div className="w-12 h-12 bg-gradient-to-r from-amber-600 to-orange-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <span className="text-white font-bold text-xl">📊</span>
-            </div>
-            <h3 className="text-xl font-bold mb-2">Deep Debate Analytics</h3>
-            <p className="text-gray-400">
-              Get insights into argument quality, bias detection, and debate dynamics with our comprehensive analytics dashboard.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Pricing Preview */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -426,40 +385,6 @@ export default function HomePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
           </Link>
-        </div>
-      </div>
-
-      {/* CTA Section with Video Logo */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <div className="relative bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-pink-900/30 rounded-3xl p-8 md:p-12 overflow-hidden">
-          {/* Video Logo in background */}
-          <div className="absolute top-4 right-4 w-24 h-24 opacity-20">
-            <div className="w-full h-full bg-gradient-to-br from-blue-600/30 to-purple-600/30 rounded-xl flex items-center justify-center">
-              <span className="text-3xl">⚔️</span>
-            </div>
-          </div>
-
-          <h2 className="text-3xl font-bold mb-4 relative z-10">Ready to Experience Dual-Perspective AI?</h2>
-          <p className="text-gray-300 mb-8 text-lg relative z-10">
-            Join the future of intelligent debate with JanusForge&apos;s unique two-faced AI approach.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center relative z-10">
-            <button
-              onClick={handleGetStarted}
-              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-lg font-medium transition-all transform hover:scale-105 shadow-lg shadow-blue-500/25"
-            >
-              Start Free Trial
-            </button>
-            <Link
-              href="/demo"
-              className="px-8 py-4 bg-transparent hover:bg-gray-800/50 rounded-xl text-lg font-medium border border-gray-700/50 hover:border-gray-600 transition-all"
-            >
-              Watch Demo Video
-            </Link>
-          </div>
-          <p className="text-gray-500 text-sm mt-6 relative z-10">
-            No credit card required • 50 free tokens included • Cancel anytime
-          </p>
         </div>
       </div>
     </div>
