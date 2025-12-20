@@ -56,7 +56,7 @@ export default function HomePage() {
                     <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
                       <div className="text-center">
                         <div className="text-4xl font-bold mb-2">⚔️</div>
-                        <div className="text-xl font-bold">Janus Forge Nexus</div>
+                        <div className="text-lg font-bold">Janus Forge Nexus</div>
                       </div>
                     </div>
                   </video>
