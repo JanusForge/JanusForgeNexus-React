@@ -40,44 +40,47 @@ export default function HomePage() {
             <div className="lg:w-1/2 text-center lg:text-left">
               <div className="mb-8">
                 {/* Video Logo */}
-                <div className="relative w-64 h-64 mx-auto lg:mx-0 mb-8 rounded-2xl overflow-hidden border-4 border-purple-500/30 shadow-2xl shadow-purple-500/20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 via-purple-600/30 to-pink-600/30 flex items-center justify-center">
-                    {!isVideoLoaded && (
+                <div className="relative w-64 h-64 mx-auto lg:mx-0 mb-8 rounded-2xl overflow-hidden border-4 border-purple-500/30 shadow-2xl shadow-purple-500/20 bg-black">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                    onLoadedData={() => setIsVideoLoaded(true)}
+                    poster="/api/placeholder/256/256"
+                  >
+                    <source src="/logos/nexus-video-logo.mp4" type="video/mp4" />
+                    <source src="/logos/nexus-video-logo.mp4" type="video/webm" />
+                    {/* Fallback image */}
+                    <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="text-4xl font-bold mb-2">⚔️</div>
+                        <div className="text-xl font-bold">Janus Forge Nexus</div>
+                      </div>
+                    </div>
+                  </video>
+  
+                  {/* Loading spinner - shown only while video loads */}
+                  {!isVideoLoaded && (
+                    <div className="absolute inset-0 bg-black/90 flex items-center justify-center">
                       <div className="text-center">
                         <div className="w-16 h-16 border-4 border-purple-500/50 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                         <span className="text-purple-300 text-sm">Loading Janus...</span>
                       </div>
-                    )}
-                    <video
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover"
-                      onLoadedData={() => setIsVideoLoaded(true)}
-                      poster="/api/placeholder/256/256"
-                    >
-                      <source src="/logos/nexus-video-logo.mp4" type="video/mp4" />
-                      <source src="/logos/nexus-video-logo.mp4" type="video/webm" />
-                      {/* Fallback image */}
-                      <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-4xl font-bold mb-2">⚔️</div>
-                          <div className="text-xl font-bold">JanusForge</div>
-                        </div>
-                      </div>
-                    </video>
-                  </div>
-                  
+                    </div>
+                  )}
+
                   {/* Glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent animate-pulse"></div>
-                </div>
+                  </div>
                 
+
                 <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                   JanusForge
                 </h1>
                 <p className="text-xl md:text-2xl text-gray-300 mb-6">
-                  AI-Powered Debate Platform
+                  A Multi-AI with Human Realtime Conversation Platform
                   <span className="block text-lg text-purple-400 mt-2">
                     Where perspectives collide and wisdom emerges
                   </span>
