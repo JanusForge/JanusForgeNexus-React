@@ -94,7 +94,7 @@ export default function HomePage() {
             <div className="lg:w-1/2 text-center lg:text-left">
               <div className="mb-8">
                 {/* Video Logo */}
-                <div className="relative w-64 h-64 mx-auto lg:mx-0 mb-8 rounded-2xl overflow-hidden border-4 border-purple-500/30 shadow-2xl shadow-purple-500/20 bg-black">
+                <div className="relative w-110 h-110 mx-auto lg:mx-0 mb-8 rounded-2xl overflow-hidden border-4 border-purple-500/30 shadow-2xl shadow-purple-500/20 bg-black">
                   <video
                     autoPlay
                     loop
