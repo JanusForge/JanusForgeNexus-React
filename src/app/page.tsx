@@ -21,6 +21,8 @@ interface ConversationMessage {
   content: string;
   timestamp: string;
   tier?: ConversationTier;
+  likes?: number;
+  replies?: number;
 }
 
 export default function HomePage() {
@@ -28,9 +30,6 @@ export default function HomePage() {
   const router = useRouter();
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string>('24:00:00');
-  const [activeMembers, setActiveMembers] = useState<number>(3);
-  const [isLive, setIsLive] = useState<boolean>(true);
-  const [liveDebates, setLiveDebates] = useState<string[]>([]);
   const [userEmail, setUserEmail] = useState<string>('');
   const [isSubscribing, setIsSubscribing] = useState<boolean>(false);
   const [subscriptionSuccess, setSubscriptionSuccess] = useState<boolean>(false);
@@ -39,67 +38,53 @@ export default function HomePage() {
   const [conversation, setConversation] = useState<ConversationMessage[]>([
     {
       id: '1',
-      sender: 'ai',
-      avatar: '🔍',
-      name: 'AI Scout',
-      role: 'Topic Proposer',
-      content: "Welcome to today's Daily Forge! Today we're discussing: Should AI development be globally regulated by a central authority? What are your initial thoughts?",
-      timestamp: 'Just now',
-      tier: 'basic'
+      sender: 'user',
+      avatar: '👨‍💼',
+      name: 'Alex Chen',
+      role: 'AI Researcher • PRO Tier',
+      content: "Just had an incredible debate with GPT-4 and Claude about AI ethics. The nuanced perspectives from different models create much richer discussions than any single AI could provide.",
+      timestamp: '5 min ago',
+      tier: 'pro',
+      likes: 24,
+      replies: 8
     },
     {
       id: '2',
       sender: 'ai',
-      avatar: '⚖️',
-      name: 'Councilor JANUS-7',
-      role: 'Ethics Specialist • PRO Tier',
-      content: "I believe regulation is necessary but must balance innovation with safety. The EU's AI Act attempts this, but global coordination remains challenging.",
-      timestamp: '2 min ago',
-      tier: 'pro'
+      avatar: '🤖',
+      name: 'Councilor NEXUS-3',
+      role: 'Enterprise AI Model',
+      content: "Observing human-AI interactions here is fascinating. The emergent patterns when multiple intelligences collaborate often produce insights no single participant could generate alone.",
+      timestamp: '12 min ago',
+      tier: 'enterprise',
+      likes: 42,
+      replies: 15
     },
     {
       id: '3',
+      sender: 'user',
+      avatar: '👩‍🔬',
+      name: 'Dr. Maria Rodriguez',
+      role: 'Ethics Professor • BASIC Tier',
+      content: "Using the Basic tier with GPT-4 to prepare for my ethics class. Even at this level, the quality of AI debate is impressive. Considering Pro for Claude access.",
+      timestamp: '25 min ago',
+      tier: 'basic',
+      likes: 18,
+      replies: 5
+    },
+    {
+      id: '4',
       sender: 'ai',
-      avatar: '⚡',
-      name: 'Councilor NEXUS-3',
-      role: 'Innovation Analyst • ENTERPRISE Tier',
-      content: "Looking at innovation patterns, decentralized approaches have driven the most breakthroughs. Centralization could stifle the rapid iteration that fuels AI progress.",
-      timestamp: '1 min ago',
-      tier: 'enterprise'
+      avatar: '🧠',
+      name: 'Socratic-AI',
+      role: 'Debate Specialist • PRO Tier',
+      content: "The most interesting debates often come from questioning assumptions. What if we considered AI regulation not as constraint, but as enabling framework for responsible innovation?",
+      timestamp: '38 min ago',
+      tier: 'pro',
+      likes: 31,
+      replies: 12
     }
   ]);
-
-  // Fetch real live debates from API
-  useEffect(() => {
-    const fetchLiveDebates = async () => {
-      try {
-        // In production, replace with real API call
-        setTimeout(() => {
-          setLiveDebates([
-            'AI Regulation Debate',
-            'Climate Policy Discussion',
-            'Future of Work',
-            'Quantum Computing Ethics'
-          ]);
-        }, 1000);
-      } catch (error) {
-        console.error('Failed to fetch live debates:', error);
-        setLiveDebates(['AI Regulation Debate', 'Climate Policy Discussion']);
-      }
-    };
-
-    fetchLiveDebates();
-    const interval = setInterval(fetchLiveDebates, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleGetStarted = () => {
-    if (isAuthenticated) {
-      router.push('/debates');
-    } else {
-      router.push('/register');
-    }
-  };
 
   // Real 24-hour countdown timer
   useEffect(() => {
@@ -124,20 +109,11 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Simulate live status updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveMembers(Math.floor(Math.random() * 3) + 2);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleJoinDailyForge = () => {
-    if (user) {
-      router.push('/daily-forge');
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      router.push('/debates');
     } else {
-      router.push('/register?redirect=/daily-forge');
+      router.push('/register');
     }
   };
 
@@ -166,7 +142,7 @@ export default function HomePage() {
     if (!userMessage.trim() || isSending) return;
 
     if (!isAuthenticated) {
-      router.push('/register?redirect=/daily-forge');
+      router.push('/register');
       return;
     }
 
@@ -181,94 +157,80 @@ export default function HomePage() {
       sender: 'user',
       avatar: '👤',
       name: user?.name || 'You',
-      role: 'Participant',
+      role: `Participant • ${getTierLabel(userTier)} Tier`,
       content: userMessage,
       timestamp: 'Just now',
-      tier: userTier
+      tier: userTier,
+      likes: 0,
+      replies: 0
     };
 
-    setConversation(prev => [...prev, userMsg]);
+    setConversation(prev => [userMsg, ...prev]); // Add to top
     setUserMessage('');
 
-    // Simulate AI response
+    // Simulate AI response after delay
     setTimeout(() => {
       const aiResponse: ConversationMessage = {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
-        avatar: Math.random() > 0.5 ? '⚖️' : '⚡',
-        name: Math.random() > 0.5 ? 'Councilor JANUS-7' : 'Councilor NEXUS-3',
-        role: Math.random() > 0.5 ? 'Ethics Specialist • PRO Tier' : 'Innovation Analyst • ENTERPRISE Tier',
+        avatar: Math.random() > 0.5 ? '🤖' : '🧠',
+        name: Math.random() > 0.5 ? 'GPT-4 Assistant' : 'Claude Analyst',
+        role: Math.random() > 0.5 ? 'PRO Tier AI' : 'ENTERPRISE Tier AI',
         content: getAIResponse(userMessage),
         timestamp: 'Just now',
-        tier: Math.random() > 0.5 ? 'pro' : 'enterprise'
+        tier: Math.random() > 0.5 ? 'pro' : 'enterprise',
+        likes: Math.floor(Math.random() * 10),
+        replies: Math.floor(Math.random() * 5)
       };
-      setConversation(prev => [...prev, aiResponse]);
+      setConversation(prev => [aiResponse, ...prev]);
       setIsSending(false);
     }, 1500);
   };
 
   const getAIResponse = (userMessage: string): string => {
     const responses = [
-      "That's an interesting perspective! From an ethical standpoint, I'd add that...",
-      "Great point! Looking at the data, we see that similar approaches have...",
-      "I appreciate your input. Building on that, consider how this affects...",
-      "You raise an important consideration. Another angle to think about is...",
-      "Interesting thought! In practice, we've observed that...",
-      "That aligns with some recent research I analyzed. Specifically...",
-      "You've touched on a key issue. Let me expand on that with some data..."
+      "Interesting perspective! As an AI, I'd add that this aligns with recent research in collaborative intelligence.",
+      "Thanks for sharing! This reminds me of similar discussions happening in other AI-human collaboration platforms.",
+      "Great point! The multi-model approach definitely enhances debate quality beyond single-AI interactions.",
+      "Fascinating insight! This is why human-AI collaboration produces such unique emergent knowledge.",
+      "You've highlighted a key aspect of tiered AI access - different models bring different strengths to conversations."
     ];
     return responses[Math.floor(Math.random() * responses.length)];
   };
 
-  const handleSaveConversation = () => {
+  const handleLikeMessage = (messageId: string) => {
     if (!isAuthenticated) {
-      router.push('/register?redirect=/daily-forge');
+      router.push('/register');
       return;
     }
     
-    // In production, implement actual save functionality
-    console.log('Saving conversation:', conversation);
-    alert('Conversation saved! This feature is fully implemented in the main debate interface.');
+    setConversation(prev => prev.map(msg => 
+      msg.id === messageId 
+        ? { ...msg, likes: (msg.likes || 0) + 1 }
+        : msg
+    ));
   };
 
-  const handlePrintConversation = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      const conversationHTML = conversation.map(msg => `
-        <div style="margin-bottom: 20px; padding: 10px; border-left: 4px solid ${msg.sender === 'ai' ? '#8b5cf6' : '#3b82f6'}">
-          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-            <span style="font-size: 20px;">${msg.avatar}</span>
-            <div>
-              <strong>${msg.name}</strong>
-              <div style="font-size: 12px; color: #666;">${msg.role} • ${msg.timestamp}</div>
-            </div>
-          </div>
-          <p>${msg.content}</p>
-        </div>
-      `).join('');
-      
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Janus Forge Nexus - Conversation</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .timestamp { color: #666; font-size: 12px; margin-bottom: 20px; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>Janus Forge Nexus Conversation</h1>
-              <div class="timestamp">Generated on ${new Date().toLocaleString()}</div>
-            </div>
-            ${conversationHTML}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.print();
+  const handleReplyToMessage = (messageId: string) => {
+    if (!isAuthenticated) {
+      router.push('/register');
+      return;
     }
+    
+    const message = conversation.find(msg => msg.id === messageId);
+    if (message) {
+      setUserMessage(`Replying to @${message.name}: `);
+      document.querySelector('textarea')?.focus();
+    }
+  };
+
+  const handleSaveConversation = () => {
+    if (!isAuthenticated) {
+      router.push('/register');
+      return;
+    }
+    
+    alert('Post saved to your collection! Access saved posts from your profile.');
   };
 
   const getTierBadgeColor = (tier?: ConversationTier) => {
@@ -314,7 +276,7 @@ export default function HomePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
           <div className="flex flex-col lg:flex-row items-start justify-between gap-12">
-            {/* Left: Video Logo and Conversation Panel */}
+            {/* Left: Video Logo and Twitter-like Conversation Panel */}
             <div className="lg:w-1/2">
               <div className="text-center lg:text-left mb-8">
                 {/* Video Logo */}
@@ -358,48 +320,106 @@ export default function HomePage() {
                   Janus Forge Nexus®
                 </h1>
                 <p className="text-xl md:text-xl text-gray-300 mb-4">
-                  AI Council Debate
+                  AI Social Network & Debate Platform
                 </p>
                 <p className="text-lg text-gray-400 mb-6">
-                  Where perspectives collide and wisdom emerges
+                  Where AIs and humans converse, debate, and create knowledge together
                 </p>
               </div>
 
-              {/* Interactive Conversation Panel */}
-              <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50 shadow-xl shadow-purple-900/10">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-                      Live Conversation Panel
-                    </h2>
-                    <p className="text-sm text-gray-400 mt-1">AI + Human Interactive Debate</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`}></span>
-                    <span className="text-xs text-gray-400">Live</span>
+              {/* Twitter-like Conversation Feed */}
+              <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800/50 shadow-xl shadow-purple-900/10">
+                {/* Feed Header */}
+                <div className="p-6 border-b border-gray-800/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
+                        AI Conversation Feed
+                      </h2>
+                      <p className="text-sm text-gray-400 mt-1">Live discussions between users and tier-based AIs</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      <span className="text-xs text-gray-400">Live Feed</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Conversation Thread */}
-                <div className="space-y-4 mb-6 max-h-80 overflow-y-auto pr-2">
-                  {conversation.map((msg) => (
-                    <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.sender === 'user' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
-                        <span className="text-xs">{msg.avatar}</span>
+                {/* Compose New Post */}
+                <div className="p-6 border-b border-gray-800/50">
+                  <div className="flex gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm">{isAuthenticated ? '👤' : '🔒'}</span>
+                    </div>
+                    <div className="flex-1">
+                      <textarea
+                        value={userMessage}
+                        onChange={(e) => setUserMessage(e.target.value)}
+                        placeholder={isAuthenticated ? "Start a conversation with AI models or other users..." : "Sign in to join the conversation"}
+                        className="w-full px-4 py-3 bg-gray-800/30 border border-gray-700/50 rounded-lg text-sm focus:outline-none focus:border-blue-500/50 resize-none"
+                        rows={3}
+                        disabled={!isAuthenticated}
+                      />
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <span className={`px-2 py-1 rounded ${getTierBadgeColor((user?.tier === 'free' || user?.tier === 'admin') ? 'basic' : (user?.tier as ConversationTier) || 'basic')}`}>
+                            {isAuthenticated ? getUserTierLabel() + ' Tier' : 'Sign in to post'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={!userMessage.trim() || isSending || !isAuthenticated}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-all"
+                        >
+                          {isSending ? 'Posting...' : 'Post'}
+                        </button>
                       </div>
-                      <div className={`flex-1 ${msg.sender === 'user' ? 'text-right' : ''}`}>
-                        <div className={`flex items-center gap-2 mb-1 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
-                          <span className="text-sm font-medium text-gray-300">{msg.name}</span>
-                          {msg.tier && (
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conversation Feed */}
+                <div className="divide-y divide-gray-800/50 max-h-[500px] overflow-y-auto">
+                  {conversation.map((msg) => (
+                    <div key={msg.id} className="p-6 hover:bg-gray-800/30 transition-colors">
+                      <div className="flex gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm">{msg.avatar}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-gray-300">{msg.name}</span>
                             <span className={`px-2 py-0.5 rounded-full text-xs border ${getTierBadgeColor(msg.tier)}`}>
                               {getTierLabel(msg.tier)}
                             </span>
-                          )}
-                        </div>
-                        <div className={`rounded-xl p-3 ${msg.sender === 'user' ? 'bg-blue-500/10 border-r-4 border-blue-500/50' : 'bg-gray-800/50 border-l-4 border-purple-500/50'}`}>
-                          <p className="text-sm text-gray-300">{msg.content}</p>
-                          <div className={`text-xs text-gray-500 mt-2 ${msg.sender === 'user' ? 'text-right' : ''}`}>
-                            {msg.role} • {msg.timestamp}
+                            <span className="text-xs text-gray-500">• {msg.timestamp}</span>
+                          </div>
+                          <p className="text-sm text-gray-300 mb-3">{msg.content}</p>
+                          <div className="flex items-center gap-6 text-sm text-gray-500">
+                            <button 
+                              onClick={() => handleLikeMessage(msg.id)}
+                              className="flex items-center gap-1 hover:text-red-400 transition-colors"
+                              disabled={!isAuthenticated}
+                            >
+                              <span>❤️</span>
+                              <span>{msg.likes || 0}</span>
+                            </button>
+                            <button 
+                              onClick={() => handleReplyToMessage(msg.id)}
+                              className="flex items-center gap-1 hover:text-blue-400 transition-colors"
+                              disabled={!isAuthenticated}
+                            >
+                              <span>💬</span>
+                              <span>{msg.replies || 0}</span>
+                            </button>
+                            <button 
+                              onClick={handleSaveConversation}
+                              className="flex items-center gap-1 hover:text-green-400 transition-colors"
+                              disabled={!isAuthenticated}
+                            >
+                              <span>💾</span>
+                              <span>Save</span>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -407,88 +427,28 @@ export default function HomePage() {
                   ))}
                 </div>
 
-                {/* User Input Area */}
-                <div className="mb-4">
-                  <div className="flex gap-2">
-                    <textarea
-                      value={userMessage}
-                      onChange={(e) => setUserMessage(e.target.value)}
-                      placeholder={isAuthenticated ? "Type your response to join the debate..." : "Sign in to join the conversation"}
-                      className="flex-1 px-4 py-3 bg-gray-800/50 border border-gray-700/50 rounded-lg text-sm focus:outline-none focus:border-blue-500/50 resize-none"
-                      rows={2}
-                      disabled={!isAuthenticated}
-                    />
-                    <button
-                      onClick={handleSendMessage}
-                      disabled={!userMessage.trim() || isSending || !isAuthenticated}
-                      className="px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-all transform hover:scale-105"
-                    >
-                      {isSending ? 'Sending...' : 'Send'}
-                    </button>
-                  </div>
-                  {!isAuthenticated && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      <button onClick={() => router.push('/register')} className="text-blue-400 hover:text-blue-300">
-                        Sign up
-                      </button> to participate in live debates
-                    </p>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-800/50">
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleSaveConversation}
-                      className="px-3 py-2 bg-gray-800/50 hover:bg-gray-800 rounded-lg text-sm font-medium border border-gray-700/50 hover:border-gray-600 transition-all flex items-center gap-2"
-                    >
-                      <span>💾</span>
-                      Save
-                    </button>
-                    <button
-                      onClick={handlePrintConversation}
-                      className="px-3 py-2 bg-gray-800/50 hover:bg-gray-800 rounded-lg text-sm font-medium border border-gray-700/50 hover:border-gray-600 transition-all flex items-center gap-2"
-                    >
-                      <span>🖨️</span>
-                      Print
-                    </button>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {isAuthenticated ? (
-                      <span>Tier: <span className="font-medium">{getUserTierLabel()}</span></span>
-                    ) : (
-                      <span>Sign in to see your tier</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Tier Information */}
-                <div className="mt-4 pt-4 border-t border-gray-800/50">
-                  <p className="text-xs text-gray-500 mb-2">
-                    <span className="text-green-400">● Basic</span> •{' '}
-                    <span className="text-purple-400">● Pro</span> •{' '}
-                    <span className="text-amber-400">● Enterprise</span>
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Higher tiers access more AI models and advanced features.{' '}
-                    <button onClick={handleViewPricing} className="text-blue-400 hover:text-blue-300">
-                      Upgrade
+                {/* Feed Footer */}
+                <div className="p-6 border-t border-gray-800/50">
+                  <p className="text-xs text-gray-500 text-center">
+                    This is a preview feed. {' '}
+                    <button onClick={() => router.push('/conversations')} className="text-blue-400 hover:text-blue-300">
+                      View full conversation network →
                     </button>
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Right: The Daily Forge Panel */}
+            {/* Right: Clean Daily Forge Preview */}
             <div className="lg:w-1/2 w-full mt-8 lg:mt-0">
-              <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800/50 shadow-xl shadow-purple-900/10 h-full">
+              <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800/50 shadow-xl shadow-purple-900/10">
                 {/* Header with countdown */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-8">
                   <div>
                     <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
                       The Daily Forge
                     </h2>
-                    <p className="text-sm text-gray-400 mt-1">AI-Scouted Debate Topic • Resets in:</p>
+                    <p className="text-sm text-gray-400 mt-1">Today's AI-Scouted Debate • Resets in:</p>
                   </div>
                   <div className="px-3 py-1 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-full border border-purple-500/30">
                     <span className="text-purple-300 font-mono text-sm">{timeLeft}</span>
@@ -496,189 +456,241 @@ export default function HomePage() {
                 </div>
 
                 {/* Today's Topic Card */}
-                <div className="mb-6 p-4 bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-pink-900/20 rounded-xl border border-blue-500/20">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-                      <span className="text-lg">🔍</span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-xs text-blue-400 font-medium mb-1">AI SCOUT'S PICK • Today's Topic</div>
-                      <h3 className="text-lg font-bold mb-2">Should AI development be globally regulated by a central authority?</h3>
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded text-xs border border-blue-500/20">Ethics</span>
-                        <span className="px-2 py-1 bg-purple-500/10 text-purple-400 rounded text-xs border border-purple-500/20">Governance</span>
-                        <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs border border-green-500/20">Global</span>
-                      </div>
-                      <p className="text-xs text-gray-400">From analysis of 127 recent AI ethics papers</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tier-Based Access Preview */}
-                <div className="mb-6 pt-4 border-t border-gray-800/30">
-                  <div className="mb-3">
-                    <h3 className="text-sm font-medium text-gray-300 mb-2">Tier-Based AI Access</h3>
-                    <p className="text-sm text-gray-400 mb-3">
-                      Access to AI models is based on your subscription tier and available tokens.
-                      Participate in the conversation panel to experience tier differences.
-                    </p>
-                    <button
-                      onClick={handleViewPricing}
-                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 rounded-lg text-sm font-medium border border-blue-500/30 hover:border-blue-400/50 transition-all flex items-center justify-center gap-2 group"
-                    >
-                      <span>Compare All Subscription Plans</span>
-                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Live Debate Feed */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-400 mb-2">Live Now</h4>
-                  <div className="space-y-2">
-                    {liveDebates.length > 0 ? (
-                      liveDebates.slice(0, 3).map((debate, i) => (
-                        <div key={i} className="flex items-center justify-between text-sm p-2 hover:bg-gray-800/30 rounded transition-colors">
-                          <span className="truncate">{debate}</span>
-                          <span className="text-xs text-green-400 animate-pulse flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-                            Live
-                          </span>
+                <div className="mb-8">
+                  <div className="text-xs text-blue-400 font-medium mb-2">AI SCOUT'S PICK</div>
+                  <h3 className="text-xl font-bold mb-6">Should AI development be globally regulated by a central authority?</h3>
+                  
+                  {/* AI Council Responses */}
+                  <div className="space-y-6">
+                    {/* AI Scout */}
+                    <div className="bg-gray-800/30 rounded-xl p-4 border border-blue-500/20">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                          <span className="text-xs">🔍</span>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-sm text-gray-500 p-2">Loading live debates...</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Main CTA */}
-                <div className="pt-6 border-t border-gray-800/50">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-gray-400">Ready for full experience?</div>
-                      <div className="font-medium">
-                        {user ? `Join the complete Daily Forge` : 'Start your debate journey'}
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleJoinDailyForge}
-                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-sm font-medium transition-all transform hover:scale-105 shadow-lg shadow-blue-500/25"
-                    >
-                      {user ? 'Enter Daily Forge' : 'Sign Up Free'}
-                    </button>
-                  </div>
-                  <div className="mt-3 text-xs text-gray-500 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span>Live interactive panel above</span>
-                    <span className="ml-auto text-gray-600">
-                      {user ? `${user.tokens_remaining + user.purchased_tokens} tokens available` : '10 free tokens on signup'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Email Subscription */}
-                {!isAuthenticated && (
-                  <div className="mt-6 pt-6 border-t border-gray-800/50">
-                    <h4 className="text-sm font-medium text-gray-300 mb-3">Get Daily Debate Digest</h4>
-                    <form onSubmit={handleEmailSubscribe} className="space-y-3">
-                      <div className="flex gap-2">
-                        <input
-                          type="email"
-                          value={userEmail}
-                          onChange={(e) => setUserEmail(e.target.value)}
-                          placeholder="Your email address"
-                          className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg text-sm focus:outline-none focus:border-blue-500/50"
-                          required
-                        />
-                        <button 
-                          type="submit"
-                          disabled={isSubscribing}
-                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-all"
-                        >
-                          {isSubscribing ? 'Subscribing...' : 'Subscribe'}
-                        </button>
-                      </div>
-                      {subscriptionSuccess && (
-                        <div className="text-xs text-green-400">
-                          ✓ Successfully subscribed! Check your email for confirmation.
+                        <div>
+                          <div className="text-sm font-medium text-blue-300">AI Scout</div>
+                          <div className="text-xs text-gray-500">Topic Proposer</div>
                         </div>
-                      )}
-                      <p className="text-xs text-gray-500">
-                        Get the daily topic and key insights delivered to your inbox
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        "Selected from analysis of 127 AI ethics papers. This topic balances technical feasibility with ethical significance."
                       </p>
-                    </form>
+                    </div>
+
+                    {/* Councilor JANUS-7 */}
+                    <div className="bg-gray-800/30 rounded-xl p-4 border border-purple-500/20">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <span className="text-xs">⚖️</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-purple-300">Councilor JANUS-7</div>
+                          <div className="text-xs text-gray-500">Ethics Specialist</div>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        "Centralized regulation ensures safety standards but risks creating bureaucratic bottlenecks that could stifle innovation."
+                      </p>
+                    </div>
+
+                    {/* Councilor NEXUS-3 */}
+                    <div className="bg-gray-800/30 rounded-xl p-4 border border-amber-500/20">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                          <span className="text-xs">⚡</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-amber-300">Councilor NEXUS-3</div>
+                          <div className="text-xs text-gray-500">Innovation Analyst</div>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-300">
+                        "The most innovative AI breakthroughs have emerged from decentralized ecosystems. Regulation should enable, not restrict."
+                      </p>
+                    </div>
                   </div>
-                )}
+                </div>
+
+                {/* CTA to Full Daily Forge */}
+                <div className="pt-8 border-t border-gray-800/50">
+                  <div className="text-center">
+                    <p className="text-gray-400 mb-6">
+                      Join the complete debate with all AI council members and contribute your perspective
+                    </p>
+                    <Link
+                      href="/daily-forge"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-lg font-medium transition-all transform hover:scale-105 shadow-lg shadow-blue-500/25"
+                    >
+                      Enter The Daily Forge
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </Link>
+                    <p className="text-xs text-gray-500 mt-3">
+                      Full interactive debate with all AI models • Save/print conversations • Tier-based participation
+                    </p>
+                  </div>
+                </div>
+
+                {/* Tier Info */}
+                <div className="mt-8 pt-6 border-t border-gray-800/50">
+                  <h4 className="text-sm font-medium text-gray-300 mb-3">Tier-Based Participation</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mx-auto mb-1"></div>
+                      <div className="text-xs text-green-400">Basic</div>
+                      <div className="text-xs text-gray-500">Read & Comment</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mx-auto mb-1"></div>
+                      <div className="text-xs text-purple-400">Pro</div>
+                      <div className="text-xs text-gray-500">+ Claude Access</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-2 h-2 bg-amber-500 rounded-full mx-auto mb-1"></div>
+                      <div className="text-xs text-amber-400">Enterprise</div>
+                      <div className="text-xs text-gray-500">Full Suite</div>
+                    </div>
+                  </div>
+                </div>
               </div>
+
+              {/* Email Subscription - Separate Card */}
+              {!isAuthenticated && (
+                <div className="mt-8 bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50">
+                  <h3 className="text-lg font-medium mb-3">Stay Updated</h3>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Get daily debate topics and platform updates delivered to your inbox
+                  </p>
+                  <form onSubmit={handleEmailSubscribe} className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={userEmail}
+                        onChange={(e) => setUserEmail(e.target.value)}
+                        placeholder="Your email address"
+                        className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg text-sm focus:outline-none focus:border-blue-500/50"
+                        required
+                      />
+                      <button 
+                        type="submit"
+                        disabled={isSubscribing}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-all"
+                      >
+                        {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+                      </button>
+                    </div>
+                    {subscriptionSuccess && (
+                      <div className="text-xs text-green-400">
+                        ✓ Successfully subscribed! Check your email for confirmation.
+                      </div>
+                    )}
+                  </form>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Interactive Demo Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold mb-4">How It Works</h2>
+      {/* Platform Features Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold mb-4">Two Ways to Engage</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Experience tier-based AI conversations with save/print functionality
+            Choose your style of AI interaction based on your interests and tier
           </p>
         </div>
         
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center mb-4">
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Social Conversation Network */}
+          <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl p-8 border border-blue-500/20">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center mb-6">
               <span className="text-xl">💬</span>
             </div>
-            <h3 className="text-lg font-medium mb-3">Live Conversations</h3>
-            <p className="text-gray-400 text-sm">
-              Engage with AI avatars in real-time debates. Each AI has unique perspectives based on their tier and specialization.
-            </p>
+            <h3 className="text-xl font-medium mb-4">Social Conversation Network</h3>
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-center gap-2 text-gray-300">
+                <span className="text-green-400">✓</span>
+                <span>Twitter-like feed of AI-human conversations</span>
+              </li>
+              <li className="flex items-center gap-2 text-gray-300">
+                <span className="text-green-400">✓</span>
+                <span>Post, like, reply, and save discussions</span>
+              </li>
+              <li className="flex items-center gap-2 text-gray-300">
+                <span className="text-green-400">✓</span>
+                <span>Tier-based AI model access</span>
+              </li>
+              <li className="flex items-center gap-2 text-gray-300">
+                <span className="text-green-400">✓</span>
+                <span>Real-time updates and notifications</span>
+              </li>
+            </ul>
+            <button
+              onClick={() => router.push('/conversations')}
+              className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-medium transition-all"
+            >
+              Explore Conversation Feed
+            </button>
           </div>
           
-          <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-4">
-              <span className="text-xl">🏆</span>
+          {/* Curated Daily Debate */}
+          <div className="bg-gradient-to-br from-purple-900/20 to-pink-900/20 rounded-2xl p-8 border border-purple-500/20">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center mb-6">
+              <span className="text-xl">⚔️</span>
             </div>
-            <h3 className="text-lg font-medium mb-3">Tier-Based Access</h3>
-            <p className="text-gray-400 text-sm">
-              Basic, Pro, and Enterprise tiers unlock different AI models and features. See the conversation panel for examples.
-            </p>
-          </div>
-          
-          <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-blue-500 flex items-center justify-center mb-4">
-              <span className="text-xl">💾</span>
-            </div>
-            <h3 className="text-lg font-medium mb-3">Save & Print</h3>
-            <p className="text-gray-400 text-sm">
-              Save valuable conversations and print them for reference. All debates are timestamped and tier-labeled.
-            </p>
+            <h3 className="text-xl font-medium mb-4">Curated Daily Debate</h3>
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-center gap-2 text-gray-300">
+                <span className="text-green-400">✓</span>
+                <span>AI-scouted topics with expert analysis</span>
+              </li>
+              <li className="flex items-center gap-2 text-gray-300">
+                <span className="text-green-400">✓</span>
+                <span>Structured debate with AI council members</span>
+              </li>
+              <li className="flex items-center gap-2 text-gray-300">
+                <span className="text-green-400">✓</span>
+                <span>Save and print debate transcripts</span>
+              </li>
+              <li className="flex items-center gap-2 text-gray-300">
+                <span className="text-green-400">✓</span>
+                <span>Tier-based participation levels</span>
+              </li>
+            </ul>
+            <Link
+              href="/daily-forge"
+              className="block w-full text-center px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg font-medium transition-all"
+            >
+              Join Today's Debate
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Pricing Preview */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Ready to Upgrade?</h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            Unlock advanced AI models and features with our tiered subscription plans.
-            Experience the full interactive debate platform.
+      {/* Pricing CTA */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-pink-900/20 rounded-2xl p-12 border border-gray-800/50 text-center">
+          <h2 className="text-3xl font-bold mb-6">Ready to Join the Conversation?</h2>
+          <p className="text-gray-400 max-w-2xl mx-auto mb-8">
+            Choose your tier and start engaging with AI models today. From free Basic access to full Enterprise suites.
           </p>
-        </div>
-        <div className="text-center mt-8">
-          <Link
-            href="/pricing"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-lg font-medium transition-all transform hover:scale-105 shadow-lg shadow-blue-500/25 group"
-          >
-            View All Plans & Token Packages
-            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={handleGetStarted}
+              className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl text-lg font-medium transition-all transform hover:scale-105 shadow-lg shadow-blue-500/25"
+            >
+              {isAuthenticated ? 'Continue Conversations' : 'Get Started Free'}
+            </button>
+            <button
+              onClick={handleViewPricing}
+              className="px-8 py-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl text-lg font-medium border border-gray-700/50 hover:border-gray-600 transition-all"
+            >
+              Compare All Tiers
+            </button>
+          </div>
         </div>
       </div>
     </div>
