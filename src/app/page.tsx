@@ -417,7 +417,8 @@ export default function HomePage() {
                     <span>{isLive ? 'Live debate in progress' : 'Debate starting soon'}</span>
                     <span className="ml-auto text-gray-600">
                       {user ? `${user.tokens_remaining + user.purchased_tokens} tokens available` : '10 free tokens on signup'}
-                    </div>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
