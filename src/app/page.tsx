@@ -303,78 +303,9 @@ export default function HomePage() {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Choose the perfect plan for your debating needs. All plans include access to all AI models.
+            Choose the perfect plan for your debating needs.Click the link below for more information.
           </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-          {popularTiers.map(([tierKey, tier]) => (
-            <div
-              key={tierKey}
-              className={`rounded-2xl p-6 border transition-all hover:scale-105 ${
-                tierKey === 'pro'
-                  ? 'border-purple-500 bg-gray-900/80 shadow-2xl shadow-purple-500/20'
-                  : 'border-gray-800/50 bg-gray-900/50 hover:border-gray-700'
-              }`}
-            >
-              {tierKey === 'pro' && (
-                <div className="text-center mb-4">
-                  <span className="inline-block px-3 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full text-sm font-medium">
-                    ⭐ MOST POPULAR
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center mb-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mr-3 ${
-                  tierKey === 'pro' ? 'bg-purple-500/20' :
-                  tierKey === 'enterprise' ? 'bg-amber-500/20' :
-                  'bg-blue-500/20'
-                }`}>
-                  <span className={`text-lg ${
-                    tierKey === 'pro' ? 'text-purple-400' :
-                    tierKey === 'enterprise' ? 'text-amber-400' :
-                    'text-blue-400'
-                  }`}>
-                    {tierKey === 'pro' ? '⚡' :
-                     tierKey === 'enterprise' ? '🏢' : '👤'}
-                  </span>
-                </div>
-                <h3 className="text-2xl font-bold">{tier.name}</h3>
-              </div>
-
-              <div className="mb-6">
-                <div className="text-4xl font-bold mb-1">${tier.price}
-                  <span className="text-sm text-gray-400 font-normal">/month</span>
-                </div>
-                <div className="text-gray-400 text-sm">
-                  {tierKey === 'free' ? 'Free forever' : 'Billed monthly'}
-                </div>
-              </div>
-
-              <ul className="space-y-3 mb-8">
-                {tier.features.slice(0, 4).map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm text-gray-300">
-                    <span className="text-green-400 mt-1">✓</span>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={() => router.push('/pricing')}
-                className={`w-full py-3 rounded-lg font-medium transition-all ${
-                  tierKey === 'pro'
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-                    : 'bg-gray-800 hover:bg-gray-700'
-                }`}
-              >
-                {user?.tier === tierKey ? 'Current Plan' : 'Choose Plan'}
-              </button>
-            </div>
-          ))}
-        </div>
-
         <div className="text-center mt-8">
           <Link
             href="/pricing"
