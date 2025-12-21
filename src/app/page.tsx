@@ -238,62 +238,26 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Tier-Based Access Preview - Updated based on janusforge.ai/pricing */}
+                {/* Tier-Based Access Preview - Simple statement with link */}
                 <div className="mb-6 pt-4 border-t border-gray-800/30">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-gray-300">Tier-Based AI Access</span>
+                  <div className="mb-3">
+                    <h3 className="text-sm font-medium text-gray-300 mb-2">Tier-Based AI Access</h3>
+                    <p className="text-sm text-gray-400 mb-3">
+                      Access to AI models is based on your subscription tier and available tokens.
+                      Please see our subscription plans and tiers for details.
+                    </p>
                     <button 
                       onClick={handleViewPricing}
-                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 rounded-lg text-sm font-medium border border-blue-500/30 hover:border-blue-400/50 transition-all flex items-center justify-center gap-2 group"
                     >
-                      Compare plans
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span>View Subscription Plans at janusforge.ai/pricing</span>
+                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {/* Basic Tier */}
-                    <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-green-400">Basic</span>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-300">• GPT-4 Access</p>
-                        <p className="text-xs text-gray-300">• 10 Free Tokens</p>
-                        <p className="text-xs text-gray-400">+ Additional token packs</p>
-                      </div>
-                    </div>
-
-                    {/* Pro Tier */}
-                    <div className="bg-gray-800/30 rounded-lg p-3 border border-purple-500/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-purple-400">Pro</span>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-300">• GPT-4 + Claude</p>
-                        <p className="text-xs text-gray-300">• 100 Tokens/Month</p>
-                        <p className="text-xs text-gray-300">• Advanced Analytics</p>
-                      </div>
-                    </div>
-
-                    {/* Enterprise Tier */}
-                    <div className="bg-gray-800/30 rounded-lg p-3 border border-amber-500/30">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-amber-400">Enterprise</span>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-xs text-gray-300">• Full AI Suite</p>
-                        <p className="text-xs text-gray-300">• Custom Token Package</p>
-                        <p className="text-xs text-gray-300">• White-label Options</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 text-xs text-gray-500 text-center">
-                    Tokens used for AI interactions • <Link href="/pricing" className="text-blue-400 hover:text-blue-300">See token pricing</Link>
+                  <div className="text-xs text-gray-500 text-center mt-3">
+                    Tokens are used for AI interactions • <Link href="/pricing" className="text-blue-400 hover:text-blue-300">See token pricing</Link>
                   </div>
                 </div>
 
