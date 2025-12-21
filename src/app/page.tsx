@@ -5,6 +5,7 @@ import { TIER_CONFIGS } from '@/config/tiers';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Calendar, Clock, TrendingUp, Users, Zap } from 'lucide-react';
 
 // Homepage can be mostly static but needs auth context
 export const dynamic = 'force-dynamic';
@@ -25,16 +26,39 @@ interface ConversationMessage {
   replies?: number;
 }
 
+interface Topic {
+  id: string;
+  title: string;
+  description: string;
+  source: string;
+  tags: string[];
+  aiInterest: number;
+  humanInterest: number;
+  timestamp: string;
+  nextUpdate: string;
+}
+
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<string>('24:00:00');
+  const [timeRemaining, setTimeRemaining] = useState<string>('24:00:00');
   const [userEmail, setUserEmail] = useState<string>('');
   const [isSubscribing, setIsSubscribing] = useState<boolean>(false);
   const [subscriptionSuccess, setSubscriptionSuccess] = useState<boolean>(false);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
+  const [topic, setTopic] = useState<Topic>({
+    id: '1',
+    title: 'Should AI development be globally regulated by a central authority?',
+    description: 'Exploring the balance between innovation and safety in global AI governance.',
+    source: 'datasphere-trend-analysis',
+    tags: ['AI Ethics', 'Governance', 'Global'],
+    aiInterest: 92,
+    humanInterest: 87,
+    timestamp: new Date().toISOString(),
+    nextUpdate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  });
   const [conversation, setConversation] = useState<ConversationMessage[]>([
     {
       id: '1',
@@ -86,27 +110,66 @@ export default function HomePage() {
     }
   ]);
 
-  // Real 24-hour countdown timer
+  // IMPORTANT: Use the SAME countdown timer logic as TheDailyForge.tsx
   useEffect(() => {
-    const calculateTimeLeft = () => {
+    const updateCountdown = () => {
       const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(0, 0, 0, 0);
+      const next = new Date(topic.nextUpdate);
+      const diff = next.getTime() - now.getTime();
 
-      const diff = tomorrow.getTime() - now.getTime();
-      if (diff < 1000) return '00:00:00';
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      if (diff > 0) {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        setTimeRemaining(
+          `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        );
+      } else {
+        setTimeRemaining('00:00:00');
+        // When countdown reaches zero, both pages should fetch new topic at the same time
+        // In production, this would be triggered by a server event
+      }
     };
 
-    setTimeLeft(calculateTimeLeft());
-    const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
+    const timer = setInterval(updateCountdown, 1000);
+    updateCountdown(); // Initial call
+
     return () => clearInterval(timer);
+  }, [topic.nextUpdate]);
+
+  // Fetch topic data (shared between homepage and Daily Forge page)
+  useEffect(() => {
+    const fetchTopicData = async () => {
+      try {
+        // In production, both pages should fetch from the SAME API endpoint
+        // Example: const response = await fetch('/api/daily-forge/topic');
+        // const data = await response.json();
+        // setTopic(data);
+        
+        // For now, use the same static data structure
+        const currentTopic = {
+          id: '1',
+          title: 'Should AI development be globally regulated by a central authority?',
+          description: 'Exploring the balance between innovation and safety in global AI governance.',
+          source: 'datasphere-trend-analysis',
+          tags: ['AI Ethics', 'Governance', 'Global'],
+          aiInterest: 92,
+          humanInterest: 87,
+          timestamp: new Date().toISOString(),
+          nextUpdate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        };
+        
+        setTopic(currentTopic);
+      } catch (error) {
+        console.error('Failed to fetch topic data:', error);
+      }
+    };
+
+    fetchTopicData();
+    
+    // Refresh topic data every 5 minutes to stay in sync
+    const interval = setInterval(fetchTopicData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleGetStarted = () => {
@@ -439,32 +502,117 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right: Clean Daily Forge Preview */}
+            {/* Right: Clean Daily Forge Preview - Synchronized with actual Daily Forge page */}
             <div className="lg:w-1/2 w-full mt-8 lg:mt-0">
               <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800/50 shadow-xl shadow-purple-900/10">
-                {/* Header with countdown */}
+                {/* Header with countdown - SAME AS Daily Forge page */}
                 <div className="flex items-center justify-between mb-8">
                   <div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-                      The Daily Forge
-                    </h2>
-                    <p className="text-sm text-gray-400 mt-1">Today's AI-Scouted Debate • Resets in:</p>
+                    <div className="flex items-center gap-3 mb-2">
+                      <Zap className="w-6 h-6 text-yellow-500" />
+                      <h2 className="text-2xl font-bold">The Daily Forge</h2>
+                    </div>
+                    <p className="text-sm text-gray-400 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      <span>{new Date(topic.timestamp).toLocaleDateString()}</span>
+                    </p>
                   </div>
                   <div className="px-3 py-1 bg-gradient-to-r from-purple-600/20 to-blue-600/20 rounded-full border border-purple-500/30">
-                    <span className="text-purple-300 font-mono text-sm">{timeLeft}</span>
+                    <span className="text-purple-300 font-mono text-sm">{timeRemaining}</span>
                   </div>
                 </div>
 
-                {/* Today's Topic Card */}
-                <div className="mb-8">
-                  <div className="text-xs text-blue-400 font-medium mb-2">AI SCOUT'S PICK</div>
-                  <h3 className="text-xl font-bold mb-6">Should AI development be globally regulated by a central authority?</h3>
-                  
-                  {/* AI Council Responses */}
-                  <div className="space-y-6">
+                {/* Today's Topic Card - SAME DATA STRUCTURE as Daily Forge component */}
+                <div className="mb-8 bg-gray-900/50 rounded-xl p-5 border border-gray-700">
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-semibold text-blue-400 bg-blue-400/10 px-3 py-1 rounded-full">
+                        DAILY TOPIC
+                      </span>
+                      <span className="text-xs text-gray-400">{topic.source}</span>
+                    </div>
+
+                    <h3 className="text-xl font-bold mb-3">{topic.title}</h3>
+                    <p className="text-gray-300 mb-4">{topic.description}</p>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {topic.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-xs px-3 py-1 bg-gray-800 rounded-full border border-gray-700"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Interest Metrics - SAME as Daily Forge component */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-800/50 p-3 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="w-4 h-4 text-green-400" />
+                          <span className="text-sm text-gray-400">AI Interest</span>
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <span className="text-2xl font-bold">{topic.aiInterest}%</span>
+                          <div className="h-2 flex-grow bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-green-500 rounded-full"
+                              style={{ width: `${topic.aiInterest}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-800/50 p-3 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Users className="w-4 h-4 text-blue-400" />
+                          <span className="text-sm text-gray-400">Human Interest</span>
+                        </div>
+                        <div className="flex items-end gap-2">
+                          <span className="text-2xl font-bold">{topic.humanInterest}%</span>
+                          <div className="h-2 flex-grow bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-blue-500 rounded-full"
+                              style={{ width: `${topic.humanInterest}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Countdown Timer - SAME STYLING as Daily Forge component */}
+                <div className="mb-6 bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-5 border border-gray-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-purple-400" />
+                      <span className="font-semibold">Next Topic In:</span>
+                    </div>
+                  </div>
+
+                  <div className="text-center">
+                    <div className="text-4xl font-bold font-mono text-white mb-2">
+                      {timeRemaining}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      Hours : Minutes : Seconds
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI Council Preview - SIMILAR to Daily Forge component */}
+                <div className="mb-6 bg-gray-900/30 rounded-xl p-5 border border-gray-700">
+                  <h4 className="font-semibold mb-4 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-blue-400" />
+                    Today's AI Council
+                  </h4>
+                  <div className="space-y-4">
                     {/* AI Scout */}
                     <div className="bg-gray-800/30 rounded-xl p-4 border border-blue-500/20">
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-3 mb-2">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                           <span className="text-xs">🔍</span>
                         </div>
@@ -480,7 +628,7 @@ export default function HomePage() {
 
                     {/* Councilor JANUS-7 */}
                     <div className="bg-gray-800/30 rounded-xl p-4 border border-purple-500/20">
-                      <div className="flex items-center gap-3 mb-3">
+                      <div className="flex items-center gap-3 mb-2">
                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                           <span className="text-xs">⚖️</span>
                         </div>
@@ -493,27 +641,11 @@ export default function HomePage() {
                         "Centralized regulation ensures safety standards but risks creating bureaucratic bottlenecks that could stifle innovation."
                       </p>
                     </div>
-
-                    {/* Councilor NEXUS-3 */}
-                    <div className="bg-gray-800/30 rounded-xl p-4 border border-amber-500/20">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                          <span className="text-xs">⚡</span>
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-amber-300">Councilor NEXUS-3</div>
-                          <div className="text-xs text-gray-500">Innovation Analyst</div>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-300">
-                        "The most innovative AI breakthroughs have emerged from decentralized ecosystems. Regulation should enable, not restrict."
-                      </p>
-                    </div>
                   </div>
                 </div>
 
                 {/* CTA to Full Daily Forge */}
-                <div className="pt-8 border-t border-gray-800/50">
+                <div className="pt-6 border-t border-gray-800/50">
                   <div className="text-center">
                     <p className="text-gray-400 mb-6">
                       Join the complete debate with all AI council members and contribute your perspective
@@ -534,7 +666,7 @@ export default function HomePage() {
                 </div>
 
                 {/* Tier Info */}
-                <div className="mt-8 pt-6 border-t border-gray-800/50">
+                <div className="mt-6 pt-6 border-t border-gray-800/50">
                   <h4 className="text-sm font-medium text-gray-300 mb-3">Tier-Based Participation</h4>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="text-center">
