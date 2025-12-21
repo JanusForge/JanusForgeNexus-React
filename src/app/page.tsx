@@ -10,6 +10,8 @@ import { useEffect, useState } from 'react';
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Revalidate homepage every hour
 
+type ConversationTier = 'basic' | 'pro' | 'enterprise' | 'free' | 'admin';
+
 interface ConversationMessage {
   id: string;
   sender: 'ai' | 'user';
@@ -18,7 +20,7 @@ interface ConversationMessage {
   role: string;
   content: string;
   timestamp: string;
-  tier?: 'basic' | 'pro' | 'enterprise';
+  tier?: ConversationTier;
 }
 
 export default function HomePage() {
@@ -170,6 +172,9 @@ export default function HomePage() {
 
     setIsSending(true);
     
+    // Get user tier, default to 'basic' for free/admin users
+    const userTier = (user?.tier === 'free' || user?.tier === 'admin') ? 'basic' : (user?.tier as ConversationTier) || 'basic';
+    
     // Add user message to conversation
     const userMsg: ConversationMessage = {
       id: Date.now().toString(),
@@ -179,7 +184,7 @@ export default function HomePage() {
       role: 'Participant',
       content: userMessage,
       timestamp: 'Just now',
-      tier: user?.tier || 'basic'
+      tier: userTier
     };
 
     setConversation(prev => [...prev, userMsg]);
@@ -266,21 +271,38 @@ export default function HomePage() {
     }
   };
 
-  const getTierBadgeColor = (tier?: string) => {
+  const getTierBadgeColor = (tier?: ConversationTier) => {
     switch (tier) {
-      case 'basic': return 'border-green-500/30 bg-green-500/10 text-green-400';
+      case 'basic':
+      case 'free': return 'border-green-500/30 bg-green-500/10 text-green-400';
       case 'pro': return 'border-purple-500/30 bg-purple-500/10 text-purple-400';
       case 'enterprise': return 'border-amber-500/30 bg-amber-500/10 text-amber-400';
+      case 'admin': return 'border-red-500/30 bg-red-500/10 text-red-400';
       default: return 'border-gray-500/30 bg-gray-500/10 text-gray-400';
     }
   };
 
-  const getTierLabel = (tier?: string) => {
+  const getTierLabel = (tier?: ConversationTier) => {
     switch (tier) {
-      case 'basic': return 'BASIC';
+      case 'basic':
+      case 'free': return 'BASIC';
       case 'pro': return 'PRO';
       case 'enterprise': return 'ENTERPRISE';
+      case 'admin': return 'ADMIN';
       default: return 'FREE';
+    }
+  };
+
+  const getUserTierLabel = () => {
+    if (!user?.tier) return 'Basic';
+    
+    switch (user.tier) {
+      case 'free':
+      case 'basic': return 'Basic';
+      case 'pro': return 'Pro';
+      case 'enterprise': return 'Enterprise';
+      case 'admin': return 'Admin';
+      default: return 'Basic';
     }
   };
 
@@ -433,7 +455,7 @@ export default function HomePage() {
                   </div>
                   <div className="text-xs text-gray-500">
                     {isAuthenticated ? (
-                      <span>Tier: <span className="font-medium">{user?.tier ? getTierLabel(user.tier) : 'Basic'}</span></span>
+                      <span>Tier: <span className="font-medium">{getUserTierLabel()}</span></span>
                     ) : (
                       <span>Sign in to see your tier</span>
                     )}
