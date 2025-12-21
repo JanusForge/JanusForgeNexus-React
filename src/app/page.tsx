@@ -17,12 +17,43 @@ export default function HomePage() {
   const [timeLeft, setTimeLeft] = useState<string>('24:00:00');
   const [activeMembers, setActiveMembers] = useState<number>(3);
   const [isLive, setIsLive] = useState<boolean>(true);
-  const [liveDebates, setLiveDebates] = useState<string[]>([
-    'AI Regulation Debate',
-    'Climate Policy Discussion',
-    'Future of Work',
-    'Quantum Computing Ethics'
-  ]);
+  const [liveDebates, setLiveDebates] = useState<string[]>([]);
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [isSubscribing, setIsSubscribing] = useState<boolean>(false);
+  const [subscriptionSuccess, setSubscriptionSuccess] = useState<boolean>(false);
+
+  // Fetch real live debates from API
+  useEffect(() => {
+    const fetchLiveDebates = async () => {
+      try {
+        // In production, replace with real API call
+        // const response = await fetch('/api/debates/live');
+        // const data = await response.json();
+        // setLiveDebates(data.debates);
+        
+        // For now, simulate API call with timeout
+        setTimeout(() => {
+          setLiveDebates([
+            'AI Regulation Debate',
+            'Climate Policy Discussion',
+            'Future of Work',
+            'Quantum Computing Ethics'
+          ]);
+        }, 1000);
+      } catch (error) {
+        console.error('Failed to fetch live debates:', error);
+        // Fallback to default debates
+        setLiveDebates([
+          'AI Regulation Debate',
+          'Climate Policy Discussion'
+        ]);
+      }
+    };
+
+    fetchLiveDebates();
+    const interval = setInterval(fetchLiveDebates, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
@@ -70,14 +101,6 @@ export default function HomePage() {
     const interval = setInterval(() => {
       // Randomly change active members between 2-4 for demo
       setActiveMembers(Math.floor(Math.random() * 3) + 2);
-      // Cycle through live debates
-      setLiveDebates(prev => {
-        const newDebates = [...prev];
-        // Move first to last
-        const first = newDebates.shift();
-        if (first) newDebates.push(first);
-        return newDebates;
-      });
     }, 10000);
 
     return () => clearInterval(interval);
@@ -92,8 +115,6 @@ export default function HomePage() {
   };
 
   const handleExpandConversation = (aiName: string) => {
-    console.log(`Expanding conversation with ${aiName}`);
-    // In the future, this could open a modal or navigate to specific conversation
     if (user) {
       router.push('/daily-forge');
     } else {
@@ -103,6 +124,36 @@ export default function HomePage() {
 
   const handleViewPricing = () => {
     router.push('/pricing');
+  };
+
+  const handleEmailSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userEmail.trim()) return;
+
+    setIsSubscribing(true);
+    try {
+      // In production, replace with real API call
+      // const response = await fetch('/api/newsletter/subscribe', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ email: userEmail })
+      // });
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setSubscriptionSuccess(true);
+      setUserEmail('');
+      
+      // Reset success message after 5 seconds
+      setTimeout(() => {
+        setSubscriptionSuccess(false);
+      }, 5000);
+    } catch (error) {
+      console.error('Subscription failed:', error);
+    } finally {
+      setIsSubscribing(false);
+    }
   };
 
   const popularTiers = Object.entries(TIER_CONFIGS)
@@ -118,7 +169,7 @@ export default function HomePage() {
         {/* Video Logo Container */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
           <div className="flex flex-col lg:flex-row items-start justify-between gap-12">
-            {/* Left: Video Logo and Main Heading - Adjusted for vertical alignment */}
+            {/* Left: Video Logo and Main Heading */}
             <div className="lg:w-1/2 text-center lg:text-left">
               <div className="mb-6">
                 {/* Video Logo */}
@@ -187,23 +238,86 @@ export default function HomePage() {
                 </button>
               </div>
 
-              <div className="mt-8 flex items-center justify-center lg:justify-start space-x-6 text-gray-400">
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                  <span>Live AI Debates</span>
+              {/* Quick Actions for Logged-In Users */}
+              {isAuthenticated && (
+                <div className="mt-8 bg-gray-800/30 rounded-xl p-4 border border-gray-700/50">
+                  <h3 className="text-sm font-medium text-gray-300 mb-3">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button 
+                      onClick={() => router.push('/my-debates')}
+                      className="px-3 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-sm transition-colors flex items-center gap-2"
+                    >
+                      <span>📚</span>
+                      My Debates
+                    </button>
+                    <button 
+                      onClick={() => router.push('/saved')}
+                      className="px-3 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-sm transition-colors flex items-center gap-2"
+                    >
+                      <span>💾</span>
+                      Saved
+                    </button>
+                    <button 
+                      onClick={() => router.push('/history')}
+                      className="px-3 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-sm transition-colors flex items-center gap-2"
+                    >
+                      <span>🕒</span>
+                      History
+                    </button>
+                    <button 
+                      onClick={() => router.push('/profile')}
+                      className="px-3 py-2 bg-gray-700/50 hover:bg-gray-700 rounded-lg text-sm transition-colors flex items-center gap-2"
+                    >
+                      <span>👤</span>
+                      Profile
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                  <span>Token System</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
-                  <span>Multi-Model</span>
-                </div>
+              )}
+
+              {/* Gamification Stats */}
+              <div className="mt-8 flex flex-wrap gap-4 justify-center lg:justify-start">
+                {isAuthenticated ? (
+                  <>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center">
+                        <span className="text-sm">🏆</span>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-400">Debate Rank</div>
+                        <div className="text-sm font-medium">Calculating...</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
+                        <span className="text-sm">⚡</span>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-400">Weekly Streak</div>
+                        <div className="text-sm font-medium">Loading...</div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center lg:justify-start space-x-6 text-gray-400">
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                      <span>Live AI Debates</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                      <span>Token System</span>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                      <span>Multi-Model</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Right: The Daily Forge - Adjusted for vertical alignment */}
+            {/* Right: The Daily Forge */}
             <div className="lg:w-1/2 w-full mt-4 lg:mt-0">
               <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800/50 shadow-xl shadow-purple-900/10 h-full">
                 {/* Header with countdown */}
@@ -238,7 +352,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Tier-Based Access Preview - Simple statement with link */}
+                {/* Tier-Based Access Preview */}
                 <div className="mb-6 pt-4 border-t border-gray-800/30">
                   <div className="mb-3">
                     <h3 className="text-sm font-medium text-gray-300 mb-2">Tier-Based AI Access</h3>
@@ -246,7 +360,7 @@ export default function HomePage() {
                       Access to AI models is based on your subscription tier and available tokens.
                       Please see our subscription plans and tiers for details.
                     </p>
-                    <button 
+                    <button
                       onClick={handleViewPricing}
                       className="w-full px-4 py-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 hover:from-blue-600/30 hover:to-purple-600/30 rounded-lg text-sm font-medium border border-blue-500/30 hover:border-blue-400/50 transition-all flex items-center justify-center gap-2 group"
                     >
@@ -281,7 +395,7 @@ export default function HomePage() {
                         <span className="text-sm font-medium text-blue-300">AI Scout</span>
                         <span className="text-xs text-gray-500">• Topic Proposer</span>
                       </div>
-                      <div 
+                      <div
                         className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-blue-500/50 hover:bg-gray-700/50 transition-colors cursor-pointer group"
                         onClick={() => handleExpandConversation('AI Scout')}
                       >
@@ -305,7 +419,7 @@ export default function HomePage() {
                         <span className="text-sm font-medium text-purple-300">Councilor JANUS-7</span>
                         <span className="text-xs text-gray-500">• Ethics Specialist</span>
                       </div>
-                      <div 
+                      <div
                         className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-purple-500/50 hover:bg-gray-700/50 transition-colors cursor-pointer group"
                         onClick={() => handleExpandConversation('Councilor JANUS-7')}
                       >
@@ -329,7 +443,7 @@ export default function HomePage() {
                         <span className="text-sm font-medium text-amber-300">Councilor NEXUS-3</span>
                         <span className="text-xs text-gray-500">• Innovation Analyst</span>
                       </div>
-                      <div 
+                      <div
                         className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-amber-500/50 hover:bg-gray-700/50 transition-colors cursor-pointer group"
                         onClick={() => handleExpandConversation('Councilor NEXUS-3')}
                       >
@@ -348,17 +462,31 @@ export default function HomePage() {
                 <div className="mb-6">
                   <h4 className="text-sm font-medium text-gray-400 mb-2">Live Now</h4>
                   <div className="space-y-2">
-                    {liveDebates.slice(0, 3).map((debate, i) => (
-                      <div key={i} className="flex items-center justify-between text-sm p-2 hover:bg-gray-800/30 rounded transition-colors">
-                        <span className="truncate">{debate}</span>
-                        <span className="text-xs text-green-400 animate-pulse flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-                          Live
-                        </span>
-                      </div>
-                    ))}
+                    {liveDebates.length > 0 ? (
+                      liveDebates.slice(0, 3).map((debate, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm p-2 hover:bg-gray-800/30 rounded transition-colors">
+                          <span className="truncate">{debate}</span>
+                          <span className="text-xs text-green-400 animate-pulse flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                            Live
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-sm text-gray-500 p-2">Loading live debates...</div>
+                    )}
                   </div>
                 </div>
+
+                {/* Recent Activity for Logged-In Users */}
+                {isAuthenticated && (
+                  <div className="mb-6">
+                    <h4 className="text-sm font-medium text-gray-400 mb-2">Your Recent Activity</h4>
+                    <div className="space-y-2">
+                      <div className="text-sm text-gray-500 p-2">Loading your activity...</div>
+                    </div>
+                  </div>
+                )}
 
                 {/* CTA to Join */}
                 <div className="pt-6 border-t border-gray-800/50">
@@ -384,7 +512,108 @@ export default function HomePage() {
                     </span>
                   </div>
                 </div>
+
+                {/* Email Subscription for Non-Logged-In Users */}
+                {!isAuthenticated && (
+                  <div className="mt-6 pt-6 border-t border-gray-800/50">
+                    <h4 className="text-sm font-medium text-gray-300 mb-3">Get Daily Debate Digest</h4>
+                    <form onSubmit={handleEmailSubscribe} className="space-y-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          value={userEmail}
+                          onChange={(e) => setUserEmail(e.target.value)}
+                          placeholder="Your email address"
+                          className="flex-1 px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg text-sm focus:outline-none focus:border-blue-500/50"
+                          required
+                        />
+                        <button 
+                          type="submit"
+                          disabled={isSubscribing}
+                          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-all"
+                        >
+                          {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+                        </button>
+                      </div>
+                      {subscriptionSuccess && (
+                        <div className="text-xs text-green-400">
+                          ✓ Successfully subscribed! Check your email for confirmation.
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Get the daily topic and key insights delivered to your inbox
+                      </p>
+                    </form>
+                  </div>
+                )}
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Interactive Demo Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold mb-4">Experience Interactive AI Debates</h2>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Engage in dynamic conversations where AI avatars debate with each other and you
+          </p>
+        </div>
+        
+        <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-800/50 max-w-2xl mx-auto">
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs">🤖</span>
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-blue-300 mb-1">AI Assistant</div>
+                <div className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-blue-500/50">
+                  <p className="text-sm text-gray-300">Ready to debate today's topic about AI regulation? What's your initial thought?</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <button 
+                onClick={handleGetStarted}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-medium transition-all transform hover:scale-105"
+              >
+                {isAuthenticated ? 'Continue Your Debate' : 'Start Your First Debate'}
+              </button>
+              <p className="text-xs text-gray-500 mt-2">
+                {isAuthenticated ? 'Continue your conversation with the AI council' : 'Sign up to join the interactive debate'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Platform Stats */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-pink-900/20 rounded-2xl p-8 border border-gray-800/50">
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
+                Live
+              </div>
+              <div className="text-gray-300">Real-time Debates</div>
+              <div className="text-sm text-gray-500 mt-1">Join conversations as they happen</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
+                Multiple
+              </div>
+              <div className="text-gray-300">AI Personalities</div>
+              <div className="text-sm text-gray-500 mt-1">Each with unique perspectives</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-blue-400 bg-clip-text text-transparent mb-2">
+                Tiered
+              </div>
+              <div className="text-gray-300">Access System</div>
+              <div className="text-sm text-gray-500 mt-1">Choose your level of engagement</div>
             </div>
           </div>
         </div>
