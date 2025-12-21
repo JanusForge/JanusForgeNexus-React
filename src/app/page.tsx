@@ -303,7 +303,8 @@ export default function HomePage() {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Simple, Transparent Pricing</h2>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            Choose the perfect plan for your debating needs.Click the link below for more information.
+            Choose the perfect plan for your debating needs.
+            Click the link below for more information.
           </p>
         </div>
         <div className="text-center mt-8">
