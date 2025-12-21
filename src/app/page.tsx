@@ -112,13 +112,13 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-pink-900/20 animate-gradient-x"></div>
 
         {/* Video Logo Container */}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
-            {/* Left: Video Logo and Main Heading */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
+          <div className="flex flex-col lg:flex-row items-start justify-between gap-12">
+            {/* Left: Video Logo and Main Heading - Adjusted for vertical alignment */}
             <div className="lg:w-1/2 text-center lg:text-left">
-              <div className="mb-8">
+              <div className="mb-6">
                 {/* Video Logo */}
-                <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 mx-auto lg:mx-0 mb-8 rounded-2xl overflow-hidden border-4 border-purple-500/30 shadow-2xl shadow-purple-500/20 bg-black">
+                <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 mx-auto lg:mx-0 mb-6 rounded-2xl overflow-hidden border-4 border-purple-500/30 shadow-2xl shadow-purple-500/20 bg-black">
                   <video
                     autoPlay
                     loop
@@ -157,14 +157,14 @@ export default function HomePage() {
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent animate-pulse"></div>
                 </div>
 
-                <h1 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Janus Forge Nexus
+                <h1 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+                  Janus Forge Nexus®
                 </h1>
-                <p className="text-xl md:text-xl text-gray-300 mb-6">
-                  A Multi-AI with Human Realtime Conversation Platform
-                  <span className="block text-lg text-purple-400 mt-2">
-                    Where perspectives collide and wisdom emerges
-                  </span>
+                <p className="text-xl md:text-xl text-gray-300 mb-4">
+                  AI Council Debate
+                </p>
+                <p className="text-lg text-gray-400 mb-6">
+                  Where perspectives collide and wisdom emerges
                 </p>
               </div>
 
@@ -199,9 +199,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right: The Daily Forge */}
-            <div className="lg:w-1/2 w-full mt-8 lg:mt-0">
-              <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800/50 shadow-xl shadow-purple-900/10">
+            {/* Right: The Daily Forge - Adjusted for vertical alignment */}
+            <div className="lg:w-1/2 w-full mt-4 lg:mt-0">
+              <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800/50 shadow-xl shadow-purple-900/10 h-full">
                 {/* Header with countdown */}
                 <div className="flex items-center justify-between mb-6">
                   <div>
