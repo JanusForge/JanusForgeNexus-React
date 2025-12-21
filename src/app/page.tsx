@@ -101,6 +101,10 @@ export default function HomePage() {
     }
   };
 
+  const handleViewPricing = () => {
+    router.push('/pricing');
+  };
+
   const popularTiers = Object.entries(TIER_CONFIGS)
     .filter(([key]) => ['basic', 'pro', 'enterprise'].includes(key));
 
@@ -175,12 +179,12 @@ export default function HomePage() {
                 >
                   {isAuthenticated ? 'Start New Debate' : 'Get Started Free'}
                 </button>
-                <Link
-                  href="/pricing"
+                <button
+                  onClick={handleViewPricing}
                   className="px-8 py-4 bg-gray-800/50 hover:bg-gray-800 rounded-xl text-lg font-medium border border-gray-700/50 hover:border-gray-600 transition-all"
                 >
                   View Pricing
-                </Link>
+                </button>
               </div>
 
               <div className="mt-8 flex items-center justify-center lg:justify-start space-x-6 text-gray-400">
@@ -234,15 +238,62 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Tier-Based Access Preview */}
+                {/* Tier-Based Access Preview - Updated based on janusforge.ai/pricing */}
                 <div className="mb-6 pt-4 border-t border-gray-800/30">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-gray-400">Tier-Based AI Access:</span>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium text-gray-300">Tier-Based AI Access</span>
+                    <button 
+                      onClick={handleViewPricing}
+                      className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                    >
+                      Compare plans
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs border border-green-500/30">Basic: GPT-4</span>
-                    <span className="px-2 py-1 bg-purple-500/10 text-purple-400 rounded text-xs border border-purple-500/30">Pro: GPT-4 + Claude</span>
-                    <span className="px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-xs border border-amber-500/30">Enterprise: Full Suite</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {/* Basic Tier */}
+                    <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700/50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-green-400">Basic</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-300">• GPT-4 Access</p>
+                        <p className="text-xs text-gray-300">• 10 Free Tokens</p>
+                        <p className="text-xs text-gray-400">+ Additional token packs</p>
+                      </div>
+                    </div>
+
+                    {/* Pro Tier */}
+                    <div className="bg-gray-800/30 rounded-lg p-3 border border-purple-500/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-purple-400">Pro</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-300">• GPT-4 + Claude</p>
+                        <p className="text-xs text-gray-300">• 100 Tokens/Month</p>
+                        <p className="text-xs text-gray-300">• Advanced Analytics</p>
+                      </div>
+                    </div>
+
+                    {/* Enterprise Tier */}
+                    <div className="bg-gray-800/30 rounded-lg p-3 border border-amber-500/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-amber-400">Enterprise</span>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-gray-300">• Full AI Suite</p>
+                        <p className="text-xs text-gray-300">• Custom Token Package</p>
+                        <p className="text-xs text-gray-300">• White-label Options</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500 text-center">
+                    Tokens used for AI interactions • <Link href="/pricing" className="text-blue-400 hover:text-blue-300">See token pricing</Link>
                   </div>
                 </div>
 
@@ -365,9 +416,8 @@ export default function HomePage() {
                     <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`}></span>
                     <span>{isLive ? 'Live debate in progress' : 'Debate starting soon'}</span>
                     <span className="ml-auto text-gray-600">
-                      {user ? `${user.tokens_remaining + user.purchased_tokens} tokens available` : '50 free tokens on signup'}
-                    </span>
-                  </div>
+                      {user ? `${user.tokens_remaining + user.purchased_tokens} tokens available` : '10 free tokens on signup'}
+                    </div>
                 </div>
               </div>
             </div>
