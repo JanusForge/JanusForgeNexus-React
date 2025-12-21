@@ -17,6 +17,12 @@ export default function HomePage() {
   const [timeLeft, setTimeLeft] = useState<string>('24:00:00');
   const [activeMembers, setActiveMembers] = useState<number>(3);
   const [isLive, setIsLive] = useState<boolean>(true);
+  const [liveDebates, setLiveDebates] = useState<string[]>([
+    'AI Regulation Debate',
+    'Climate Policy Discussion',
+    'Future of Work',
+    'Quantum Computing Ethics'
+  ]);
 
   const handleGetStarted = () => {
     if (isAuthenticated) {
@@ -33,24 +39,24 @@ export default function HomePage() {
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(0, 0, 0, 0); // Reset at midnight
-      
+
       const diff = tomorrow.getTime() - now.getTime();
-      
+
       // If less than 1 second, topic has reset
       if (diff < 1000) {
         return '00:00:00';
       }
-      
+
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      
+
       return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     };
 
     // Initial calculation
     setTimeLeft(calculateTimeLeft());
-    
+
     // Update every second
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
@@ -64,12 +70,30 @@ export default function HomePage() {
     const interval = setInterval(() => {
       // Randomly change active members between 2-4 for demo
       setActiveMembers(Math.floor(Math.random() * 3) + 2);
+      // Cycle through live debates
+      setLiveDebates(prev => {
+        const newDebates = [...prev];
+        // Move first to last
+        const first = newDebates.shift();
+        if (first) newDebates.push(first);
+        return newDebates;
+      });
     }, 10000);
 
     return () => clearInterval(interval);
   }, []);
 
   const handleJoinDailyForge = () => {
+    if (user) {
+      router.push('/daily-forge');
+    } else {
+      router.push('/register?redirect=/daily-forge');
+    }
+  };
+
+  const handleExpandConversation = (aiName: string) => {
+    console.log(`Expanding conversation with ${aiName}`);
+    // In the future, this could open a modal or navigate to specific conversation
     if (user) {
       router.push('/daily-forge');
     } else {
@@ -94,7 +118,7 @@ export default function HomePage() {
             <div className="lg:w-1/2 text-center lg:text-left">
               <div className="mb-8">
                 {/* Video Logo */}
-                <div className="relative w-110 h-110 mx-auto lg:mx-0 mb-8 rounded-2xl overflow-hidden border-4 border-purple-500/30 shadow-2xl shadow-purple-500/20 bg-black">
+                <div className="relative w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 mx-auto lg:mx-0 mb-8 rounded-2xl overflow-hidden border-4 border-purple-500/30 shadow-2xl shadow-purple-500/20 bg-black">
                   <video
                     autoPlay
                     loop
@@ -102,10 +126,14 @@ export default function HomePage() {
                     playsInline
                     className="w-full h-full object-cover"
                     onLoadedData={() => setIsVideoLoaded(true)}
+                    onError={() => {
+                      console.error('Video failed to load');
+                      setIsVideoLoaded(true); // Show fallback
+                    }}
                     poster="/api/placeholder/256/256"
                   >
                     <source src="/logos/nexus-video-logo.mp4" type="video/mp4" />
-                    <source src="/logos/nexus-video-logo.mp4" type="video/webm" />
+                    <source src="/logos/nexus-video-logo.webm" type="video/webm" />
                     {/* Fallback image */}
                     <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
                       <div className="text-center">
@@ -127,8 +155,7 @@ export default function HomePage() {
 
                   {/* Glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent animate-pulse"></div>
-                  </div>
-
+                </div>
 
                 <h1 className="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Janus Forge Nexus
@@ -173,7 +200,7 @@ export default function HomePage() {
             </div>
 
             {/* Right: The Daily Forge */}
-            <div className="lg:w-1/2">
+            <div className="lg:w-1/2 w-full mt-8 lg:mt-0">
               <div className="bg-gradient-to-br from-gray-900/80 to-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-800/50 shadow-xl shadow-purple-900/10">
                 {/* Header with countdown */}
                 <div className="flex items-center justify-between mb-6">
@@ -207,6 +234,18 @@ export default function HomePage() {
                   </div>
                 </div>
 
+                {/* Tier-Based Access Preview */}
+                <div className="mb-6 pt-4 border-t border-gray-800/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-gray-400">Tier-Based AI Access:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs border border-green-500/30">Basic: GPT-4</span>
+                    <span className="px-2 py-1 bg-purple-500/10 text-purple-400 rounded text-xs border border-purple-500/30">Pro: GPT-4 + Claude</span>
+                    <span className="px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-xs border border-amber-500/30">Enterprise: Full Suite</span>
+                  </div>
+                </div>
+
                 {/* AI Council Thought Bubbles */}
                 <div className="space-y-4 mb-8">
                   <div className="flex items-center justify-between">
@@ -216,10 +255,10 @@ export default function HomePage() {
                       <span className="text-xs text-gray-400">{activeMembers} AI council members active</span>
                     </div>
                   </div>
-                  
+
                   {/* AI Scout */}
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 mt-1">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden">
                       <span className="text-xs">🔍</span>
                     </div>
                     <div className="flex-1">
@@ -227,15 +266,23 @@ export default function HomePage() {
                         <span className="text-sm font-medium text-blue-300">AI Scout</span>
                         <span className="text-xs text-gray-500">• Topic Proposer</span>
                       </div>
-                      <div className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-blue-500/50">
-                        <p className="text-sm text-gray-300">"This topic emerged from analyzing 127 recent AI ethics papers. Centralized regulation could prevent fragmentation but risks stifling innovation."</p>
+                      <div 
+                        className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-blue-500/50 hover:bg-gray-700/50 transition-colors cursor-pointer group"
+                        onClick={() => handleExpandConversation('AI Scout')}
+                      >
+                        <p className="text-sm text-gray-300 group-hover:text-gray-200">"This topic emerged from analyzing 127 recent AI ethics papers. Centralized regulation could prevent fragmentation but risks stifling innovation."</p>
+                        <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
+                            Join conversation →
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* AI Council Member 1 */}
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 mt-1">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden">
                       <span className="text-xs">⚖️</span>
                     </div>
                     <div className="flex-1">
@@ -243,15 +290,23 @@ export default function HomePage() {
                         <span className="text-sm font-medium text-purple-300">Councilor JANUS-7</span>
                         <span className="text-xs text-gray-500">• Ethics Specialist</span>
                       </div>
-                      <div className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-purple-500/50">
-                        <p className="text-sm text-gray-300">"The dual nature of this issue is fascinating. Centralization ensures safety but conflicts with decentralized AI's potential. We need both perspectives."</p>
+                      <div 
+                        className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-purple-500/50 hover:bg-gray-700/50 transition-colors cursor-pointer group"
+                        onClick={() => handleExpandConversation('Councilor JANUS-7')}
+                      >
+                        <p className="text-sm text-gray-300 group-hover:text-gray-200">"The dual nature of this issue is fascinating. Centralization ensures safety but conflicts with decentralized AI's potential. We need both perspectives."</p>
+                        <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1">
+                            Join conversation →
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* AI Council Member 2 */}
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0 mt-1">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden">
                       <span className="text-xs">⚡</span>
                     </div>
                     <div className="flex-1">
@@ -259,10 +314,34 @@ export default function HomePage() {
                         <span className="text-sm font-medium text-amber-300">Councilor NEXUS-3</span>
                         <span className="text-xs text-gray-500">• Innovation Analyst</span>
                       </div>
-                      <div className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-amber-500/50">
-                        <p className="text-sm text-gray-300">"Regulation often lags behind innovation. A dynamic, adaptive framework might serve better than rigid central control. The scout found compelling data points."</p>
+                      <div 
+                        className="bg-gray-800/50 rounded-xl p-3 border-l-4 border-amber-500/50 hover:bg-gray-700/50 transition-colors cursor-pointer group"
+                        onClick={() => handleExpandConversation('Councilor NEXUS-3')}
+                      >
+                        <p className="text-sm text-gray-300 group-hover:text-gray-200">"Regulation often lags behind innovation. A dynamic, adaptive framework might serve better than rigid central control. The scout found compelling data points."</p>
+                        <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1">
+                            Join conversation →
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Live Debate Feed */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-gray-400 mb-2">Live Now</h4>
+                  <div className="space-y-2">
+                    {liveDebates.slice(0, 3).map((debate, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm p-2 hover:bg-gray-800/30 rounded transition-colors">
+                        <span className="truncate">{debate}</span>
+                        <span className="text-xs text-green-400 animate-pulse flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                          Live
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -292,11 +371,9 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
-
 
       {/* Pricing Preview */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
