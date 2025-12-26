@@ -128,6 +128,28 @@ class ApiClient {
     });
   }
 
+  async likeConversation(id: string): Promise<ApiResponse<{
+    id: string;
+    likes: number;
+  }>> {
+    return this.request(`/api/conversations/${id}/like`, {
+      method: 'POST',
+    });
+  }
+
+  async replyToConversation(id: string, content: string): Promise<ApiResponse<{
+    id: string;
+    content: string;
+    parent_id: string;
+    user_id: string;
+    created_at: string;
+  }>> {
+    return this.request(`/api/conversations/${id}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
   // Daily Forge
   async getDailyForgeTopic(): Promise<ApiResponse<{
     id: string;
@@ -176,6 +198,8 @@ export const register = (email: string, password: string, name: string) => apiCl
 export const getCurrentUser = () => apiClient.getCurrentUser();
 export const getConversations = (page?: number, limit?: number) => apiClient.getConversations(page, limit);
 export const createConversation = (content: string, model?: string) => apiClient.createConversation(content, model);
+export const likeConversation = (id: string) => apiClient.likeConversation(id);
+export const replyToConversation = (id: string, content: string) => apiClient.replyToConversation(id, content);
 export const fetchDailyForgeTopic = () => apiClient.getDailyForgeTopic();
 export const submitDailyForgeVote = (topicId: string, positionId: string) => apiClient.submitDailyForgeVote(topicId, positionId);
 export const getTokenBalance = () => apiClient.getTokenBalance();

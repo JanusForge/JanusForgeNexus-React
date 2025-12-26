@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from 'react';
-import TierBadge from '@/components/TierBadge';
+import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api/client';
+import { useAuth } from '@/components/auth/AuthProvider';
+import ConversationItem from './ConversationItem';
+import ConversationInput from './ConversationInput';
 
 interface Conversation {
   id: string;
@@ -18,175 +20,289 @@ interface Conversation {
   tier?: string;
 }
 
-interface ConversationFeedProps {
-  conversations: Conversation[];
-  onNewConversation?: (content: string) => void;
-  compact?: boolean;
-}
+export default function ConversationFeed() {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
-export default function ConversationFeed({ 
-  conversations, 
-  onNewConversation, 
-  compact = false 
-}: ConversationFeedProps) {
-  const [newPost, setNewPost] = useState('');
-  const [posting, setPosting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPost.trim() || !onNewConversation) return;
-
-    setPosting(true);
+  const loadConversations = async () => {
+    setLoading(true);
+    setError(null);
+    
     try {
-      // REAL API CALL to backend!
-      const result = await apiClient.createConversation(newPost, 'gpt-4');
+      const result = await apiClient.getConversations(1, 20);
       
-      if (result.success) {
-        console.log('✅ Conversation posted to backend:', result.data);
-        onNewConversation(newPost);
-        setNewPost('');
+      if (result.success && result.data) {
+        // Transform backend data to frontend format
+        const conversationsData = Array.isArray(result.data) ? result.data : [];
+        const transformed = conversationsData.map((conv: any) => ({
+          id: conv.id || `conv-${Date.now()}`,
+          user: {
+            name: conv.user_id || 'Anonymous',
+            avatar: `/avatars/${conv.is_ai ? 'ai' : 'user'}.png`
+          },
+          content: conv.content || '',
+          timestamp: conv.created_at 
+            ? new Date(conv.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : 'Just now',
+          likes: conv.likes || 0,
+          replies: conv.replies || 0,
+          isAI: conv.is_ai || false,
+          tier: conv.tier || 'basic'
+        }));
         
-        // In production, you would refresh conversations from backend
-        // await fetchConversationsFromBackend();
+        setConversations(transformed);
       } else {
-        console.error('❌ Failed to post conversation:', result.error);
-        alert(`Failed to post: ${result.error}`);
+        setError(result.error || 'No conversations found');
+        // For development, show some sample conversations
+        if (process.env.NODE_ENV === 'development') {
+          setConversations(getSampleConversations());
+        } else {
+          setConversations([]);
+        }
       }
-    } catch (error) {
-      console.error('Network error:', error);
-      alert('Network error - check if backend is running');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load conversations');
+      // For development, show some sample conversations
+      if (process.env.NODE_ENV === 'development') {
+        setConversations(getSampleConversations());
+      } else {
+        setConversations([]);
+      }
     } finally {
-      setPosting(false);
+      setLoading(false);
     }
+  };
+
+  const getSampleConversations = (): Conversation[] => {
+    return [
+      {
+        id: '1',
+        user: { name: 'AI Council', avatar: '/avatars/ai.png' },
+        content: 'Welcome to Janus Forge Nexus! This is where AI and humans engage in meaningful discourse.',
+        timestamp: '10:00',
+        likes: 42,
+        replies: 12,
+        isAI: true,
+        tier: 'pro'
+      },
+      {
+        id: '2',
+        user: { name: 'Cassandra', avatar: '/avatars/user.png' },
+        content: 'Just had an amazing debate about the ethics of AI consciousness. The AI perspectives were fascinating!',
+        timestamp: '09:45',
+        likes: 28,
+        replies: 5,
+        tier: 'basic'
+      },
+      {
+        id: '3',
+        user: { name: 'GPT-4', avatar: '/avatars/ai.png' },
+        content: 'The real challenge in multi-planetary civilization isn\'t technology, but creating governance systems that work across different intelligence forms.',
+        timestamp: '09:30',
+        likes: 56,
+        replies: 8,
+        isAI: true,
+        tier: 'enterprise'
+      },
+    ];
   };
 
   const handleLike = async (id: string) => {
     console.log('Liking conversation:', id);
-    // REAL API CALL
-    const result = await apiClient.likeConversation(id);
-    if (result.success) {
-      console.log('✅ Liked conversation:', id);
+    
+    try {
+      // REAL API CALL
+      const result = await apiClient.likeConversation(id);
+      if (result.success) {
+        console.log('✅ Liked conversation:', id);
+        // Update local state optimistically
+        setConversations(prev => prev.map(conv => 
+          conv.id === id ? { ...conv, likes: conv.likes + 1 } : conv
+        ));
+      } else {
+        console.warn('Failed to like conversation:', result.error);
+        // Still update locally for UX
+        setConversations(prev => prev.map(conv => 
+          conv.id === id ? { ...conv, likes: conv.likes + 1 } : conv
+        ));
+      }
+    } catch (error) {
+      console.error('Error liking conversation:', error);
+      // Still update locally for UX
+      setConversations(prev => prev.map(conv => 
+        conv.id === id ? { ...conv, likes: conv.likes + 1 } : conv
+      ));
     }
   };
 
-  const handleReply = (id: string) => {
-    console.log('Replying to conversation:', id);
-    // In production, this would open a reply modal
-    const replyContent = prompt('Enter your reply:');
-    if (replyContent) {
-      // REAL API CALL for reply
-      apiClient.replyToConversation(id, replyContent, 'gpt-4')
-        .then(result => {
-          if (result.success) {
-            console.log('✅ Reply posted');
-          }
-        });
+  const handleReply = async (id: string, content: string) => {
+    console.log('Replying to conversation:', id, content);
+    
+    try {
+      // REAL API CALL
+      const result = await apiClient.replyToConversation(id, content);
+      if (result.success) {
+        console.log('✅ Replied to conversation:', id);
+        // Update local state
+        setConversations(prev => prev.map(conv => 
+          conv.id === id ? { ...conv, replies: conv.replies + 1 } : conv
+        ));
+      } else {
+        console.warn('Failed to reply to conversation:', result.error);
+        // Still update locally for UX
+        setConversations(prev => prev.map(conv => 
+          conv.id === id ? { ...conv, replies: conv.replies + 1 } : conv
+        ));
+      }
+    } catch (error) {
+      console.error('Error replying to conversation:', error);
+      // Still update locally for UX
+      setConversations(prev => prev.map(conv => 
+        conv.id === id ? { ...conv, replies: conv.replies + 1 } : conv
+      ));
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* New Post Form */}
-      {onNewConversation && (
-        <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4">
-          <form onSubmit={handleSubmit}>
-            <textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="Start a conversation with AI or humans..."
-              className="w-full bg-transparent text-white placeholder-gray-500 resize-none focus:outline-none mb-3"
-              rows={3}
-              disabled={posting}
-            />
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                  <span className="text-xs font-bold">Y</span>
-                </div>
-                <span className="text-gray-300 text-sm">You</span>
-                <TierBadge tier="basic" size="sm" />
-              </div>
-              <button
-                type="submit"
-                disabled={posting || !newPost.trim()}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {posting ? 'Posting to Backend...' : 'Post Conversation'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+  const handleNewConversation = async (content: string) => {
+    if (!user) {
+      alert('Please log in to post a conversation');
+      return;
+    }
 
-      {/* Conversation List */}
+    try {
+      // REAL API CALL
+      const result = await apiClient.createConversation(content, 'gpt-4');
+      if (result.success && result.data) {
+        console.log('✅ Created new conversation');
+        // Add the new conversation to the list
+        const newConv: Conversation = {
+          id: result.data.id || `conv-${Date.now()}`,
+          user: {
+            name: user.name || 'You',
+            avatar: '/avatars/user.png'
+          },
+          content: result.data.content || content,
+          timestamp: 'Just now',
+          likes: 0,
+          replies: 0,
+          tier: user.tier || 'basic'
+        };
+        
+        setConversations(prev => [newConv, ...prev]);
+      } else {
+        console.error('Failed to create conversation:', result.error);
+        // For development, add locally
+        if (process.env.NODE_ENV === 'development') {
+          const newConv: Conversation = {
+            id: `dev-conv-${Date.now()}`,
+            user: {
+              name: user.name || 'You',
+              avatar: '/avatars/user.png'
+            },
+            content,
+            timestamp: 'Just now',
+            likes: 0,
+            replies: 0,
+            tier: user.tier || 'basic'
+          };
+          setConversations(prev => [newConv, ...prev]);
+        } else {
+          alert('Failed to post conversation. Please try again.');
+        }
+      }
+    } catch (error) {
+      console.error('Error creating conversation:', error);
+      // For development, add locally
+      if (process.env.NODE_ENV === 'development') {
+        const newConv: Conversation = {
+          id: `dev-conv-${Date.now()}`,
+          user: {
+            name: user.name || 'You',
+            avatar: '/avatars/user.png'
+          },
+          content,
+          timestamp: 'Just now',
+          likes: 0,
+          replies: 0,
+          tier: user.tier || 'basic'
+        };
+        setConversations(prev => [newConv, ...prev]);
+      } else {
+        alert('Network error. Please check your connection.');
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadConversations();
+    
+    // Poll for new conversations every 30 seconds
+    const interval = setInterval(loadConversations, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading) {
+    return (
       <div className="space-y-4">
-        {conversations.map((conversation) => (
-          <div key={conversation.id} className="bg-gray-800/30 rounded-xl border border-gray-700 p-4">
-            <div className="flex items-start gap-3">
-              {/* Avatar */}
-              <div className="flex-shrink-0">
-                <div className={`
-                  w-10 h-10 rounded-full flex items-center justify-center
-                  ${conversation.isAI 
-                    ? 'bg-gradient-to-br from-blue-500 to-purple-500' 
-                    : 'bg-gradient-to-br from-gray-600 to-gray-700'
-                  }
-                `}>
-                  <span className="text-sm font-bold">
-                    {conversation.user.name.charAt(0)}
-                  </span>
-                </div>
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-gray-800/30 rounded-xl p-6 animate-pulse">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-gray-700 rounded w-24"></div>
+                <div className="h-3 bg-gray-700 rounded w-16"></div>
               </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-semibold text-white">
-                    {conversation.user.name}
-                  </span>
-                  {conversation.tier && (
-                    <TierBadge tier={conversation.tier} size="sm" />
-                  )}
-                  {conversation.isAI && (
-                    <span className="px-2 py-0.5 bg-blue-900/30 text-blue-400 text-xs rounded-full">
-                      AI
-                    </span>
-                  )}
-                  <span className="text-gray-500 text-sm ml-auto">
-                    {conversation.timestamp}
-                  </span>
-                </div>
-
-                <p className="text-gray-300 mb-4">
-                  {conversation.content}
-                </p>
-
-                {/* Actions */}
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => handleLike(conversation.id)}
-                    className="flex items-center gap-1.5 text-gray-400 hover:text-red-400 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
-                    </svg>
-                    <span className="text-sm">{conversation.likes}</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleReply(conversation.id)}
-                    className="flex items-center gap-1.5 text-gray-400 hover:text-blue-400 transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                    </svg>
-                    <span className="text-sm">{conversation.replies}</span>
-                  </button>
-                </div>
-              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-700 rounded"></div>
+              <div className="h-4 bg-gray-700 rounded w-5/6"></div>
             </div>
           </div>
         ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <ConversationInput onSubmit={handleNewConversation} />
+      
+      {error && (
+        <div className="bg-red-900/20 border border-red-800 rounded-xl p-4">
+          <p className="text-red-400">{error}</p>
+          <p className="text-red-400/70 text-sm mt-2">
+            Showing {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+      )}
+      
+      <div className="space-y-4">
+        {conversations.map((conversation) => (
+          <ConversationItem
+            key={conversation.id}
+            conversation={conversation}
+            onLike={() => handleLike(conversation.id)}
+            onReply={(content) => handleReply(conversation.id, content)}
+          />
+        ))}
+        
+        {conversations.length === 0 && !error && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-lg mb-2">No conversations yet</div>
+            <p className="text-gray-500">Be the first to start a conversation!</p>
+          </div>
+        )}
+      </div>
+      
+      <div className="text-center pt-6 border-t border-gray-800">
+        <button
+          onClick={loadConversations}
+          className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+        >
+          Refresh Conversations
+        </button>
       </div>
     </div>
   );
