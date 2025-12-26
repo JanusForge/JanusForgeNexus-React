@@ -8,6 +8,7 @@ interface User {
   name: string;
   tier: 'free' | 'basic' | 'pro' | 'enterprise';
   tokens: number;
+  isAdmin?: boolean;  // Added isAdmin as optional property
 }
 
 interface AuthContextType {
@@ -43,7 +44,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const storedUser = localStorage.getItem('janus_user');
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Add isAdmin based on email (for demo purposes)
+        const userWithAdmin = {
+          ...parsedUser,
+          isAdmin: parsedUser.email?.includes('admin') || parsedUser.email === 'admin@janusforge.ai'
+        };
+        setUser(userWithAdmin);
       } catch (error) {
         console.error('Error parsing stored user:', error);
         localStorage.removeItem('janus_user');
@@ -53,36 +60,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Mock login for now
     setIsLoading(true);
     try {
+      // Mock login - in production, this would call your backend
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const mockUser: User = {
-        id: 'mock-user-1',
+        id: '1',
         email,
         name: email.split('@')[0],
         tier: 'pro',
-        tokens: 1000
+        tokens: 1000,
+        isAdmin: email.includes('admin') || email === 'admin@janusforge.ai'
       };
+      
       setUser(mockUser);
       localStorage.setItem('janus_user', JSON.stringify(mockUser));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (email: string, name: string, password: string) => {
-    // Mock registration for now
-    setIsLoading(true);
-    try {
-      const mockUser: User = {
-        id: 'mock-user-' + Date.now(),
-        email,
-        name,
-        tier: 'free',
-        tokens: 100
-      };
-      setUser(mockUser);
-      localStorage.setItem('janus_user', JSON.stringify(mockUser));
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -91,6 +87,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('janus_user');
+  };
+
+  const register = async (email: string, name: string, password: string) => {
+    setIsLoading(true);
+    try {
+      // Mock registration
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const mockUser: User = {
+        id: '1',
+        email,
+        name,
+        tier: 'free',
+        tokens: 100,
+        isAdmin: email.includes('admin') || email === 'admin@janusforge.ai'
+      };
+      
+      setUser(mockUser);
+      localStorage.setItem('janus_user', JSON.stringify(mockUser));
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const value: AuthContextType = {

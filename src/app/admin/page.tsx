@@ -3,7 +3,6 @@
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { TIER_CONFIGS, TOKEN_PACKAGES } from '@/config/tiers';
 
 // Admin dashboard needs to be dynamic as it shows live data
 export const dynamic = 'force-dynamic';
@@ -50,105 +49,69 @@ export default function AdminDashboard() {
   // Calculate stats
   const totalUsers = mockUsers.length;
   const totalRevenue = mockTokenPurchases.reduce((sum, purchase) => sum + purchase.amount, 0);
-  const averageTokensUsed = mockUsers.reduce((sum, user) => sum + user.tokens_used, 0) / totalUsers;
-
-  const tierDistribution = mockUsers.reduce((acc, user) => {
-    acc[user.tier] = (acc[user.tier] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const activeUsers = mockUsers.filter(u => u.tokens_used > 0).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-              <p className="text-gray-400">
-                Manage users, monitor revenue, and configure system settings
-              </p>
-            </div>
-            <div className="px-4 py-2 bg-red-500/20 text-red-300 rounded-full text-sm">
-              Administrator Mode
-            </div>
-          </div>
-        </div>
+      <div className="container mx-auto">
+        <header className="mb-10">
+          <h1 className="text-4xl font-bold mb-4">Admin Dashboard</h1>
+          <p className="text-gray-400">Welcome back, {user?.name || 'Admin'}</p>
+        </header>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-            <div className="text-gray-400 text-sm mb-2">Total Users</div>
-            <div className="text-3xl font-bold text-white">{totalUsers}</div>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            <h3 className="text-lg font-semibold mb-2">Total Users</h3>
+            <p className="text-3xl font-bold">{totalUsers}</p>
+            <p className="text-gray-400 text-sm">Registered users</p>
           </div>
-          
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-            <div className="text-gray-400 text-sm mb-2">Total Revenue</div>
-            <div className="text-3xl font-bold text-green-400">${totalRevenue.toFixed(2)}</div>
+          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            <h3 className="text-lg font-semibold mb-2">Active Users</h3>
+            <p className="text-3xl font-bold">{activeUsers}</p>
+            <p className="text-gray-400 text-sm">Used tokens this month</p>
           </div>
-          
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-            <div className="text-gray-400 text-sm mb-2">Avg Tokens Used</div>
-            <div className="text-3xl font-bold text-blue-400">{averageTokensUsed.toFixed(0)}</div>
-          </div>
-          
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-            <div className="text-gray-400 text-sm mb-2">Active Today</div>
-            <div className="text-3xl font-bold text-purple-400">{Math.floor(totalUsers * 0.3)}</div>
+          <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+            <h3 className="text-lg font-semibold mb-2">Total Revenue</h3>
+            <p className="text-3xl font-bold">${totalRevenue.toFixed(2)}</p>
+            <p className="text-gray-400 text-sm">Lifetime revenue</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* User Management */}
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">User Management</h2>
-              <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-sm">
-                Add User
-              </button>
+          {/* Users Table */}
+          <div className="bg-gray-800/30 rounded-xl border border-gray-700 overflow-hidden">
+            <div className="p-6 border-b border-gray-700">
+              <h2 className="text-xl font-semibold">Recent Users</h2>
             </div>
-            
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-800/50">
-                    <th className="text-left py-3 px-2 text-gray-400 text-sm">User</th>
-                    <th className="text-left py-3 px-2 text-gray-400 text-sm">Tier</th>
-                    <th className="text-left py-3 px-2 text-gray-400 text-sm">Tokens</th>
-                    <th className="text-left py-3 px-2 text-gray-400 text-sm">Actions</th>
+                <thead className="bg-gray-800/50">
+                  <tr>
+                    <th className="p-4 text-left">Email</th>
+                    <th className="p-4 text-left">Tier</th>
+                    <th className="p-4 text-left">Tokens</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mockUsers.map((user) => (
-                    <tr key={user.id} className="border-b border-gray-800/30">
-                      <td className="py-3 px-2">
-                        <div className="font-medium">{user.email}</div>
-                        <div className="text-xs text-gray-500">{user.createdAt}</div>
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          user.tier === 'pro' ? 'bg-purple-500/20 text-purple-300' :
-                          user.tier === 'enterprise' ? 'bg-amber-500/20 text-amber-300' :
-                          user.tier === 'basic' ? 'bg-blue-500/20 text-blue-300' :
-                          'bg-gray-500/20 text-gray-300'
+                    <tr key={user.id} className="border-b border-gray-700/50 hover:bg-gray-800/30">
+                      <td className="p-4">{user.email}</td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full text-sm ${
+                          user.tier === 'enterprise' ? 'bg-purple-900/30 text-purple-400' :
+                          user.tier === 'pro' ? 'bg-blue-900/30 text-blue-400' :
+                          user.tier === 'basic' ? 'bg-green-900/30 text-green-400' :
+                          'bg-gray-700 text-gray-300'
                         }`}>
-                          {TIER_CONFIGS[user.tier as keyof typeof TIER_CONFIGS]?.name || user.tier}
+                          {user.tier}
                         </span>
                       </td>
-                      <td className="py-3 px-2">
-                        <div className="text-sm">
-                          <div className="text-gray-300">{user.tokens_remaining} remaining</div>
-                          <div className="text-gray-500 text-xs">{user.tokens_used} used</div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-2">
-                        <div className="flex gap-2">
-                          <button className="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">
-                            Edit
-                          </button>
-                          <button className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded text-xs">
-                            Ban
-                          </button>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <span>{user.tokens_remaining}</span>
+                          <span className="text-gray-500">/</span>
+                          <span>{user.tokens_remaining + user.tokens_used}</span>
                         </div>
                       </td>
                     </tr>
@@ -158,111 +121,50 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="space-y-8">
-            <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-              <h2 className="text-xl font-bold mb-6">Recent Purchases</h2>
-              
-              <div className="space-y-4">
-                {mockTokenPurchases.map((purchase) => (
-                  <div key={purchase.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                    <div>
-                      <div className="font-medium">{purchase.userEmail}</div>
-                      <div className="text-sm text-gray-400">
-                        {TOKEN_PACKAGES.find(p => p.id === purchase.package)?.name || purchase.package}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-green-400 font-bold">${purchase.amount}</div>
-                      <div className="text-xs text-gray-500">{purchase.date}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* Token Purchases */}
+          <div className="bg-gray-800/30 rounded-xl border border-gray-700 overflow-hidden">
+            <div className="p-6 border-b border-gray-700">
+              <h2 className="text-xl font-semibold">Recent Purchases</h2>
             </div>
-
-            <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-              <h2 className="text-xl font-bold mb-6">Tier Distribution</h2>
-              
-              <div className="space-y-4">
-                {Object.entries(tierDistribution).map(([tier, count]) => {
-                  const percentage = (count / totalUsers) * 100;
-                  const tierConfig = TIER_CONFIGS[tier as keyof typeof TIER_CONFIGS];
-                  
-                  return (
-                    <div key={tier} className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-300">{tierConfig?.name || tier}</span>
-                        <span className="text-gray-400">{count} users ({percentage.toFixed(0)}%)</span>
-                      </div>
-                      <div className="h-2 bg-gray-800/50 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full"
-                          style={{ 
-                            width: `${percentage}%`,
-                            background: tierConfig?.color === 'purple' ? 'linear-gradient(to right, #9333ea, #3b82f6)' :
-                                      tierConfig?.color === 'amber' ? 'linear-gradient(to right, #f59e0b, #f97316)' :
-                                      tierConfig?.color === 'blue' ? 'linear-gradient(to right, #3b82f6, #06b6d4)' :
-                                      'linear-gradient(to right, #6b7280, #9ca3af)'
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-800/50">
+                  <tr>
+                    <th className="p-4 text-left">User</th>
+                    <th className="p-4 text-left">Package</th>
+                    <th className="p-4 text-left">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockTokenPurchases.map((purchase) => (
+                    <tr key={purchase.id} className="border-b border-gray-700/50 hover:bg-gray-800/30">
+                      <td className="p-4">{purchase.userEmail}</td>
+                      <td className="p-4">{purchase.package}</td>
+                      <td className="p-4">${purchase.amount.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-          <h2 className="text-xl font-bold mb-6">System Configuration</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Default Free Tokens</label>
-              <input
-                type="number"
-                defaultValue={50}
-                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-3 text-white"
-              />
+        {/* System Status */}
+        <div className="mt-8 bg-gray-800/30 rounded-xl border border-gray-700 p-6">
+          <h2 className="text-xl font-semibold mb-4">System Status</h2>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+              <span>Backend API</span>
+              <span className="px-3 py-1 bg-green-900/30 text-green-400 rounded-full text-sm">Online</span>
             </div>
-            
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Token Expiration (Days)</label>
-              <input
-                type="number"
-                defaultValue={90}
-                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-3 text-white"
-              />
+            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+              <span>Database</span>
+              <span className="px-3 py-1 bg-green-900/30 text-green-400 rounded-full text-sm">Connected</span>
             </div>
-            
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Monthly Reset Date</label>
-              <select className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-3 text-white">
-                <option>1st of each month</option>
-                <option>User signup date</option>
-                <option>Fixed calendar day</option>
-              </select>
+            <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+              <span>AI Services</span>
+              <span className="px-3 py-1 bg-green-900/30 text-green-400 rounded-full text-sm">4/5 Active</span>
             </div>
-            
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">AI Cost Multiplier</label>
-              <input
-                type="number"
-                step="0.01"
-                defaultValue="2.0"
-                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-3 text-white"
-              />
-            </div>
-          </div>
-          
-          <div className="flex gap-3 mt-6">
-            <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg font-medium">
-              Save Changes
-            </button>
-            <button className="px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium">
-              Reset to Defaults
-            </button>
           </div>
         </div>
       </div>
