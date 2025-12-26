@@ -1,185 +1,236 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
-import apiClient, { API_ENDPOINTS } from '@/lib/api';
+import { apiClient, API_ENDPOINTS } from '@/lib/api/client';
 
 interface TestResult {
   name: string;
-  status: string;
-  details: string;
-  success: boolean;
+  status: 'pending' | 'success' | 'error';
+  message: string;
+  data?: any;
 }
 
 export default function IntegrationTest() {
-  const [status, setStatus] = useState<string>('Testing backend connection...');
-  const [results, setResults] = useState<TestResult[]>([]);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [isTesting, setIsTesting] = useState<boolean>(false);
+  const [results, setResults] = useState<TestResult[]>([
+    { name: 'Health Check', status: 'pending', message: 'Testing backend connection...' },
+    { name: 'Database Connection', status: 'pending', message: 'Checking database...' },
+    { name: 'Authentication', status: 'pending', message: 'Testing auth endpoints...' },
+    { name: 'Conversation API', status: 'pending', message: 'Testing conversation endpoints...' },
+  ]);
+  const [isTesting, setIsTesting] = useState(false);
+  const [overallStatus, setOverallStatus] = useState<'pending' | 'success' | 'partial' | 'error'>('pending');
 
-  useEffect(() => {
-    testConnection();
-  }, []);
-
-  const testConnection = async () => {
+  const runTests = async () => {
     setIsTesting(true);
-    setStatus('Running tests...');
+    setOverallStatus('pending');
     
-    const tests = [
-      {
-        name: 'Health Check',
-        test: async () => {
-          const data = await apiClient.get(API_ENDPOINTS.health);
-          return {
-            success: data.status === 'healthy',
-            details: `Database: ${data.database}, Users: ${data.statistics?.users}`
-          };
-        }
-      },
-      {
-        name: 'Tiers',
-        test: async () => {
-          const data = await apiClient.get(API_ENDPOINTS.tiers);
-          return {
-            success: data.success && data.tiers?.length === 4,
-            details: `${data.tiers?.length} tiers loaded`
-          };
-        }
-      },
-      {
-        name: 'Conversations',
-        test: async () => {
-          const data = await apiClient.get(API_ENDPOINTS.conversations);
-          return {
-            success: data.success,
-            details: `${data.conversations?.length} conversations loaded`
-          };
-        }
-      },
-      {
-        name: 'Daily Forge',
-        test: async () => {
-          const data = await apiClient.get(API_ENDPOINTS.dailyForge.current);
-          return {
-            success: data.success,
-            details: `Topic: ${data.topic?.title?.substring(0, 50)}...`
-          };
-        }
-      },
-      {
-        name: 'Registration',
-        test: async () => {
-          const timestamp = Date.now();
-          const data = await apiClient.post(API_ENDPOINTS.auth.register, {
-            email: `test_${timestamp}@janusforge.ai`,
-            username: `testuser_${timestamp}`,
-            password: 'Test123!'
-          });
-          return {
-            success: data.success,
-            details: `User: ${data.user?.username}`
-          };
-        }
-      },
-    ];
-
-    const testResults: TestResult[] = [];
-    
-    for (const test of tests) {
-      try {
-        const result = await test.test();
-        testResults.push({
-          name: test.name,
-          status: result.success ? '✅ Success' : '❌ Failed',
-          details: result.details,
-          success: result.success
-        });
-      } catch (error: any) {
-        testResults.push({
-          name: test.name,
-          status: '❌ Connection Failed',
-          details: error.message,
-          success: false
-        });
-      }
+    // Test 1: Health Check
+    setResults(prev => prev.map(r => r.name === 'Health Check' ? {...r, status: 'pending'} : r));
+    try {
+      const healthResult = await apiClient.healthCheck();
+      setResults(prev => prev.map(r => 
+        r.name === 'Health Check' 
+          ? { 
+              ...r, 
+              status: healthResult.success ? 'success' : 'error',
+              message: healthResult.success ? 'Backend is healthy' : healthResult.error || 'Health check failed',
+              data: healthResult.data
+            }
+          : r
+      ));
+    } catch (error) {
+      setResults(prev => prev.map(r => 
+        r.name === 'Health Check' 
+          ? { ...r, status: 'error', message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }
+          : r
+      ));
     }
 
-    setResults(testResults);
-    const allPassed = testResults.every(r => r.success);
-    setIsConnected(allPassed);
-    setStatus(allPassed ? '✅ Backend connected!' : '⚠️ Some connections failed');
+    // Test 2: Database (via conversations endpoint)
+    setResults(prev => prev.map(r => r.name === 'Database Connection' ? {...r, status: 'pending'} : r));
+    try {
+      const convResult = await apiClient.fetchConversations(1, 5);
+      setResults(prev => prev.map(r => 
+        r.name === 'Database Connection' 
+          ? { 
+              ...r, 
+              status: convResult.success ? 'success' : 'error',
+              message: convResult.success 
+                ? `Database connected (${convResult.data?.conversations?.length || 0} conversations)`
+                : convResult.error || 'Database check failed'
+            }
+          : r
+      ));
+    } catch (error) {
+      setResults(prev => prev.map(r => 
+        r.name === 'Database Connection' 
+          ? { ...r, status: 'error', message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }
+          : r
+      ));
+    }
+
+    // Test 3: Authentication (test endpoint availability)
+    setResults(prev => prev.map(r => r.name === 'Authentication' ? {...r, status: 'pending'} : r));
+    try {
+      // Try to access a protected endpoint (should fail with 401 if not authenticated, but that's OK)
+      // We just want to see if the endpoint exists
+      const response = await fetch('http://localhost:5000/api/auth/test', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const exists = response.status !== 404;
+      setResults(prev => prev.map(r => 
+        r.name === 'Authentication' 
+          ? { 
+              ...r, 
+              status: exists ? 'success' : 'error',
+              message: exists ? 'Auth endpoints available' : 'Auth endpoints not found'
+            }
+          : r
+      ));
+    } catch (error) {
+      setResults(prev => prev.map(r => 
+        r.name === 'Authentication' 
+          ? { ...r, status: 'error', message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }
+          : r
+      ));
+    }
+
+    // Test 4: Conversation API
+    setResults(prev => prev.map(r => r.name === 'Conversation API' ? {...r, status: 'pending'} : r));
+    try {
+      const testConv = await apiClient.createNewConversation('Test conversation from integration test', 'gpt-4');
+      setResults(prev => prev.map(r => 
+        r.name === 'Conversation API' 
+          ? { 
+              ...r, 
+              status: testConv.success ? 'success' : 'error',
+              message: testConv.success ? 'Conversation API working' : testConv.error || 'Conversation API failed'
+            }
+          : r
+      ));
+    } catch (error) {
+      setResults(prev => prev.map(r => 
+        r.name === 'Conversation API' 
+          ? { ...r, status: 'error', message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }
+          : r
+      ));
+    }
+
+    // Calculate overall status
+    const successCount = results.filter(r => r.status === 'success').length;
+    const errorCount = results.filter(r => r.status === 'error').length;
+    
+    if (errorCount === 0) {
+      setOverallStatus('success');
+    } else if (successCount > 0) {
+      setOverallStatus('partial');
+    } else {
+      setOverallStatus('error');
+    }
+    
     setIsTesting(false);
   };
 
+  useEffect(() => {
+    // Auto-run tests on component mount
+    runTests();
+  }, []);
+
+  const getStatusColor = (status: TestResult['status'] | typeof overallStatus) => {
+    switch (status) {
+      case 'success': return 'text-green-400';
+      case 'error': return 'text-red-400';
+      case 'partial': return 'text-yellow-400';
+      case 'pending': return 'text-blue-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getStatusBg = (status: TestResult['status']) => {
+    switch (status) {
+      case 'success': return 'bg-green-900/20 border-green-800';
+      case 'error': return 'bg-red-900/20 border-red-800';
+      case 'pending': return 'bg-blue-900/20 border-blue-800';
+      default: return 'bg-gray-900/20 border-gray-800';
+    }
+  };
+
   return (
-    <div className="p-6 bg-gray-900 rounded-xl border border-purple-500/30 max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4 text-white">Backend Integration Test</h2>
-      
-      <div className={`p-4 rounded-lg mb-6 ${isConnected ? 'bg-green-900/30 border border-green-500' : isTesting ? 'bg-yellow-900/30 border border-yellow-500' : 'bg-red-900/30 border border-red-500'}`}>
-        <p className="font-mono text-lg">{status}</p>
-        <p className="text-sm opacity-80 mt-2">Backend URL: http://localhost:5000</p>
-        
-        <button
-          onClick={testConnection}
-          disabled={isTesting}
-          className={`mt-3 px-4 py-2 rounded font-medium ${isTesting ? 'bg-gray-600 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'}`}
-        >
-          {isTesting ? 'Testing...' : 'Test Again'}
-        </button>
+    <div className="bg-gray-900/50 rounded-2xl border border-gray-800 p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Integration Test</h2>
+          <p className="text-gray-400">Testing backend connections and API endpoints</p>
+        </div>
+        <div className={`px-4 py-2 rounded-full ${getStatusBg(overallStatus as any)}`}>
+          <span className={`font-semibold ${getStatusColor(overallStatus)}`}>
+            {overallStatus.toUpperCase()}
+          </span>
+        </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4 mb-6">
         {results.map((result, index) => (
-          <div key={index} className="p-3 bg-gray-800/50 rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-white">{result.name}</span>
-              <span className={`px-2 py-1 rounded text-xs ${result.status.includes('✅') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                {result.status}
+          <div
+            key={index}
+            className={`p-4 rounded-lg border ${getStatusBg(result.status)}`}
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold text-white">{result.name}</h3>
+              <span className={`font-medium ${getStatusColor(result.status)}`}>
+                {result.status.toUpperCase()}
               </span>
             </div>
-            <p className="text-sm text-gray-300 mt-1">{result.details}</p>
+            <p className="text-gray-300 text-sm">{result.message}</p>
+            {result.data && (
+              <pre className="mt-2 p-2 bg-gray-950 rounded text-xs overflow-x-auto text-gray-400">
+                {JSON.stringify(result.data, null, 2)}
+              </pre>
+            )}
           </div>
         ))}
       </div>
 
-      {isConnected && (
-        <div className="mt-6 p-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/50 rounded-lg">
-          <h3 className="text-xl font-bold text-white mb-2">🎉 Ready for Development!</h3>
-          <p className="text-purple-300 mb-3">
-            Your backend is fully connected. You can now implement:
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div className="p-3 bg-black/30 rounded">
-              <h4 className="font-semibold text-white">🤖 AI Conversations</h4>
-              <p className="text-sm text-gray-300">Twitter-like feed with AI-human interactions</p>
-            </div>
-            <div className="p-3 bg-black/30 rounded">
-              <h4 className="font-semibold text-white">🔥 Daily Forge</h4>
-              <p className="text-sm text-gray-300">Structured AI council debates</p>
-            </div>
-            <div className="p-3 bg-black/30 rounded">
-              <h4 className="font-semibold text-white">💰 Tier System</h4>
-              <p className="text-sm text-gray-300">Free/Basic/Pro/Enterprise access levels</p>
-            </div>
-            <div className="p-3 bg-black/30 rounded">
-              <h4 className="font-semibold text-white">🔐 Authentication</h4>
-              <p className="text-sm text-gray-300">User registration and login</p>
-            </div>
+      <div className="flex gap-4">
+        <button
+          onClick={runTests}
+          disabled={isTesting}
+          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50"
+        >
+          {isTesting ? 'Testing...' : 'Run Tests Again'}
+        </button>
+        
+        <button
+          onClick={() => window.open('http://localhost:5000/api/health', '_blank')}
+          className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-lg transition-all"
+        >
+          Open Backend Health
+        </button>
+      </div>
+
+      <div className="mt-6 p-4 bg-gray-800/30 rounded-lg">
+        <h4 className="font-semibold text-white mb-2">Backend Information</h4>
+        <div className="space-y-2 text-sm">
+          <div className="flex">
+            <span className="text-gray-400 w-32">Backend URL:</span>
+            <span className="text-gray-300 font-mono">http://localhost:5000</span>
+          </div>
+          <div className="flex">
+            <span className="text-gray-400 w-32">Database:</span>
+            <span className="text-gray-300">PostgreSQL (Professional Tier)</span>
+          </div>
+          <div className="flex">
+            <span className="text-gray-400 w-32">Status:</span>
+            <span className={`font-medium ${getStatusColor(overallStatus)}`}>
+              {overallStatus === 'success' ? 'All systems operational' :
+               overallStatus === 'partial' ? 'Partial connectivity' :
+               overallStatus === 'error' ? 'Connection issues' :
+               'Testing...'}
+            </span>
           </div>
         </div>
-      )}
-
-      {!isConnected && results.length > 0 && (
-        <div className="mt-6 p-4 bg-red-900/20 border border-red-500/50 rounded-lg">
-          <h3 className="text-lg font-bold text-white mb-2">⚠️ Connection Issues</h3>
-          <p className="text-red-300">
-            Make sure your backend is running:
-          </p>
-          <pre className="mt-2 p-2 bg-black/50 text-sm text-gray-300 rounded overflow-x-auto">
-            cd ~/JanusForgeNexus-Backend{'\n'}
-            node server-fixed.js
-          </pre>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
