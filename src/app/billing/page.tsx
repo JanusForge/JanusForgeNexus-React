@@ -1,173 +1,150 @@
 "use client";
 
 import { useAuth } from '@/components/auth/AuthProvider';
+import { TIER_CONFIGS, TOKEN_PACKAGES } from '@/config/tiers';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import TokenPurchase from '@/components/Billing/TokenPurchase';
-import TierUpgrade from '@/components/Billing/TierUpgrade';
-import { TIER_CONFIGS } from '@/config/tiers';
-import Link from 'next/link';
-
-// This page needs to be dynamic because it shows user-specific billing data
-export const dynamic = 'force-dynamic';
-export const revalidate = 0; // Never cache
 
 export default function BillingPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/login');
-    }
-  }, [isLoading, isAuthenticated, router]);
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
+    router.push('/login');
     return null;
   }
 
-  const currentTier = user ? TIER_CONFIGS[user.tier] : null;
+  const currentTier = user?.tier || 'free';
+  const tierConfig = TIER_CONFIGS[currentTier];
+
+  const handlePurchase = (pkgId: string) => {
+    // In production, this would redirect to Stripe checkout
+    // For now, show a message about what would happen
+    alert('In production: Redirect to Stripe checkout for payment processing.\n\nAfter payment, tokens would be added to your account via webhook.');
+    setSelectedPackage(pkgId);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Billing & Tokens</h1>
-          <p className="text-gray-400">
-            Manage your subscription and purchase additional tokens
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+      <div className="container mx-auto px-4 py-16">
+        <header className="mb-12 text-center">
+          <h1 className="text-4xl font-bold mb-4">Token Management</h1>
+          <p className="text-gray-400 max-w-2xl mx-auto">
+            Purchase tokens to participate in AI conversations. Each AI response consumes tokens based on model complexity.
           </p>
-        </div>
+        </header>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-            <div className="text-gray-400 text-sm mb-2">Current Plan</div>
-            <div className="text-2xl font-bold text-white mb-1">
-              {currentTier?.name || 'Free'}
-            </div>
-            <div className="text-gray-300">
-              {user?.tier === 'free' ? 'Free forever' : `$${currentTier?.price}/month`}
-            </div>
-          </div>
+        {/* Current Status */}
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="bg-gray-800/30 rounded-2xl border border-gray-700 p-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="text-gray-400 text-sm mb-2">Current Tier</div>
+                <div className={`inline-block px-4 py-2 rounded-full ${tierConfig.bgColor} ${tierConfig.textColor} font-semibold`}>
+                  {tierConfig.name}
+                </div>
+                <div className="mt-3 text-gray-300 text-sm">
+                  {tierConfig.description}
+                </div>
+              </div>
 
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-            <div className="text-gray-400 text-sm mb-2">Tokens Available</div>
-            <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-1">
-              {user ? user.tokens_remaining + user.purchased_tokens : 0}
-            </div>
-            <div className="text-gray-300">
-              {user?.tokens_remaining} monthly + {user?.purchased_tokens} purchased
-            </div>
-          </div>
+              <div className="text-center">
+                <div className="text-gray-400 text-sm mb-2">Tokens Available</div>
+                <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-1">
+                  {user ? (user.tokens_remaining + user.purchased_tokens) : 0}
+                </div>
+                <div className="text-gray-300">
+                  {user?.tokens_remaining || 0} monthly + {user?.purchased_tokens || 0} purchased
+                </div>
+              </div>
 
-          <div className="bg-gray-900/50 rounded-2xl p-6 border border-gray-800/50">
-            <div className="text-gray-400 text-sm mb-2">AI Models Allowed</div>
-            <div className="text-2xl font-bold text-white mb-1">
-              {currentTier?.max_ai_models || 2}
-            </div>
-            <div className="text-gray-300">
-              per debate
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Token Purchase Section */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Purchase Tokens</h2>
-              <Link 
-                href="/pricing" 
-                className="text-sm text-blue-400 hover:text-blue-300"
-              >
-                View all plans →
-              </Link>
-            </div>
-            <TokenPurchase />
-          </div>
-
-          {/* Tier Upgrade Section */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold">Subscription Plans</h2>
-              <div className="text-sm text-gray-400">
-                {user?.tier === 'free' ? 'Start your trial' : 'Change plan'}
+              <div className="text-center">
+                <div className="text-gray-400 text-sm mb-2">Token Usage</div>
+                <div className="text-2xl font-bold text-white mb-1">
+                  {user ? (tierConfig.monthlyTokens - user.tokens_remaining) : 0}
+                </div>
+                <div className="text-gray-300">
+                  used this month
+                </div>
               </div>
             </div>
-            <TierUpgrade />
           </div>
         </div>
 
-        {/* Usage Information */}
-        <div className="mt-8 bg-gray-900/30 rounded-2xl p-6 border border-gray-800/50">
-          <h3 className="text-xl font-bold mb-4">How Tokens Work</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h4 className="font-bold text-white mb-2">Token Usage</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li className="flex items-center gap-2">
-                  <span className="text-blue-400">•</span>
-                  AI response generation
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-blue-400">•</span>
-                  Debate analysis
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-blue-400">•</span>
-                  Summary creation
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-2">Monthly Allocation</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li className="flex items-center gap-2">
-                  <span className="text-green-400">✓</span>
-                  Resets on billing date
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-green-400">✓</span>
-                  Use-it-or-lose-it
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-green-400">✓</span>
-                  Auto-renews monthly
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-2">Purchased Tokens</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-400">•</span>
-                  Expire in 90 days
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-400">•</span>
-                  Used after monthly tokens
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="text-purple-400">•</span>
-                  Stackable packages
-                </li>
-              </ul>
-            </div>
+        {/* Token Packages */}
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-2xl font-bold mb-8 text-center">Purchase Additional Tokens</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {TOKEN_PACKAGES.map((pkg) => (
+              <div
+                key={pkg.id}
+                className={`bg-gray-800/30 rounded-xl border ${selectedPackage === pkg.id ? 'border-blue-500' : 'border-gray-700'} p-6 hover:bg-gray-800/50 transition-all`}
+              >
+                <div className="mb-4">
+                  <h3 className="text-xl font-bold mb-2">{pkg.name}</h3>
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    ${pkg.price}
+                  </div>
+                  <div className="text-gray-400 text-sm mt-1">{pkg.tokens.toLocaleString()} tokens</div>
+                </div>
+
+                <ul className="space-y-2 mb-6">
+                  <li className="flex items-center text-gray-300">
+                    <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    ${(pkg.price / pkg.tokens * 1000).toFixed(2)} per 1K tokens
+                  </li>
+                  <li className="flex items-center text-gray-300">
+                    <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    No expiration
+                  </li>
+                  <li className="flex items-center text-gray-300">
+                    <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Works with all AI models
+                  </li>
+                </ul>
+
+                <button
+                  onClick={() => handlePurchase(pkg.id)}
+                  disabled={selectedPackage === pkg.id}
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg font-semibold transition-all disabled:opacity-50"
+                >
+                  {selectedPackage === pkg.id ? 'Processing...' : 'Purchase'}
+                </button>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Support Section */}
-        <div className="mt-8 text-center text-gray-400 text-sm">
-          Need help with billing? <a href="mailto:support@janusforge.ai" className="text-blue-400 hover:text-blue-300">Contact support</a>
+        {/* Production Note */}
+        <div className="max-w-4xl mx-auto mt-12">
+          <div className="bg-blue-900/20 border border-blue-800 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-blue-400 mb-2">Production Payment Processing</h3>
+            <p className="text-gray-300">
+              In production, this page would integrate with Stripe for secure payment processing. 
+              After successful payment, tokens would be automatically added to your account via webhook.
+            </p>
+            <div className="mt-4 flex items-center gap-2 text-sm text-gray-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>Payment processing would be PCI-compliant and secure</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

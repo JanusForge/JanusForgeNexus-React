@@ -1,14 +1,16 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { apiClient } from '@/lib/api/client';
 
 interface User {
   id: string;
   email: string;
   name: string;
   tier: 'free' | 'basic' | 'pro' | 'enterprise';
-  tokens: number;
-  isAdmin?: boolean;  // Added isAdmin as optional property
+  tokens_remaining: number;
+  purchased_tokens: number;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -18,11 +20,11 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   register: (email: string, name: string, password: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// This is the hook that Header.tsx is trying to use
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -39,22 +41,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check for existing session on load
   useEffect(() => {
-    // Check for stored user
-    const storedUser = localStorage.getItem('janus_user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        // Add isAdmin based on email (for demo purposes)
-        const userWithAdmin = {
-          ...parsedUser,
-          isAdmin: parsedUser.email?.includes('admin') || parsedUser.email === 'admin@janusforge.ai'
-        };
-        setUser(userWithAdmin);
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('janus_user');
-      }
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      // In production, this would validate the token with backend
+      // For now, just clear it since we want real auth
+      localStorage.removeItem('auth_token');
     }
     setIsLoading(false);
   }, []);
@@ -62,20 +55,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock login - in production, this would call your backend
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // REAL BACKEND CALL
+      const result = await apiClient.login(email, password);
       
-      const mockUser: User = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        tier: 'pro',
-        tokens: 1000,
-        isAdmin: email.includes('admin') || email === 'admin@janusforge.ai'
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('janus_user', JSON.stringify(mockUser));
+      if (result.success && result.data?.user) {
+        setUser(result.data.user);
+        if (result.data.token) {
+          localStorage.setItem('auth_token', result.data.token);
+        }
+      } else {
+        throw new Error(result.error || 'Login failed');
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -86,31 +76,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('auth_token');
     localStorage.removeItem('janus_user');
   };
 
   const register = async (email: string, name: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock registration
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // REAL BACKEND CALL
+      const result = await apiClient.register(email, password, name);
       
-      const mockUser: User = {
-        id: '1',
-        email,
-        name,
-        tier: 'free',
-        tokens: 100,
-        isAdmin: email.includes('admin') || email === 'admin@janusforge.ai'
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('janus_user', JSON.stringify(mockUser));
+      if (result.success && result.data?.user) {
+        setUser(result.data.user);
+        if (result.data.token) {
+          localStorage.setItem('auth_token', result.data.token);
+        }
+      } else {
+        throw new Error(result.error || 'Registration failed');
+      }
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshUser = async () => {
+    if (!user) return;
+    
+    try {
+      // REAL BACKEND CALL to refresh user data
+      const result = await apiClient.getCurrentUser();
+      if (result.success && result.data) {
+        setUser(result.data);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
     }
   };
 
@@ -121,6 +123,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     register,
+    refreshUser,
   };
 
   return (

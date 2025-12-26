@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -11,139 +11,109 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/debates';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    const result = await login(email, password);
-    
-    if (result.success) {
-      router.push(redirect);
-    } else {
-      setError(result.error || 'Login failed');
+    try {
+      await login(email, password);
+      router.push('/');
+    } catch (err) {
+      setError('Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
-  // Demo credentials
-  const demoCredentials = [
-    { email: 'free@example.com', password: 'demo123', label: 'Free Tier' },
-    { email: 'basic@example.com', password: 'demo123', label: 'Basic Tier' },
-    { email: 'pro@example.com', password: 'demo123', label: 'Pro Tier' },
-    { email: 'admin-access@janusforge.ai', password: 'admin123', label: 'Admin Access' },
-  ];
-
-  const handleDemoLogin = (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-  };
+  if (isAuthenticated) {
+    router.push('/');
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-xl">JF</span>
+        <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 p-8">
+          <div className="text-center mb-8">
+            <div className="inline-block mb-4">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                <span className="text-2xl font-bold text-white">J</span>
+              </div>
             </div>
-          </Link>
-          <h1 className="text-3xl font-bold mt-4">Welcome back</h1>
-          <p className="text-gray-400 mt-2">Sign in to your JanusForge account</p>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-800/50">
-          <h3 className="font-bold text-white mb-2">Demo Access</h3>
-          <p className="text-gray-400 text-sm mb-3">Try out different user tiers:</p>
-          <div className="space-y-2">
-            {demoCredentials.map((cred, index) => (
-              <button
-                key={index}
-                onClick={() => handleDemoLogin(cred.email, cred.password)}
-                className="w-full text-left p-3 bg-gray-800/30 hover:bg-gray-800/50 rounded-lg text-sm"
-              >
-                <div className="font-medium text-white">{cred.label}</div>
-                <div className="text-gray-400 text-xs mt-1">{cred.email}</div>
-              </button>
-            ))}
+            <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
+            <p className="text-gray-400 mt-2">Sign in to your Janus Forge account</p>
           </div>
-        </div>
 
-        {/* Login Form */}
-        <div className="bg-gray-900/50 rounded-2xl p-8 border border-gray-800/50">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Email address
+              <label className="block text-gray-300 text-sm font-medium mb-2">
+                Email Address
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 placeholder="you@example.com"
                 required
+                disabled={isLoading}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Password
-              </label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-gray-300 text-sm font-medium">
+                  Password
+                </label>
+                <Link href="/forgot-password" className="text-sm text-blue-400 hover:text-blue-300">
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="••••••••"
+                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                placeholder="Enter your password"
                 required
+                disabled={isLoading}
               />
             </div>
-
-            {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
-
-            <div className="text-center text-sm">
-              <Link href="/forgot-password" className="text-blue-400 hover:text-blue-300">
-                Forgot your password?
-              </Link>
-            </div>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-gray-800/50">
-            <p className="text-center text-gray-400 text-sm">
+          <div className="mt-8 pt-8 border-t border-gray-800">
+            <p className="text-gray-400 text-center">
               Don't have an account?{' '}
-              <Link href="/register" className="text-blue-400 hover:text-blue-300 font-medium">
-                Sign up
+              <Link href="/register" className="text-blue-400 hover:text-blue-300 font-semibold">
+                Create account
               </Link>
             </p>
           </div>
-        </div>
 
-        {/* Token Info */}
-        <div className="mt-6 text-center">
-          <p className="text-gray-500 text-sm">
-            New users get 50 free tokens to start debating
-          </p>
+          <div className="mt-6 p-4 bg-gray-800/30 rounded-lg">
+            <p className="text-gray-400 text-sm text-center">
+              This is a production platform. Use your real credentials.
+            </p>
+          </div>
         </div>
       </div>
     </div>
