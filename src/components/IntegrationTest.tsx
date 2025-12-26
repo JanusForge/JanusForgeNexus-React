@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { apiClient, API_ENDPOINTS } from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 
 interface TestResult {
   name: string;
