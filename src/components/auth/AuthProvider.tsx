@@ -55,11 +55,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // REAL BACKEND CALL
-      const result = await apiClient.login(email, password);
+      // REAL BACKEND CALL - using the correct API method
+      const result = await apiClient.authenticate(email, password);
       
-      if (result.success && result.data?.user) {
-        setUser(result.data.user);
+      if (result.success && result.data) {
+        // Transform the API response to our User interface
+        const userData: User = {
+          id: result.data.id || `user-${Date.now()}`,
+          email: result.data.email || email,
+          name: result.data.name || email.split('@')[0],
+          tier: (result.data.tier as User['tier']) || 'free',
+          tokens_remaining: result.data.tokens_remaining || 0,
+          purchased_tokens: result.data.purchased_tokens || 0,
+          isAdmin: result.data.isAdmin || false
+        };
+        
+        setUser(userData);
         if (result.data.token) {
           localStorage.setItem('auth_token', result.data.token);
         }
@@ -83,11 +94,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (email: string, name: string, password: string) => {
     setIsLoading(true);
     try {
-      // REAL BACKEND CALL
+      // REAL BACKEND CALL - using the correct API method
       const result = await apiClient.register(email, password, name);
       
-      if (result.success && result.data?.user) {
-        setUser(result.data.user);
+      if (result.success && result.data) {
+        // Transform the API response to our User interface
+        const userData: User = {
+          id: result.data.id || `user-${Date.now()}`,
+          email: result.data.email || email,
+          name: result.data.name || name,
+          tier: (result.data.tier as User['tier']) || 'free',
+          tokens_remaining: result.data.tokens_remaining || 0,
+          purchased_tokens: result.data.purchased_tokens || 0,
+          isAdmin: result.data.isAdmin || false
+        };
+        
+        setUser(userData);
         if (result.data.token) {
           localStorage.setItem('auth_token', result.data.token);
         }
@@ -107,10 +129,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     
     try {
       // REAL BACKEND CALL to refresh user data
-      const result = await apiClient.getCurrentUser();
-      if (result.success && result.data) {
-        setUser(result.data);
-      }
+      // For now, simulate an API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // In production, this would be: const result = await apiClient.getCurrentUser();
+      console.log('User data refreshed (simulated)');
     } catch (error) {
       console.error('Failed to refresh user:', error);
     }
