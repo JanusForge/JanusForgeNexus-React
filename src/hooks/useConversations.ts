@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchConversations, createNewConversation } from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 
 export interface Conversation {
   id: string;
@@ -25,7 +25,7 @@ export function useConversations() {
     setError(null);
     
     try {
-      const result = await fetchConversations(1, 20);
+      const result = await apiClient.getConversations(1, 20);
       
       if (result.success && result.data?.conversations) {
         // Transform backend data to frontend format
@@ -61,7 +61,7 @@ export function useConversations() {
 
   const addConversation = useCallback(async (content: string) => {
     try {
-      const result = await createNewConversation(content, 'gpt-4');
+      const result = await apiClient.createConversation(content, 'gpt-4');
       
       if (result.success && result.data?.conversation) {
         // Add the new conversation to the list

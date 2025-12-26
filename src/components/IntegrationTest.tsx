@@ -49,7 +49,7 @@ export default function IntegrationTest() {
     // Test 2: Database (via conversations endpoint)
     setResults(prev => prev.map(r => r.name === 'Database Connection' ? {...r, status: 'pending'} : r));
     try {
-      const convResult = await apiClient.fetchConversations(1, 5);
+      const convResult = await apiClient.getConversations(1, 5);
       setResults(prev => prev.map(r => 
         r.name === 'Database Connection' 
           ? { 
@@ -99,7 +99,7 @@ export default function IntegrationTest() {
     // Test 4: Conversation API
     setResults(prev => prev.map(r => r.name === 'Conversation API' ? {...r, status: 'pending'} : r));
     try {
-      const testConv = await apiClient.createNewConversation('Test conversation from integration test', 'gpt-4');
+      const testConv = await apiClient.createConversation('Test conversation from integration test', 'gpt-4');
       setResults(prev => prev.map(r => 
         r.name === 'Conversation API' 
           ? { 
