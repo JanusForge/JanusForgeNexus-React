@@ -1,12 +1,7 @@
-/**
- * Production API Client for Janus Forge Nexus
- * Connects to https://janusforgenexus-backend.onrender.com
- */
+// API Client for Janus Forge Nexus
+// Connects to backend at localhost:5000
 
-// PRODUCTION BACKEND - This is what the public will use
-const API_BASE_URL = 'https://janusforgenexus-backend.onrender.com';
-
-console.log('🌐 PRODUCTION API Client configured to:', API_BASE_URL);
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -16,49 +11,28 @@ export interface ApiResponse<T = any> {
 }
 
 class ApiClient {
-  private baseUrl: string;
-  private token: string | null = null;
-
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token');
-    }
-  }
-
-  setToken(token: string) {
-    this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
-    }
-  }
-
-  clearToken() {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
-    }
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const defaultHeaders = {
+      'Content-Type': 'application/json',
+    };
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    if (token) {
+      defaultHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
-      const url = `${this.baseUrl}${endpoint}`;
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...options.headers as Record<string, string>,
-      };
-
-      if (this.token) {
-        headers['Authorization'] = `Bearer ${this.token}`;
-      }
-
       const response = await fetch(url, {
         ...options,
-        headers,
+        headers: {
+          ...defaultHeaders,
+          ...options.headers,
+        },
       });
 
       const data = await response.json();
@@ -73,11 +47,11 @@ class ApiClient {
 
       return {
         success: true,
-        data: data,
+        data: data.data || data,
         message: data.message,
       };
     } catch (error) {
-      console.error(`API request failed to ${endpoint}:`, error);
+      console.error(`API request failed: ${endpoint}`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
@@ -85,59 +59,124 @@ class ApiClient {
     }
   }
 
-  // Health & Status
-  async healthCheck() {
+  // Health check
+  async healthCheck(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
     return this.request('/api/health');
   }
 
-  async testConnection() {
-    return this.request('/api/test');
+  // Authentication
+  async authenticate(email: string, password: string): Promise<ApiResponse<{
+    id: string;
+    email: string;
+    name: string;
+    tier: string;
+    tokens_remaining: number;
+    purchased_tokens: number;
+    isAdmin: boolean;
+    token: string;
+  }>> {
+    return this.request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
   }
 
-  async getDatabaseStatus() {
-    return this.request('/api/db-status');
+  // Registration
+  async register(email: string, password: string, name: string): Promise<ApiResponse<{
+    id: string;
+    email: string;
+    name: string;
+    tier: string;
+    tokens_remaining: number;
+    purchased_tokens: number;
+    token: string;
+  }>> {
+    return this.request('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, name }),
+    });
+  }
+
+  // Get current user
+  async getCurrentUser(): Promise<ApiResponse<{
+    id: string;
+    email: string;
+    name: string;
+    tier: string;
+    tokens_remaining: number;
+    purchased_tokens: number;
+    isAdmin: boolean;
+  }>> {
+    return this.request('/api/auth/me');
   }
 
   // Conversations
-  async getConversations(page: number = 1, limit: number = 20) {
+  async getConversations(page: number = 1, limit: number = 20): Promise<ApiResponse<any[]>> {
     return this.request(`/api/conversations?page=${page}&limit=${limit}`);
   }
 
-  async createConversation(content: string, aiModel: string = 'gpt-4') {
+  async createConversation(content: string, model: string = 'gpt-4'): Promise<ApiResponse<{
+    id: string;
+    content: string;
+    user_id: string;
+    is_ai: boolean;
+    created_at: string;
+  }>> {
     return this.request('/api/conversations', {
       method: 'POST',
-      body: JSON.stringify({ content, aiModel }),
+      body: JSON.stringify({ content, model }),
     });
   }
 
   // Daily Forge
-  async getDailyForgeTopic() {
-    return this.request('/api/daily-forge/topic');
+  async getDailyForgeTopic(): Promise<ApiResponse<{
+    id: string;
+    title: string;
+    description: string;
+    created_at: string;
+    positions: Array<{
+      id: string;
+      position: string;
+      ai: string;
+      votes: number;
+    }>;
+  }>> {
+    return this.request('/api/daily-forge/current');
   }
 
-  // AI Models
-  async getAvailableAIModels() {
-    return this.request('/api/ai-models');
+  async submitDailyForgeVote(topicId: string, positionId: string): Promise<ApiResponse> {
+    return this.request(`/api/daily-forge/${topicId}/vote`, {
+      method: 'POST',
+      body: JSON.stringify({ positionId }),
+    });
+  }
+
+  // Token management
+  async getTokenBalance(): Promise<ApiResponse<{
+    tokens_remaining: number;
+    purchased_tokens: number;
+    total_tokens: number;
+  }>> {
+    return this.request('/api/user/tokens');
+  }
+
+  // Test function for development
+  async testBackendConnection(): Promise<ApiResponse> {
+    return this.request('/api/health');
   }
 }
 
-// Create a singleton instance
+// Create and export a singleton instance
 export const apiClient = new ApiClient();
 
-// Convenience functions
-export const testBackendConnection = async () => {
-  console.log('🔍 Testing PRODUCTION backend connection');
-  return apiClient.healthCheck();
-};
-
-export const fetchDailyForgeTopic = async () => {
-  return apiClient.getDailyForgeTopic();
-};
-
-export const fetchConversations = async (page: number = 1) => {
-  return apiClient.getConversations(page);
-};
-
-export const createNewConversation = async (content: string, aiModel: string = 'gpt-4') => {
-  return apiClient.createConversation(content, aiModel);
-};
+// Export individual functions for convenience
+export const healthCheck = () => apiClient.healthCheck();
+export const authenticate = (email: string, password: string) => apiClient.authenticate(email, password);
+export const register = (email: string, password: string, name: string) => apiClient.register(email, password, name);
+export const getCurrentUser = () => apiClient.getCurrentUser();
+export const getConversations = (page?: number, limit?: number) => apiClient.getConversations(page, limit);
+export const createConversation = (content: string, model?: string) => apiClient.createConversation(content, model);
+export const fetchDailyForgeTopic = () => apiClient.getDailyForgeTopic();
+export const submitDailyForgeVote = (topicId: string, positionId: string) => apiClient.submitDailyForgeVote(topicId, positionId);
+export const getTokenBalance = () => apiClient.getTokenBalance();
+export const testBackendConnection = () => apiClient.testBackendConnection();
