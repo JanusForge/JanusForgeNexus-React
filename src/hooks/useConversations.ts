@@ -27,9 +27,12 @@ export function useConversations() {
     try {
       const result = await apiClient.getConversations(1, 20);
       
-      if (result.success && result.data?.conversations) {
+      if (result.success && result.data) {
+        // The API returns an array of conversations directly
+        const conversationsData = Array.isArray(result.data) ? result.data : [];
+        
         // Transform backend data to frontend format
-        const transformed = result.data.conversations.map((conv: any) => ({
+        const transformed = conversationsData.map((conv: any) => ({
           id: conv.id || `conv-${Date.now()}`,
           user: {
             name: conv.user_id || 'Anonymous',
@@ -63,15 +66,15 @@ export function useConversations() {
     try {
       const result = await apiClient.createConversation(content, 'gpt-4');
       
-      if (result.success && result.data?.conversation) {
+      if (result.success && result.data) {
         // Add the new conversation to the list
         const newConv: Conversation = {
-          id: result.data.conversation.id,
+          id: result.data.id || `conv-${Date.now()}`,
           user: {
             name: 'You',
             avatar: '/avatars/user.png'
           },
-          content: result.data.conversation.content,
+          content: result.data.content || content,
           timestamp: 'Just now',
           likes: 0,
           replies: 0,

@@ -50,13 +50,17 @@ export default function IntegrationTest() {
     setResults(prev => prev.map(r => r.name === 'Database Connection' ? {...r, status: 'pending'} : r));
     try {
       const convResult = await apiClient.getConversations(1, 5);
+      // Check if we got any data back (doesn't matter if array is empty)
+      const hasData = convResult.success && convResult.data !== undefined;
+      const dataLength = hasData && Array.isArray(convResult.data) ? convResult.data.length : 0;
+      
       setResults(prev => prev.map(r => 
         r.name === 'Database Connection' 
           ? { 
               ...r, 
               status: convResult.success ? 'success' : 'error',
               message: convResult.success 
-                ? `Database connected (${convResult.data?.conversations?.length || 0} conversations)`
+                ? `Database connected${dataLength > 0 ? ` (${dataLength} conversations)` : ' (no conversations yet)'}`
                 : convResult.error || 'Database check failed'
             }
           : r
