@@ -2,39 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/components/auth/AuthProvider';
 
-export default function Header() {
+export default function NoAuthHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const handleLogout = () => {
-    logout();
-  };
-
-  // Don't render auth-dependent UI until client-side
-  if (!isClient || isLoading) {
+  if (!isClient) {
     return (
       <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-gray-800/50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Logo skeleton */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gray-800 animate-pulse"></div>
-              <div className="space-y-2">
-                <div className="h-4 w-32 bg-gray-800 rounded animate-pulse"></div>
-              </div>
+              <div className="h-4 w-32 bg-gray-800 rounded animate-pulse"></div>
             </div>
-            
-            {/* Auth buttons skeleton */}
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-24 bg-gray-800 rounded-lg animate-pulse"></div>
-            </div>
+            <div className="h-10 w-24 bg-gray-800 rounded-lg animate-pulse"></div>
           </div>
         </div>
       </header>
@@ -69,38 +55,22 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Auth Section */}
+          {/* Auth Section - Simplified without useAuth */}
           <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <>
-                <div className="hidden md:flex items-center gap-3">
-                  <div className="text-sm text-gray-300">
-                    {user?.name || user?.email}
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
-                  >
-                    Logout
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/login"
-                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors text-sm"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
-                >
-                  Sign Up
-                </Link>
-              </div>
-            )}
+            <div className="hidden md:flex items-center gap-3">
+              <Link
+                href="/login"
+                className="px-4 py-2 text-gray-300 hover:text-white transition-colors text-sm"
+              >
+                Login
+              </Link>
+              <Link
+                href="/register"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm"
+              >
+                Sign Up
+              </Link>
+            </div>
 
             {/* Mobile menu button */}
             <button
@@ -153,39 +123,20 @@ export default function Header() {
               </Link>
               
               <div className="border-t border-gray-800 pt-4 mt-2">
-                {isAuthenticated ? (
-                  <>
-                    <div className="px-4 py-2 text-sm text-gray-400">
-                      Logged in as: {user?.name || user?.email}
-                    </div>
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/register"
-                      className="block px-4 py-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-center"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Sign Up
-                    </Link>
-                  </>
-                )}
+                <Link
+                  href="/login"
+                  className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="block px-4 py-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Sign Up
+                </Link>
               </div>
             </div>
           </div>

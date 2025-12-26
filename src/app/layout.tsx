@@ -2,42 +2,38 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
-import Header from '@/components/Header';
-import Footer from '@/components/layout/Footer';
+import NoAuthHeader from '@/components/NoAuthHeader';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  // ADD THIS LINE - Fixes the warning and enables proper social media images
   metadataBase: new URL('https://janusforge.ai'),
-  
-  title: 'Janus Forge Nexus - AI-Powered Debate Platform',
-  description: 'Create, participate, and analyze debates with multiple AI models. Experience dual-perspective AI debates.',
-  keywords: ['AI debate', 'artificial intelligence', 'debate platform', 'critical thinking', 'token system'],
-  
-  // Improved Open Graph for better social media sharing
+
+  title: 'Janus Forge Nexus - Where AIs and Humans Co-Create',
+  description: 'Civilization-scale problem-solving through AI-AI-human discourse. The first platform for cross-intelligence collaboration.',
+  keywords: ['AI debate', 'artificial intelligence', 'conversation network', 'AI collaboration', 'civilization-scale problem solving', 'multiplanetary protocols'],
+
   openGraph: {
-    title: 'Janus Forge Nexus - AI-Powered Debate Platform',
-    description: 'Where perspectives collide and wisdom emerges',
+    title: 'Janus Forge Nexus - Cross-Intelligence Infrastructure',
+    description: 'Where AIs debate, humans participate, and civilization-scale solutions emerge',
     type: 'website',
     url: 'https://janusforge.ai',
     siteName: 'Janus Forge Nexus',
     images: [
       {
-        url: '/logos/janus-logo-placeholder.svg', // Or your actual social image
+        url: '/logos/janus-logo-placeholder.svg',
         width: 1200,
         height: 630,
-        alt: 'JanusForge - AI Debate Platform',
+        alt: 'Janus Forge Nexus - AI-AI-Human Discourse Platform',
       },
     ],
   },
-  
-  // Add Twitter card metadata for Twitter sharing
+
   twitter: {
     card: 'summary_large_image',
-    title: 'Janus Forge Nexus - AI-Powered Debate Platform',
-    description: 'Where perspectives collide and wisdom emerges',
-    images: ['/logos/janus-logo-placeholder.svg'], // Same as Open Graph
+    title: 'Janus Forge Nexus - Cross-Intelligence Infrastructure',
+    description: 'Civilization-scale problem-solving through AI-AI-human discourse',
+    images: ['/logos/janus-logo-placeholder.svg'],
   },
 };
 
@@ -47,28 +43,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <head>
-        {/* FAVICON LINKS - ADDED */}
-
-        {/* Preconnect to video hosting if needed */}
-        <link rel="preconnect" href="https://assets.janusforge.ai" />
-
-        {/* Video metadata */}
-        <meta property="og:video" content="https://janusforge.ai/janus-logo-animation.mp4" />
-        <meta property="og:video:type" content="video/mp4" />
-        <meta property="og:video:width" content="256" />
-        <meta property="og:video:height" content="256" />
-      </head>
-      <body className={`${inter.className} bg-gray-950 text-white`}>
+    <html lang="en" className="dark">
+      <body className={`${inter.className} bg-gray-950 text-gray-100 antialiased`}>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1 pt-16">
-              {children}
-            </main>
-            <Footer />
-          </div>
+          <NoAuthHeader />
+          <main className="pt-16">
+            {children}
+          </main>
         </AuthProvider>
       </body>
     </html>

@@ -11,7 +11,7 @@ interface User {
   isAdmin: boolean;
   tokens_used: number;
   tokens_remaining: number;
-  purchased_tokens: number; // Tokens from add-on packages
+  purchased_tokens: number;
   max_ai_models: number;
   stripe_customer_id?: string;
   stripe_subscription_id?: string;
@@ -143,7 +143,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'Package not found' };
       }
       
-      // In reality, this would process payment via Stripe
       console.log(`Processing payment of $${pkg.price} for ${pkg.tokens} tokens`);
       
       return {
@@ -155,15 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     upgradeTier: async (userId: string, newTier: UserTier): Promise<{ success: boolean; error?: string }> => {
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // In reality, this would update Stripe subscription
       console.log(`Upgrading user to ${newTier} tier at $${TIER_CONFIGS[newTier].price}/month`);
       
       return { success: true };
-    },
-    
-    useTokens: async (userId: string, tokenCount: number, purpose: string): Promise<{ success: boolean; remaining?: number; error?: string }> => {
-      // In reality, this would check token balance and deduct
-      return { success: true, remaining: 100 }; // Mock
     },
     
     getCurrentUser: async (): Promise<User | null> => {
@@ -235,7 +228,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
-    // In reality, fetch fresh user data from backend
     const saved = localStorage.getItem('janusforge_user');
     if (saved) {
       try {
@@ -255,11 +247,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
     
-    // Update user state (in reality, call backend)
     let remaining = user.tokens_remaining;
     let purchased = user.purchased_tokens;
     
-    // Use monthly tokens first
     if (remaining >= count) {
       remaining -= count;
     } else {
@@ -338,7 +328,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...user,
           tier: newTier,
           max_ai_models: TIER_CONFIGS[newTier].max_ai_models,
-          // Reset monthly tokens for new tier
           tokens_used: 0,
           tokens_remaining: TIER_CONFIGS[newTier].monthly_tokens,
         };

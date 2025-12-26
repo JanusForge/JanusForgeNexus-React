@@ -1,0 +1,69 @@
+'use client';
+
+export default function FinalTestPage() {
+  const testConnection = async () => {
+    try {
+      console.log('Testing connection to http://localhost:5000/api/health');
+      const response = await fetch('http://localhost:5000/api/health');
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      alert(`🎉 SUCCESS!\n\nBackend is connected!\n\nDatabase: ${data.database}\nTier: ${data.tier}\nMessage: ${data.message}`);
+    } catch (error: any) {
+      console.error('Connection error:', error);
+      alert(`❌ FAILED\n\nCould not connect to backend.\n\nError: ${error.message}\n\nMake sure the backend is running on port 5000.`);
+    }
+  };
+
+  return (
+    <div>
+      <h1>🔗 Janus Forge - Final Connection Test</h1>
+      <p>This is the simplest possible test of the frontend-backend connection.</p>
+      
+      <div style={{ 
+        margin: '40px 0', 
+        padding: '20px', 
+        background: '#111', 
+        borderRadius: '10px',
+        border: '1px solid #333'
+      }}>
+        <h2>Backend Connection Test</h2>
+        <button
+          onClick={testConnection}
+          style={{
+            padding: '15px 30px',
+            fontSize: '18px',
+            background: '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            margin: '20px 0'
+          }}
+        >
+          Click to Test Backend Connection
+        </button>
+        <p style={{ color: '#888' }}>
+          This will test if the frontend can connect to the backend server at localhost:5000
+        </p>
+      </div>
+      
+      <div style={{ marginTop: '40px', color: '#666' }}>
+        <h3>Expected Result:</h3>
+        <pre style={{ 
+          background: '#222', 
+          padding: '15px', 
+          borderRadius: '5px',
+          overflow: 'auto'
+        }}>
+{`{
+  "success": true,
+  "message": "✅ Professional tier database connected!",
+  "database": "dpg-d56p1bbuibrs739ojang-a (correct)",
+  "tier": "PROFESSIONAL"
+}`}</pre>
+      </div>
+    </div>
+  );
+}
