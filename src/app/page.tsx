@@ -41,7 +41,7 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const socketRef = useRef<Socket | null>(null);
-  
+
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('24:00:00');
   const [userMessage, setUserMessage] = useState<string>('');
@@ -51,10 +51,12 @@ export default function HomePage() {
 
   // 1. SOCKET INITIALIZATION: The Real-Time Engine
   useEffect(() => {
-    // Initialize socket connection
+    // Initialize socket connection with polling fallback for Render stability
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
-      transports: ['websocket']
+      transports: ['polling', 'websocket'], 
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     // Listen for incoming posts (User or AI)
@@ -63,9 +65,11 @@ export default function HomePage() {
     });
 
     // Listen for AI Council responses (The Typing Feel)
-    socketRef.current.on('ai:response', (aiMessage: ConversationMessage) => {
+    socketRef.current.on('ai:response', (aiData: any) => {
+      // Map backend socket structure to frontend interface
+      const aiMessage: ConversationMessage = aiData.post || aiData;
       setConversation(prev => [aiMessage, ...prev]);
-      setIsSending(false); 
+      setIsSending(false);
     });
 
     return () => {
@@ -83,11 +87,13 @@ export default function HomePage() {
 
       if (topicRes.ok) {
         const data = await topicRes.json();
-        // Handle nested topic object if backend wraps it
+        // Handle nested topic object from Express backend
         setTopic(data.topic || data);
       }
+      
       if (convRes.ok) {
         const data = await convRes.json();
+        // Handle nested conversations array { conversations: [...] }
         setConversation(data.conversations || data);
       }
     } catch (error) {
@@ -124,7 +130,7 @@ export default function HomePage() {
     if (!userMessage.trim() || isSending || !isAuthenticated) return;
 
     setIsSending(true);
-    
+
     const payload = {
       content: userMessage,
       userId: user?.id,
@@ -140,7 +146,8 @@ export default function HomePage() {
   };
 
   const getTierBadgeColor = (tier?: string) => {
-    switch (tier) {
+    const t = tier?.toLowerCase();
+    switch (t) {
       case 'pro': return 'border-purple-500/30 bg-purple-500/10 text-purple-400';
       case 'enterprise': return 'border-amber-500/30 bg-amber-500/10 text-amber-400';
       default: return 'border-green-500/30 bg-green-500/10 text-green-400';
@@ -159,7 +166,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900/20 via-purple-900/20 to-pink-900/20 animate-gradient-x"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
           <div className="flex flex-col lg:flex-row items-start justify-between gap-12">
-            
+
             {/* Left: Feed Panel */}
             <div className="lg:w-1/2">
               <div className="text-center lg:text-left mb-8">
@@ -179,11 +186,11 @@ export default function HomePage() {
                 </div>
 
                 <div className="p-6 border-b border-gray-800">
-                  <textarea 
-                    value={userMessage} 
+                  <textarea
+                    value={userMessage}
                     onChange={(e) => setUserMessage(e.target.value)}
                     placeholder={isAuthenticated ? "Start a conversation with AI models..." : "Sign in to join the conversation"}
-                    className="w-full px-4 py-3 bg-gray-800/30 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 resize-none"
+                    className="w-full px-4 py-3 bg-gray-800/30 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 resize-none text-white"
                     rows={3}
                   />
                   <div className="flex justify-between items-center mt-3">
@@ -195,27 +202,33 @@ export default function HomePage() {
                 </div>
 
                 <div className="divide-y divide-gray-800 max-h-[500px] overflow-y-auto">
-                  {conversation.map((msg) => (
-                    <div key={msg.id} className="p-6 hover:bg-gray-800/30 transition-colors">
-                      <div className="flex gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm">{msg.avatar}</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 text-xs">
-                            <span className="font-medium text-gray-300">{msg.name}</span>
-                            <span className={`px-2 py-0.5 rounded-full border ${getTierBadgeColor(msg.tier)}`}>{msg.tier?.toUpperCase()}</span>
+                  {conversation && conversation.length > 0 ? (
+                    conversation.map((msg) => (
+                      <div key={msg.id} className="p-6 hover:bg-gray-800/30 transition-colors">
+                        <div className="flex gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                            <span className="text-sm">{msg.avatar || '👤'}</span>
                           </div>
-                          <p className="text-sm text-gray-300">{msg.content}</p>
-                          <div className="flex gap-4 mt-3 text-gray-500 text-xs">
-                            <button className="flex items-center gap-1 hover:text-red-400"><Heart size={14}/> {msg.likes || 0}</button>
-                            <button className="flex items-center gap-1 hover:text-blue-400"><MessageSquare size={14}/> {msg.replies || 0}</button>
-                            <button className="flex items-center gap-1 hover:text-green-400"><Save size={14}/> Save</button>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1 text-xs">
+                              <span className="font-medium text-gray-300">{msg.name}</span>
+                              <span className={`px-2 py-0.5 rounded-full border ${getTierBadgeColor(msg.tier)}`}>{msg.tier?.toUpperCase()}</span>
+                            </div>
+                            <p className="text-sm text-gray-300">{msg.content}</p>
+                            <div className="flex gap-4 mt-3 text-gray-500 text-xs">
+                              <button className="flex items-center gap-1 hover:text-red-400"><Heart size={14}/> {msg.likes || 0}</button>
+                              <button className="flex items-center gap-1 hover:text-blue-400"><MessageSquare size={14}/> {msg.replies || 0}</button>
+                              <button className="flex items-center gap-1 hover:text-green-400"><Save size={14}/> Save</button>
+                            </div>
                           </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="p-12 text-center text-gray-500 text-sm italic">
+                      No active conversations found. Start the first one!
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
@@ -232,7 +245,7 @@ export default function HomePage() {
                   <span className="text-xs font-semibold text-blue-400 bg-blue-400/10 px-3 py-1 rounded-full">DAILY TOPIC</span>
                   <h3 className="text-xl font-bold mt-3 mb-2">{topic.title}</h3>
                   <p className="text-gray-300 text-sm mb-4">{topic.description}</p>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-800/50 p-3 rounded-lg text-center">
                       <div className="text-xs text-gray-500 mb-1">AI Interest</div>
