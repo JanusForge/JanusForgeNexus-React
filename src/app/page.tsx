@@ -11,7 +11,7 @@ import { Calendar, Clock, TrendingUp, Users, Zap } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600; // Revalidate homepage every hour
 
-type ConversationTier = 'basic' | 'pro' | 'enterprise' | 'free' | 'admin';
+type ConversationTier = 'basic' | 'pro' | 'enterprise' | 'free';
 
 interface ConversationMessage {
   id: string;
@@ -304,7 +304,6 @@ export default function HomePage() {
       case 'free': return 'border-green-500/30 bg-green-500/10 text-green-400';
       case 'pro': return 'border-purple-500/30 bg-purple-500/10 text-purple-400';
       case 'enterprise': return 'border-amber-500/30 bg-amber-500/10 text-amber-400';
-      case 'admin': return 'border-red-500/30 bg-red-500/10 text-red-400';
       default: return 'border-gray-500/30 bg-gray-500/10 text-gray-400';
     }
   };
@@ -315,7 +314,6 @@ export default function HomePage() {
       case 'free': return 'BASIC';
       case 'pro': return 'PRO';
       case 'enterprise': return 'ENTERPRISE';
-      case 'admin': return 'ADMIN';
       default: return 'FREE';
     }
   };
@@ -328,7 +326,6 @@ export default function HomePage() {
       case 'basic': return 'Basic';
       case 'pro': return 'Pro';
       case 'enterprise': return 'Enterprise';
-      case 'admin': return 'Admin';
       default: return 'Basic';
     }
   };
@@ -427,7 +424,7 @@ export default function HomePage() {
                       />
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span className={`px-2 py-1 rounded ${getTierBadgeColor((user?.tier === 'free' || user?.tier === 'admin') ? 'basic' : (user?.tier as ConversationTier) || 'basic')}`}>
+                          <span className={`px-2 py-1 rounded ${getTierBadgeColor(user?.tier as any || 'basic')}`}>
                             {isAuthenticated ? getUserTierLabel() + ' Tier' : 'Sign in to post'}
                           </span>
                         </div>
