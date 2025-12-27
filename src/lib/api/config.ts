@@ -52,11 +52,18 @@ const getWsUrl = () => {
   return 'ws://localhost:5000';
 };
 
+// Final Production API Configuration
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'janusforge.ai' 
-    ? 'https://janusforgenexus-backend.onrender.com' 
-    : 'http://localhost:5000'),
-  WS_URL: getWsUrl(),
+  // Logic: Use Render URL if on the live site, otherwise fallback to local for your dev work
+  BASE_URL: (typeof window !== 'undefined' && window.location.hostname === 'janusforge.ai')
+    ? 'https://janusforgenexus-backend.onrender.com/api' 
+    : 'http://localhost:5000/api',
+  
+  // Apply the same logic for WebSockets (WSS for production)
+  WS_URL: (typeof window !== 'undefined' && window.location.hostname === 'janusforge.ai')
+    ? 'wss://janusforgenexus-backend.onrender.com'
+    : 'ws://localhost:5000',
+    
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
