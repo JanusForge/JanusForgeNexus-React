@@ -23,15 +23,12 @@ export default function Header() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-gray-800/50">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Logo skeleton */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gray-800 animate-pulse"></div>
               <div className="space-y-2">
                 <div className="h-4 w-32 bg-gray-800 rounded animate-pulse"></div>
               </div>
             </div>
-            
-            {/* Auth buttons skeleton */}
             <div className="flex items-center gap-3">
               <div className="h-10 w-24 bg-gray-800 rounded-lg animate-pulse"></div>
             </div>
@@ -53,7 +50,7 @@ export default function Header() {
             <span className="text-white font-bold text-xl">Janus Forge</span>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - CLEANED */}
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/" className="text-gray-300 hover:text-white transition-colors">
               Home
@@ -64,27 +61,22 @@ export default function Header() {
             <Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors">
               Daily Forge
             </Link>
-            <Link href="/final-test" className="text-gray-300 hover:text-white transition-colors">
-              Connection Test
-            </Link>
           </nav>
 
           {/* Auth Section */}
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
-              <>
-                <div className="hidden md:flex items-center gap-3">
-                  <div className="text-sm text-gray-300">
-                    {user?.name || user?.email}
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
-                  >
-                    Logout
-                  </button>
+              <div className="hidden md:flex items-center gap-3">
+                <div className="text-sm text-gray-300">
+                  {user?.name || user?.email}
                 </div>
-              </>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
+                >
+                  Logout
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-3">
                 <Link
@@ -119,7 +111,7 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* Mobile menu - CLEANED */}
         {isMenuOpen && (
           <div className="md:hidden border-t border-gray-800 py-4">
             <div className="flex flex-col gap-3">
@@ -144,14 +136,7 @@ export default function Header() {
               >
                 Daily Forge
               </Link>
-              <Link
-                href="/final-test"
-                className="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Connection Test
-              </Link>
-              
+
               <div className="border-t border-gray-800 pt-4 mt-2">
                 {isAuthenticated ? (
                   <>
