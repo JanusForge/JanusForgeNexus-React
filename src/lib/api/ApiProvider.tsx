@@ -30,6 +30,22 @@ const transformApiUser = (apiData: any): User | null => {
   };
 };
 
+// Helper to transform API conversation data
+const transformApiConversation = (apiData: any): Conversation | null => {
+  if (!apiData) return null;
+  
+  return {
+    id: apiData.id || '',
+    content: apiData.content || '',
+    user_id: apiData.user_id || '',
+    is_ai: Boolean(apiData.is_ai),
+    created_at: apiData.created_at || new Date().toISOString(),
+    likes: typeof apiData.likes === 'number' ? apiData.likes : 0,
+    replies: typeof apiData.replies === 'number' ? apiData.replies : 0,
+    tier: apiData.tier
+  };
+};
+
 interface ApiContextType {
   // State
   conversations: Conversation[];
@@ -79,8 +95,11 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
       // Load conversations
       const convResponse = await apiClient.getConversations();
       if (convResponse.success && convResponse.data) {
-        const convs = Array.isArray(convResponse.data) ? convResponse.data : [];
-        setConversations(convs);
+        const apiConversations = Array.isArray(convResponse.data) ? convResponse.data : [];
+        const transformedConversations = apiConversations
+          .map(transformApiConversation)
+          .filter((conv): conv is Conversation => conv !== null);
+        setConversations(transformedConversations);
       }
 
       // Load daily debate
@@ -109,8 +128,11 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await apiClient.getConversations();
       if (response.success && response.data) {
-        const convs = Array.isArray(response.data) ? response.data : [];
-        setConversations(convs);
+        const apiConversations = Array.isArray(response.data) ? response.data : [];
+        const transformedConversations = apiConversations
+          .map(transformApiConversation)
+          .filter((conv): conv is Conversation => conv !== null);
+        setConversations(transformedConversations);
       }
     } catch (err) {
       console.error('Failed to load conversations:', err);
@@ -121,8 +143,10 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await apiClient.createConversation(content, aiModel);
       if (response.success && response.data) {
-        // Add to local state
-        setConversations(prev => [response.data, ...prev]);
+        const newConversation = transformApiConversation(response.data);
+        if (newConversation) {
+          setConversations(prev => [newConversation, ...prev]);
+        }
       }
       return response;
     } catch (err) {

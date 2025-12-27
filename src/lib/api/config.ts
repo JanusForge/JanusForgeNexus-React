@@ -48,3 +48,30 @@ export const API_CONFIG = {
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
 };
+
+// Type guard for Conversation
+export function isConversation(data: any): data is Conversation {
+  return (
+    data &&
+    typeof data.id === 'string' &&
+    typeof data.content === 'string' &&
+    typeof data.user_id === 'string' &&
+    typeof data.is_ai === 'boolean' &&
+    typeof data.created_at === 'string' &&
+    typeof data.likes === 'number' &&
+    typeof data.replies === 'number'
+  );
+}
+
+// Type guard for User
+export function isUser(data: any): data is User {
+  return (
+    data &&
+    typeof data.id === 'string' &&
+    typeof data.email === 'string' &&
+    typeof data.name === 'string' &&
+    ['free', 'basic', 'pro', 'enterprise'].includes(data.tier) &&
+    typeof data.tokens_remaining === 'number' &&
+    typeof data.purchased_tokens === 'number'
+  );
+}
