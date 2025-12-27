@@ -19,7 +19,7 @@ export default function Navbar() {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">JF</span>
               </div>
-              <span className="text-white font-bold text-xl">JanusForge</span>
+              <span className="text-white font-bold text-xl">Janus Forge Nexus</span>
             </Link>
           </div>
 
