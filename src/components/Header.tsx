@@ -1,3 +1,4 @@
+// Production Header Sync
 'use client';
 
 import { useState, useEffect } from 'react';
