@@ -53,7 +53,7 @@ export default function FinalTestPage() {
                   <h3 className="text-xl text-red-400 font-semibold mb-2">❌ Connection Failed</h3>
                   <p className="text-red-300 mb-4">{error}</p>
                   <p className="text-gray-400 text-sm">
-                    Please ensure the backend server is running at <code>http://localhost:5000</code>
+                    Please ensure the backend server is running at <code>https://janusforgenexus-backend.onrender.com</code>
                   </p>
                 </div>
               ) : testResult ? (
@@ -152,7 +152,7 @@ export default function FinalTestPage() {
                   <button
                     onClick={async () => {
                       try {
-                        const response = await fetch('http://localhost:5000/api/test');
+                        const response = await fetch('https://janusforgenexus-backend.onrender.com');
                         const data = await response.json();
                         alert(`✅ ${data.message || 'Test endpoint working'}`);
                       } catch (err) {
@@ -173,7 +173,7 @@ export default function FinalTestPage() {
                   <button
                     onClick={async () => {
                       try {
-                        const response = await fetch('http://localhost:5000/api/db-status');
+                        const response = await fetch('https://janusforgenexus-backend.onrender.com');
                         const data = await response.json();
                         alert(`✅ Database: ${data.database || 'Connected'}\nTier: ${data.tier || 'Professional'}`);
                       } catch (err) {
