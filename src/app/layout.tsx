@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
-import NoAuthHeader from '@/components/NoAuthHeader';
+import Header from '@/components/Header';
+import Footer from '@/components/layout/Footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -46,10 +47,18 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-gray-950 text-gray-100 antialiased`}>
         <AuthProvider>
-          <NoAuthHeader />
-          <main className="pt-16">
-            {children}
-          </main>
+          <div className="flex flex-col min-h-screen">
+            {/* Main Header navigation */}
+            <Header />
+            
+            {/* The main content area grows to push the footer down */}
+            <main className="flex-grow pt-16">
+              {children}
+            </main>
+
+            {/* Professional Footer for the entire site */}
+            <Footer />
+          </div>
         </AuthProvider>
       </body>
     </html>
