@@ -23,6 +23,7 @@ export interface Debate {
   title: string;
   description: string;
   created_at: string;
+  status?: 'active' | 'completed' | 'scheduled'; // Optional to fix build errors
   positions: Array<{
     id: string;
     position: string;
@@ -41,15 +42,30 @@ export interface User {
   isAdmin?: boolean;
 }
 
-// API configuration
-export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
-  TIMEOUT: 30000, // 30 seconds
-  RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 1000, // 1 second
+const getWsUrl = () => {
+  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+  if (typeof window !== 'undefined') {
+    const isSecure = window.location.protocol === 'https:';
+    const host = isSecure ? 'janusforgenexus-backend.onrender.com' : 'localhost:5000';
+    return isSecure ? `wss://${host}` : `ws://${host}`;
+  }
+  return 'ws://localhost:5000';
 };
 
-// Type guard for Conversation
+export const API_CONFIG = {
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' && window.location.hostname === 'janusforge.ai' 
+    ? 'https://janusforgenexus-backend.onrender.com' 
+    : 'http://localhost:5000'),
+  WS_URL: getWsUrl(),
+  TIMEOUT: 30000,
+  RETRY_ATTEMPTS: 3,
+  RETRY_DELAY: 1000,
+  WS: {
+    MAX_RECONNECT_ATTEMPTS: 5,
+    RECONNECT_INTERVAL: 3000,
+  }
+};
+
 export function isConversation(data: any): data is Conversation {
   return (
     data &&
@@ -57,21 +73,24 @@ export function isConversation(data: any): data is Conversation {
     typeof data.content === 'string' &&
     typeof data.user_id === 'string' &&
     typeof data.is_ai === 'boolean' &&
-    typeof data.created_at === 'string' &&
-    typeof data.likes === 'number' &&
-    typeof data.replies === 'number'
+    typeof data.created_at === 'string'
   );
 }
 
-// Type guard for User
+export function isDebate(data: any): data is Debate {
+  return (
+    data &&
+    typeof data.id === 'string' &&
+    typeof data.title === 'string' &&
+    Array.isArray(data.positions)
+  );
+}
+
 export function isUser(data: any): data is User {
   return (
     data &&
     typeof data.id === 'string' &&
     typeof data.email === 'string' &&
-    typeof data.name === 'string' &&
-    ['free', 'basic', 'pro', 'enterprise'].includes(data.tier) &&
-    typeof data.tokens_remaining === 'number' &&
-    typeof data.purchased_tokens === 'number'
+    ['free', 'basic', 'pro', 'enterprise'].includes(data.tier)
   );
 }

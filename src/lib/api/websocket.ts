@@ -1,50 +1,50 @@
+// WebSocket client for Janus Forge Nexus
+// Handles real-time AI-AI-human discourse updates
+
 import { API_CONFIG } from './config';
 
-export interface WebSocketMessage {
-  type: 'conversation.new' | 'conversation.update' | 'conversation.like' | 
-         'debate.update' | 'user.notification' | 'system.message';
-  data: any;
-  timestamp: string;
-}
-
-export class WebSocketClient {
+class WebSocketClient {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = API_CONFIG.ws.maxReconnectAttempts;
-  private reconnectInterval = API_CONFIG.ws.reconnectInterval;
+  private maxReconnectAttempts = API_CONFIG.WS.MAX_RECONNECT_ATTEMPTS;
+  private reconnectInterval = API_CONFIG.WS.RECONNECT_INTERVAL;
   private listeners: Map<string, Function[]> = new Map();
   private connectionPromise: Promise<void> | null = null;
 
   constructor() {
+    // Initialize WebSocket connection only on client side to avoid Next.js build errors
     if (typeof window !== 'undefined') {
       this.connect();
     }
   }
 
   private connect(): Promise<void> {
-    if (this.connectionPromise) return this.connectionPromise;
+    if (this.connectionPromise) {
+      return this.connectionPromise;
+    }
 
     this.connectionPromise = new Promise((resolve, reject) => {
       try {
-        this.ws = new WebSocket(API_CONFIG.ws.url);
-        
+        console.log(`Connecting to WebSocket at: ${API_CONFIG.WS_URL}`);
+        this.ws = new WebSocket(API_CONFIG.WS_URL);
+
         this.ws.onopen = () => {
-          console.log('WebSocket connected to', API_CONFIG.ws.url);
+          console.log('✅ WebSocket connected successfully');
           this.reconnectAttempts = 0;
           resolve();
         };
 
         this.ws.onmessage = (event) => {
           try {
-            const message: WebSocketMessage = JSON.parse(event.data);
-            this.notifyListeners(message.type, message);
+            const message = JSON.parse(event.data);
+            this.emit(message.type, message.data);
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
           }
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          console.error('❌ WebSocket error:', error);
           reject(error);
         };
 
@@ -52,7 +52,7 @@ export class WebSocketClient {
           console.log('WebSocket disconnected');
           this.ws = null;
           this.connectionPromise = null;
-          this.attemptReconnect();
+          this.scheduleReconnect();
         };
       } catch (error) {
         reject(error);
@@ -62,31 +62,29 @@ export class WebSocketClient {
     return this.connectionPromise;
   }
 
-  private attemptReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached');
-      return;
+  private scheduleReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      console.log(`🔄 Scheduling reconnect attempt ${this.reconnectAttempts} in ${this.reconnectInterval}ms`);
+      setTimeout(() => {
+        this.connect().catch(() => {
+          // Connection failed, logic will retry via onclose -> scheduleReconnect
+        });
+      }, this.reconnectInterval);
+    } else {
+      console.error('❌ Max reconnection attempts reached. Please refresh the page.');
     }
-
-    this.reconnectAttempts++;
-    console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-
-    setTimeout(() => {
-      this.connect().catch(error => {
-        console.error('Reconnection failed:', error);
-      });
-    }, this.reconnectInterval);
   }
 
-  on(eventType: string, callback: Function) {
-    if (!this.listeners.has(eventType)) {
-      this.listeners.set(eventType, []);
+  on(event: string, callback: Function) {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
     }
-    this.listeners.get(eventType)!.push(callback);
+    this.listeners.get(event)!.push(callback);
   }
 
-  off(eventType: string, callback: Function) {
-    const callbacks = this.listeners.get(eventType);
+  off(event: string, callback: Function) {
+    const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);
       if (index > -1) {
@@ -95,18 +93,29 @@ export class WebSocketClient {
     }
   }
 
-  private notifyListeners(eventType: string, data: any) {
-    const callbacks = this.listeners.get(eventType) || [];
-    callbacks.forEach(callback => callback(data));
+  private emit(event: string, data: any) {
+    const callbacks = this.listeners.get(event);
+    if (callbacks) {
+      callbacks.forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Error in WebSocket listener for event ${event}:`, error);
+        }
+      });
+    }
   }
 
-  send(message: WebSocketMessage) {
+  send(event: string, data: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message));
-      return true;
+      this.ws.send(JSON.stringify({ type: event, data }));
+    } else {
+      console.warn('⚠️ WebSocket not connected, message not sent:', event);
     }
-    console.warn('WebSocket not connected');
-    return false;
+  }
+
+  isConnected(): boolean {
+    return this.ws !== null && this.ws.readyState === WebSocket.OPEN;
   }
 
   disconnect() {
@@ -114,9 +123,10 @@ export class WebSocketClient {
       this.ws.close();
       this.ws = null;
     }
+    this.connectionPromise = null;
     this.listeners.clear();
   }
 }
 
-// Singleton instance
+// Create and export a singleton instance for the entire application
 export const websocketClient = new WebSocketClient();

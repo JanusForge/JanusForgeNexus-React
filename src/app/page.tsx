@@ -1,10 +1,12 @@
 "use client";
-
+export const dynamic = "force-dynamic";
+import React from 'react';
 import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import DailyForgePreview from '@/components/daily-forge/DailyForgePreview';
 import ConversationFeed from '@/components/conversations/ConversationFeed';
 import { fetchDailyForgeTopic } from '@/lib/api/client';
+
 
 export default function HomePage() {
   const [dailyForgeTopic, setDailyForgeTopic] = useState<any>(null);
