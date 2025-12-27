@@ -1,4 +1,4 @@
-// Janus Forge Nexus - Final Production API Configuration
+// Janus Forge Nexus - Final Autonomous Production API Configuration
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -42,21 +42,27 @@ export interface User {
   isAdmin?: boolean;
 }
 
+/**
+ * PRODUCTION DETECTION LOGIC
+ * Automatically identifies if we are running on the live domain or Vercel.
+ */
 const isProduction = typeof window !== 'undefined' && 
   (window.location.hostname === 'janusforge.ai' || 
    window.location.hostname === 'www.janusforge.ai' ||
    window.location.hostname.includes('vercel.app'));
 
 export const API_CONFIG = {
+  // Primary Bridge: Points to Render in production, localhost in development
   BASE_URL: isProduction
     ? 'https://janusforgenexus-backend.onrender.com'
     : 'http://localhost:5000',
 
+  // Real-time Bridge: Secure WebSockets (WSS) for production
   WS_URL: isProduction
     ? 'wss://janusforgenexus-backend.onrender.com'
     : 'ws://localhost:5000',
 
-  TIMEOUT: 60000, 
+  TIMEOUT: 60000, // 60-second AI response capacity
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
   WS: {
@@ -64,6 +70,8 @@ export const API_CONFIG = {
     RECONNECT_INTERVAL: 3000,
   }
 };
+
+// --- Type Guards ---
 
 export function isConversation(data: any): data is Conversation {
   return (
