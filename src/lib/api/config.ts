@@ -1,4 +1,4 @@
-// API configuration and types
+// Janus Forge Nexus - Final Production API Configuration
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -23,7 +23,7 @@ export interface Debate {
   title: string;
   description: string;
   created_at: string;
-  status?: 'active' | 'completed' | 'scheduled'; // Optional to fix build errors
+  status?: 'active' | 'completed' | 'scheduled';
   positions: Array<{
     id: string;
     position: string;
@@ -42,29 +42,21 @@ export interface User {
   isAdmin?: boolean;
 }
 
-const getWsUrl = () => {
-  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
-  if (typeof window !== 'undefined') {
-    const isSecure = window.location.protocol === 'https:';
-    const host = isSecure ? 'janusforgenexus-backend.onrender.com' : 'localhost:5000';
-    return isSecure ? `wss://${host}` : `ws://${host}`;
-  }
-  return 'ws://localhost:5000';
-};
+const isProduction = typeof window !== 'undefined' && 
+  (window.location.hostname === 'janusforge.ai' || 
+   window.location.hostname === 'www.janusforge.ai' ||
+   window.location.hostname.includes('vercel.app'));
 
-// Final Production API Configuration
 export const API_CONFIG = {
-  // Logic: Use Render URL if on the live site, otherwise fallback to local for your dev work
-  BASE_URL: (typeof window !== 'undefined' && window.location.hostname === 'janusforge.ai')
-    ? 'https://janusforgenexus-backend.onrender.com/api' 
-    : 'http://localhost:5000/api',
-  
-  // Apply the same logic for WebSockets (WSS for production)
-  WS_URL: (typeof window !== 'undefined' && window.location.hostname === 'janusforge.ai')
+  BASE_URL: isProduction
+    ? 'https://janusforgenexus-backend.onrender.com'
+    : 'http://localhost:5000',
+
+  WS_URL: isProduction
     ? 'wss://janusforgenexus-backend.onrender.com'
     : 'ws://localhost:5000',
-    
-  TIMEOUT: 30000,
+
+  TIMEOUT: 60000, 
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
   WS: {
