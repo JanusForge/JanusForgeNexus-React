@@ -212,7 +212,10 @@ export default function HomePage() {
     setIsSending(true);
     
     // Get user tier, default to 'basic' for free/admin users
-    const userTier = (user?.tier === 'free' || user?.tier === 'admin') ? 'basic' : (user?.tier as ConversationTier) || 'basic';
+    // TypeScript now understands 'free' and 'admin' are valid comparisons
+const userTier = (user?.tier === 'free' || user?.tier === 'admin') 
+  ? 'basic' 
+  : (user?.tier as ConversationTier) || 'basic';
     
     // Add user message to conversation
     const userMsg: ConversationMessage = {
