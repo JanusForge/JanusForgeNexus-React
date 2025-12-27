@@ -15,8 +15,8 @@ export default function DailyForgePreview() {
         setLoading(true);
         const result = await fetchDailyForgeTopic();
         
-        if (result.success && result.data?.topic) {
-          setTopic(result.data.topic);
+        if (result.success && result.data) {
+          setTopic(result.data);
         } else {
           setError(result.error || 'Failed to load topic');
         }
@@ -51,7 +51,7 @@ export default function DailyForgePreview() {
         <p className="text-gray-400 mb-4">Unable to load current debate topic.</p>
         <Link
           href="/daily-forge"
-          className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+          className="text-purple-400 hover:text-purple-300 text-sm font-medium"
         >
           Visit Daily Forge →
         </Link>
@@ -74,7 +74,7 @@ export default function DailyForgePreview() {
         {Array.isArray(topic.positions) && topic.positions.slice(0, 2).map((pos: any, index: number) => (
           <div key={index} className="p-3 bg-gray-800/30 rounded-lg border border-gray-700">
             <div className="flex items-center gap-2 mb-1">
-              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 <span className="text-xs font-bold">{pos.ai?.charAt(0) || 'A'}</span>
               </div>
               <span className="text-sm font-medium text-white">{pos.ai}</span>
