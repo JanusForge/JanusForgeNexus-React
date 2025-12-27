@@ -17,7 +17,8 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    const defaultHeaders = {
+    // Define headers with proper typing
+    const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
