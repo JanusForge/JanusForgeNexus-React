@@ -4,6 +4,32 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiClient } from './client';
 import { ApiResponse, Conversation, Debate, User } from './config';
 
+// Helper function to safely convert API tier string to User['tier']
+const parseUserTier = (tierString: string | undefined): User['tier'] => {
+  if (!tierString) return 'free';
+  
+  const tier = tierString.toLowerCase();
+  if (tier === 'basic' || tier === 'pro' || tier === 'enterprise') {
+    return tier;
+  }
+  return 'free';
+};
+
+// Helper to transform API user data to our User interface
+const transformApiUser = (apiData: any): User | null => {
+  if (!apiData) return null;
+  
+  return {
+    id: apiData.id || '',
+    email: apiData.email || '',
+    name: apiData.name || '',
+    tier: parseUserTier(apiData.tier),
+    tokens_remaining: typeof apiData.tokens_remaining === 'number' ? apiData.tokens_remaining : 0,
+    purchased_tokens: typeof apiData.purchased_tokens === 'number' ? apiData.purchased_tokens : 0,
+    isAdmin: Boolean(apiData.isAdmin)
+  };
+};
+
 interface ApiContextType {
   // State
   conversations: Conversation[];
@@ -46,6 +72,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
       const health = await apiClient.healthCheck();
       if (!health.success) {
         setError(health.error || 'Backend server not available');
+        setLoading(false);
         return;
       }
 
@@ -65,7 +92,8 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
       // Load current user if logged in
       const userResponse = await apiClient.getCurrentUser();
       if (userResponse.success && userResponse.data) {
-        setCurrentUser(userResponse.data);
+        const user = transformApiUser(userResponse.data);
+        setCurrentUser(user);
       }
 
       setError(null);
@@ -99,7 +127,10 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
       return response;
     } catch (err) {
       console.error('Failed to create conversation:', err);
-      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Unknown error' 
+      };
     }
   };
 
@@ -109,7 +140,10 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
       return response;
     } catch (err) {
       console.error('Failed to like conversation:', err);
-      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Unknown error' 
+      };
     }
   };
 
@@ -126,16 +160,18 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
 
   const participateInDebate = async (debateId: string, position: string, argument: string): Promise<ApiResponse> => {
     try {
-      // Note: This method doesn't exist on apiClient yet - we'll implement it when needed
-      // For now, return a placeholder response
-      console.log('Participating in debate:', { debateId, position, argument });
+      // This endpoint would be implemented when debate functionality is added
+      // For now, return error indicating feature not implemented
       return { 
-        success: true, 
-        message: 'Debate participation would be processed in production'
+        success: false, 
+        error: 'Debate participation not yet implemented. Check back soon!' 
       };
     } catch (err) {
       console.error('Failed to participate in debate:', err);
-      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Unknown error' 
+      };
     }
   };
 
@@ -143,21 +179,16 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await apiClient.authenticate(email, password);
       if (response.success && response.data) {
-        const user: User = {
-          id: response.data.id || `user-${Date.now()}`,
-          email: response.data.email || email,
-          name: response.data.name || email.split('@')[0],
-          tier: (response.data.tier as User['tier']) || 'free',
-          tokens_remaining: response.data.tokens_remaining || 0,
-          purchased_tokens: response.data.purchased_tokens || 0,
-          isAdmin: response.data.isAdmin || false
-        };
+        const user = transformApiUser(response.data);
         setCurrentUser(user);
       }
       return response;
     } catch (err) {
       console.error('Login failed:', err);
-      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Unknown error' 
+      };
     }
   };
 
@@ -165,28 +196,23 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await apiClient.register(userData.email, userData.password, userData.name);
       if (response.success && response.data) {
-        const user: User = {
-          id: response.data.id || `user-${Date.now()}`,
-          email: response.data.email || userData.email,
-          name: response.data.name || userData.name,
-          tier: (response.data.tier as User['tier']) || 'free',
-          tokens_remaining: response.data.tokens_remaining || 0,
-          purchased_tokens: response.data.purchased_tokens || 0,
-          isAdmin: false
-        };
+        const user = transformApiUser(response.data);
         setCurrentUser(user);
       }
       return response;
     } catch (err) {
       console.error('Registration failed:', err);
-      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Unknown error' 
+      };
     }
   };
 
   const logout = () => {
     // Clear local state
     setCurrentUser(null);
-    // Note: apiClient doesn't have logout method - it's handled by AuthProvider
+    // Clear localStorage (handled by AuthProvider in production)
     localStorage.removeItem('auth_token');
     localStorage.removeItem('janus_user');
   };
@@ -195,15 +221,7 @@ export function ApiProvider({ children }: { children: React.ReactNode }) {
     try {
       const response = await apiClient.getCurrentUser();
       if (response.success && response.data) {
-        const user: User = {
-          id: response.data.id || currentUser?.id || `user-${Date.now()}`,
-          email: response.data.email || currentUser?.email || '',
-          name: response.data.name || currentUser?.name || '',
-          tier: (response.data.tier as User['tier']) || currentUser?.tier || 'free',
-          tokens_remaining: response.data.tokens_remaining || currentUser?.tokens_remaining || 0,
-          purchased_tokens: response.data.purchased_tokens || currentUser?.purchased_tokens || 0,
-          isAdmin: response.data.isAdmin || currentUser?.isAdmin || false
-        };
+        const user = transformApiUser(response.data);
         setCurrentUser(user);
       }
     } catch (err) {
