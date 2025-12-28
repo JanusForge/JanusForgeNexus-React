@@ -62,7 +62,7 @@ const tierConfig = TIER_CONFIGS[currentTier];
               <div className="text-center">
                 <div className="text-gray-400 text-sm mb-2">Tokens Available</div>
                 <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent mb-1">
-                  {user ? (user.tokens_remaining + user.purchased_tokens) : 0}
+                  {user ? ((user.tokens_remaining || 0) + (user.purchased_tokens || 0)) : 0}
                 </div>
                 <div className="text-gray-300">
                   {user?.tokens_remaining || 0} monthly + {user?.purchased_tokens || 0} purchased
