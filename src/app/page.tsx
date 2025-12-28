@@ -2,12 +2,22 @@
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
-// Added Video back to imports
-温import { Zap, Loader2, ShieldCheck, Globe, Download, Video } from 'lucide-react';
+import { Zap, Loader2, ShieldCheck, Globe, Download, Video } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
+
+// Define strict types for production build
+interface ConversationMessage {
+  id: string;
+  sender: 'ai' | 'user';
+  avatar?: string;
+  name: string;
+  content: string;
+  timestamp: string;
+  isVerdict?: boolean;
+}
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
@@ -17,7 +27,7 @@ export default function HomePage() {
   const [activeTyping, setActiveTyping] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
-  const [conversation, setConversation] = useState<any[]>([]);
+  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -35,12 +45,13 @@ export default function HomePage() {
       setActiveTyping(data.councilor);
     });
 
-    socketRef.current.on('post:incoming', (newMessage: any) => {
+    socketRef.current.on('post:incoming', (newMessage: ConversationMessage) => {
       setConversation(prev => [newMessage, ...prev]);
     });
 
-    socketRef.current.on('ai:response', (aiMessage: any) => {
+    socketRef.current.on('ai:response', (aiMessage: ConversationMessage) => {
       setConversation(prev => [aiMessage, ...prev]);
+      // Local UI deduction for responsiveness
       setUserTokenBalance(prev => prev - (aiMessage.isVerdict ? 2 : 1));
       if (aiMessage.isVerdict) setIsSending(false);
     });
@@ -76,18 +87,18 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-purple-500/30">
+    <div className="min-h-screen bg-black text-white selection:bg-purple-500/30 font-sans">
       
-      {/* --- HERO SECTION WITH TRADEMARK --- */}
+      {/* --- HERO SECTION --- */}
       <div className="relative pt-24 pb-16 overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(37,99,235,0.1),transparent_50%)]"></div>
         <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6 animate-pulse">
-            <Video size={12} className="text-blue-400" /> {/* RESTORED VIDEO LOGO */}
+            <Video size={12} className="text-blue-400" />
             LIVE NEXUS ACTIVE
           </div>
           <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white via-white to-gray-500 bg-clip-text text-transparent">
-            JANUS FORGE <span className="text-blue-500">NEXUS®</span> {/* RESTORED TRADEMARK */}
+            JANUS FORGE <span className="text-blue-500">NEXUS®</span>
           </h1>
           <p className="max-w-2xl mx-auto text-gray-400 text-lg md:text-xl font-medium leading-relaxed">
             Archive your debates. Export the intelligence. <br/>
@@ -99,13 +110,12 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           
-          {/* --- AI CONVERSATION FEED --- */}
           <div className="bg-[#0A0A0A] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
                 <h2 className="font-bold tracking-tight uppercase text-xs flex items-center gap-2">
-                  <Video size={14} className="text-gray-500" /> {/* SECONDARY VIDEO LOGO */}
+                  <Video size={14} className="text-gray-500" />
                   Council Chamber
                 </h2>
               </div>
@@ -180,14 +190,17 @@ export default function HomePage() {
                 <div className="p-3 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
                   <Zap className="text-yellow-500 fill-yellow-500" size={24} />
                 </div>
-                <h2 className="text-3xl font-black tracking-tighter italic uppercase tracking-widest flex items-center gap-2">
-                  THE DAILY FORGE
-                </h2>
+                <h2 className="text-3xl font-black tracking-tighter italic">THE DAILY FORGE</h2>
               </div>
               <Link href="/daily-forge" className="group relative block w-full py-5 bg-white text-black rounded-2xl text-center font-black text-xl overflow-hidden transition-all hover:scale-[1.02]">
-                <span className="relative z-10">ENTER THE FORGE</span>
+                <span className="relative z-10 text-black">ENTER THE FORGE</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </Link>
+            </div>
+            
+            <div className="p-8 rounded-3xl border border-dashed border-white/10 text-center">
+              <ShieldCheck className="mx-auto mb-4 text-gray-600" size={32} />
+              <p className="text-xs font-bold text-gray-600 uppercase tracking-widest">Enterprise Encrypted • 256-Bit SSL</p>
             </div>
           </div>
 
