@@ -33,7 +33,8 @@ export default function ProfilePage() {
     return null;
   }
 
-  const currentTier = user?.tier || 'free';
+  // Syncing the tier logic with our AuthProvider updates
+  const currentTier = (user?.tier?.toLowerCase() || 'free') as keyof typeof TIER_CONFIGS;
   const tierConfig = TIER_CONFIGS[currentTier];
   
   // Calculate tokens used based on monthly_tokens and tokens_remaining
