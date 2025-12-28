@@ -64,8 +64,9 @@ export default function HomePage() {
 
     socketRef.current.on('ai:response', (aiMessage: ConversationMessage) => {
       console.log("🤖 AI Response Received:", aiMessage);
-      // Add message to feed and RESET the "Thinking" button state
+      // Add the AI message to the feed
       setConversation(prev => [aiMessage, ...prev]);
+      // RESET the "Thinking" button state to "Post"
       setIsSending(false); 
     });
 
