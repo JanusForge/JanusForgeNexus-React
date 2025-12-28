@@ -19,13 +19,12 @@ interface ConversationMessage {
 }
 
 export default function HomePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
   // --- ADMIN GOD MODE CHECK ---
   const isAdmin = (user as any)?.username === 'admin-access';
 
-  // --- UPDATED STATE TO MATCH FORMULA LOGIC ---
   const [tokensRemaining, setTokensRemaining] = useState<number>(0);
   const [activeTyping, setActiveTyping] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState<string>('');
@@ -46,10 +45,9 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  // FORCE STATE SYNC WITH NEW PROPERTY
+  // SYNC TOKENS
   useEffect(() => {
     if (user) {
-      // Use tokens_remaining calculated by AuthProvider
       setTokensRemaining(isAdmin ? 999999 : (user as any).tokens_remaining || 0);
     }
   }, [user, isAdmin]);
@@ -69,16 +67,14 @@ export default function HomePage() {
     socketRef.current.on('ai:response', (msg: ConversationMessage) => {
       setConversation(prev => [msg, ...prev]);
       if (!isAdmin) {
-        // Update the new state locally
         setTokensRemaining(prev => Math.max(0, prev - (msg.isVerdict ? 2 : 1)));
       }
       if (msg.isVerdict) setIsSending(false);
     });
 
     return () => { socketRef.current?.disconnect(); };
-  }, [user, isAdmin]);
+  }, [isAdmin]);
 
-  // Download Logic
   const exportNexusFeed = () => {
     if (conversation.length === 0) return;
     const content = conversation.map(msg => `[${msg.name}] (${new Date(msg.timestamp).toLocaleString()})\n${msg.content}\n\n`).reverse().join('');
@@ -92,7 +88,6 @@ export default function HomePage() {
   };
 
   const handleSendMessage = () => {
-    // Check against tokensRemaining state
     if (!userMessage.trim() || isSending || (!isAdmin && tokensRemaining <= 0)) return;
     setIsSending(true);
     socketRef.current?.emit('post:new', {
@@ -105,8 +100,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
-
-      {/* --- HERO SECTION --- */}
       <div className="relative pt-12 pb-12 text-center border-b border-white/5">
         <div className="flex justify-center mb-6">
           <video autoPlay muted loop playsInline className="w-80 h-80 md:w-96 md:h-96 object-contain shadow-[0_0_80px_rgba(37,99,235,0.15)]">
@@ -130,8 +123,6 @@ export default function HomePage() {
 
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
-
-          {/* --- LEFT PANEL: AI FEED --- */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
               <h2 className="font-bold flex items-center gap-2 text-sm">
@@ -139,13 +130,12 @@ export default function HomePage() {
                 LIVE AI CONVERSATION PANEL
               </h2>
               <div className="flex items-center gap-3">
-                <button onClick={exportNexusFeed} className="p-2 text-gray-400 hover:text-white transition-colors" title="Export Session">
+                <button onClick={exportNexusFeed} className="p-2 text-gray-400 hover:text-white transition-colors">
                   <Download size={16} />
                 </button>
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
                   <Zap size={14} className="text-purple-400 fill-purple-400" />
                   <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
-                    {/* UPDATED UI REFERENCE */}
                     {isAdmin ? 'GOD MODE (∞)' : `${tokensRemaining} TOKENS`}
                   </span>
                 </div>
@@ -156,7 +146,6 @@ export default function HomePage() {
               <textarea
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
-                {/* UPDATED PLACEHOLDER CHECK */}
                 placeholder={isAdmin || tokensRemaining > 0 ? "What would you like to ask the AI Council?" : "Insufficient tokens."}
                 disabled={(!isAdmin && tokensRemaining <= 0) || isSending}
                 className="w-full bg-black/40 border border-gray-700 rounded-2xl p-4 text-sm focus:border-blue-500 transition-all outline-none resize-none"
@@ -164,7 +153,6 @@ export default function HomePage() {
               />
               <button
                 onClick={handleSendMessage}
-                {/* UPDATED BUTTON LOCK */}
                 disabled={isSending || !userMessage.trim() || (!isAdmin && tokensRemaining <= 0)}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20"
               >
@@ -190,7 +178,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* --- RIGHT PANEL --- */}
           <div className="sticky top-12 space-y-6">
             <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
               <div className="flex justify-between items-center mb-6">
@@ -218,13 +205,7 @@ export default function HomePage() {
                 <ChevronRight size={18} />
               </Link>
             </div>
-
-            <div className="p-6 rounded-[2rem] border border-dashed border-white/10 text-center opacity-40 bg-white/[0.01]">
-              <ShieldCheck className="mx-auto mb-3 text-gray-600" size={24} />
-              <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">Secure Nexus Protocol</p>
-            </div>
           </div>
-
         </div>
       </div>
     </div>
