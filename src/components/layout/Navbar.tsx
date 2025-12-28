@@ -34,18 +34,18 @@ export default function Navbar() {
             <Link href="/pricing" className="text-gray-300 hover:text-white transition">
               Pricing
             </Link>
-            
+
             {isAuthenticated ? (
               <>
-                {/* Token Display */}
+                {/* Token Display with Null Safety */}
                 <div className="flex items-center space-x-2 px-3 py-1 bg-gray-800/50 rounded-full">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   <span className="text-white font-medium">
-                    {user ? user.tokens_remaining + user.purchased_tokens : 0}
+                    {user ? ((user.tokens_remaining || 0) + (user.purchased_tokens || 0)) : 0}
                   </span>
                   <span className="text-gray-400 text-sm">tokens</span>
                 </div>
-                
+
                 {/* User Menu */}
                 <div className="relative group">
                   <button className="flex items-center space-x-2 text-gray-300 hover:text-white">
@@ -57,12 +57,13 @@ export default function Navbar() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                  
+
                   <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <div className="p-4 border-b border-gray-700">
                       <div className="font-medium text-white">{user?.name || user?.email}</div>
                       <div className="text-sm text-gray-400">
-                        {user ? TIER_CONFIGS[user.tier].name : 'Free'} Tier
+                        {/* Type-safe tier lookup */}
+                        {user ? TIER_CONFIGS[user.tier as keyof typeof TIER_CONFIGS]?.name : 'Free'} Tier
                       </div>
                     </div>
                     <div className="p-2">
@@ -133,16 +134,16 @@ export default function Navbar() {
               <Link href="/pricing" className="text-gray-300 hover:text-white">
                 Pricing
               </Link>
-              
+
               {isAuthenticated ? (
                 <>
                   <div className="px-3 py-2 bg-gray-800/50 rounded-lg">
                     <div className="text-white font-medium">Token Balance</div>
                     <div className="text-2xl font-bold text-green-400">
-                      {user ? user.tokens_remaining + user.purchased_tokens : 0}
+                      {user ? ((user.tokens_remaining || 0) + (user.purchased_tokens || 0)) : 0}
                     </div>
                   </div>
-                  
+
                   <Link href="/profile" className="text-gray-300 hover:text-white">
                     Profile
                   </Link>
