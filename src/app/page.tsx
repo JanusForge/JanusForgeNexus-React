@@ -144,13 +144,13 @@ export default function HomePage() {
 
             <div className="p-6 space-y-4">
               <textarea
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
+                value={userMessage}
+                onChange={(e) => setuserMessage(e.target.value)}
                 onKeyDown={(e) => {
                   // Check if Enter is pressed WITHOUT the Shift key
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault(); // Prevent a new line from being created
-                    if (inputMessage.trim() && !isSending) {
+                    if (Message.trim() && !isSending) {
                       handleSendMessage(); // Trigger the council engagement
                     }
                   }
