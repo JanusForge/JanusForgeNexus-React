@@ -49,24 +49,20 @@ export default function HomePage() {
   const [topic, setTopic] = useState<Topic | null>(null);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
 
-  // 1. SOCKET INITIALIZATION: The Real-Time Engine
+  // 1. SOCKET INITIALIZATION
   useEffect(() => {
-    // Initialize socket connection with polling fallback for Render stability
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
-      transports: ['polling', 'websocket'], 
+      transports: ['polling', 'websocket'],
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
     });
 
-    // Listen for incoming posts (User or AI)
     socketRef.current.on('post:incoming', (newMessage: ConversationMessage) => {
       setConversation(prev => [newMessage, ...prev]);
     });
 
-    // Listen for AI Council responses (The Typing Feel)
     socketRef.current.on('ai:response', (aiData: any) => {
-      // Map backend socket structure to frontend interface
       const aiMessage: ConversationMessage = aiData.post || aiData;
       setConversation(prev => [aiMessage, ...prev]);
       setIsSending(false);
@@ -77,7 +73,7 @@ export default function HomePage() {
     };
   }, []);
 
-  // 2. DATA SYNC: Initial Fetch for Topic and Feed
+  // 2. DATA SYNC
   const fetchBackendData = useCallback(async () => {
     try {
       const [topicRes, convRes] = await Promise.all([
@@ -87,13 +83,11 @@ export default function HomePage() {
 
       if (topicRes.ok) {
         const data = await topicRes.json();
-        // Handle nested topic object from Express backend
         setTopic(data.topic || data);
       }
-      
+
       if (convRes.ok) {
         const data = await convRes.json();
-        // Handle nested conversations array { conversations: [...] }
         setConversation(data.conversations || data);
       }
     } catch (error) {
@@ -105,7 +99,7 @@ export default function HomePage() {
     fetchBackendData();
   }, [fetchBackendData]);
 
-  // 3. TIMER LOGIC: Sync with Backend nextUpdate
+  // 3. TIMER LOGIC
   useEffect(() => {
     if (!topic?.nextUpdate) return;
     const interval = setInterval(() => {
@@ -125,7 +119,7 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [topic, fetchBackendData]);
 
-  // 4. EMIT MESSAGE: Real-time send
+  // 4. EMIT MESSAGE
   const handleSendMessage = () => {
     if (!userMessage.trim() || isSending || !isAuthenticated) return;
 
@@ -134,15 +128,22 @@ export default function HomePage() {
     const payload = {
       content: userMessage,
       userId: user?.id,
-      name: user?.name || 'Anonymous',
-      tier: user?.tier || 'basic',
+      name: user?.username || 'Anonymous', // Fixed to use username if available
+      tier: user?.tier || 'free',
       timestamp: new Date().toISOString(),
-      conversationId: 'home-preview' // Used by backend socket rooms
+      conversationId: 'home-preview'
     };
 
-    // Emit via Socket instead of Fetch for instant relay
     socketRef.current?.emit('post:new', payload);
     setUserMessage('');
+  };
+
+  // --- NEW: HANDLE KEYDOWN (Enter to Post) ---
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevents a new line from being added
+      handleSendMessage();
+    }
   };
 
   const getTierBadgeColor = (tier?: string) => {
@@ -189,6 +190,7 @@ export default function HomePage() {
                   <textarea
                     value={userMessage}
                     onChange={(e) => setUserMessage(e.target.value)}
+                    onKeyDown={handleKeyDown} // Attached handler
                     placeholder={isAuthenticated ? "Start a conversation with AI models..." : "Sign in to join the conversation"}
                     className="w-full px-4 py-3 bg-gray-800/30 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500 resize-none text-white"
                     rows={3}
