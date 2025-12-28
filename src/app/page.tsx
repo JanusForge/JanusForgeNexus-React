@@ -62,13 +62,12 @@ export default function HomePage() {
       setConversation(prev => [newMessage, ...prev]);
     });
 
-  // Inside your useEffect in page.tsx
-  socketRef.current.on('ai:response', (aiMessage: ConversationMessage) => {
-    console.log("🤖 New AI message received:", aiMessage);
-    // This adds the REAL backend message to the top of your feed
-    setConversation(prev => [aiMessage, ...prev]);
-    setIsSending(false);
-  });
+    socketRef.current.on('ai:response', (aiMessage: ConversationMessage) => {
+      console.log("🤖 AI Response Received:", aiMessage);
+      // Add message to feed and turn off "Thinking..." button
+      setConversation(prev => [aiMessage, ...prev]);
+      setIsSending(false); 
+    });
 
     return () => {
       socketRef.current?.disconnect();
