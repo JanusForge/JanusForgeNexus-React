@@ -23,8 +23,10 @@ export default function BillingPage() {
     return null;
   }
 
-  const currentTier = user?.tier || 'free';
-  const tierConfig = TIER_CONFIGS[currentTier];
+// Force the tier to match the keys of TIER_CONFIGS to satisfy TypeScript
+const currentTier = (user?.tier?.toLowerCase() || 'free') as keyof typeof TIER_CONFIGS;
+const tierConfig = TIER_CONFIGS[currentTier];
+
 
   const handlePurchase = (pkgId: string) => {
     // In production, this would redirect to Stripe checkout
