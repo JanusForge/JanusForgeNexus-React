@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
-import { Zap, Loader2, Globe, Download, ShieldCheck, Clock, ChevronRight } from 'lucide-react';
+import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 
@@ -22,15 +22,16 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
+  // --- CRITICAL ADMIN OVERRIDE LOGIC ---
+  const isAdmin = (user as any)?.username === 'admin-access';
+  
+  // Initialize with Infinity if admin to prevent "0 tokens" flicker on load
   const [userTokenBalance, setUserTokenBalance] = useState<number>(0);
   const [activeTyping, setActiveTyping] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [timeLeft, setTimeLeft] = useState({ hours: 23, minutes: 59, seconds: 59 });
-
-  // 1. ADMIN GOD MODE CHECK
-  const isAdmin = (user as any)?.username === 'admin-access';
 
   // 24h Countdown Logic
   useEffect(() => {
@@ -45,10 +46,11 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
+  // FORCE STATE SYNC
   useEffect(() => {
-    // 2. FORCE UNLIMITED TOKENS FOR ADMIN
     if (user) {
-      setUserTokenBalance(isAdmin ? Infinity : (user as any).token_balance || 0);
+      // Force 999k tokens in the UI state if the username matches
+      setUserTokenBalance(isAdmin ? 999999 : (user as any).token_balance || 0);
     }
   }, [user, isAdmin]);
 
@@ -66,9 +68,8 @@ export default function HomePage() {
 
     socketRef.current.on('ai:response', (msg: ConversationMessage) => {
       setConversation(prev => [msg, ...prev]);
-      // God Mode Check: skip deduction for admin-access
       if (!isAdmin) {
-        setUserTokenBalance(prev => prev - (msg.isVerdict ? 2 : 1));
+        setUserTokenBalance(prev => Math.max(0, prev - (msg.isVerdict ? 2 : 1)));
       }
       if (msg.isVerdict) setIsSending(false);
     });
@@ -76,22 +77,10 @@ export default function HomePage() {
     return () => { socketRef.current?.disconnect(); };
   }, [user, isAdmin]);
 
-  // Restored Download Logic
-  const exportNexusFeed = () => {
-    if (conversation.length === 0) return;
-    const content = conversation.map(msg => `[${msg.name}] (${new Date(msg.timestamp).toLocaleString()})\n${msg.content}\n\n`).reverse().join('');
-    const blob = new Blob([`JANUS FORGE NEXUS® SESSION\n\n${content}`], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `nexus-debate-${Date.now()}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   const handleSendMessage = () => {
-    // 3. REMOVED TOKEN REQUIREMENT FOR ADMIN
-    if (!userMessage.trim() || isSending || !isAuthenticated) return;
+    // Admin bypasses the token check here entirely
+    if (!userMessage.trim() || isSending || (!isAdmin && userTokenBalance <= 0)) return;
+    
     setIsSending(true);
     socketRef.current?.emit('post:new', {
       content: userMessage,
@@ -138,9 +127,9 @@ export default function HomePage() {
               </h2>
               <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
                 <Zap size={14} className="text-purple-400 fill-purple-400" />
-                {/* 4. VISUAL DISPLAY OF GOD MODE */}
                 <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
-                  {isAdmin ? 'GOD MODE ACCESS' : `${userTokenBalance} TOKENS`}
+                  {/* DISPLAY OVERRIDE */}
+                  {isAdmin ? 'GOD MODE (∞)' : `${userTokenBalance} TOKENS`}
                 </span>
               </div>
             </div>
@@ -149,15 +138,15 @@ export default function HomePage() {
               <textarea
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
-                // 5. REMOVED DISABLED STATES FOR ADMIN
-                placeholder={isAdmin || userTokenBalance > 5 ? "What would you like to ask the AI Council?" : "Insufficient tokens."}
-                disabled={(!isAdmin && userTokenBalance <= 5) || isSending}
+                {/* DYNAMIC PLACEHOLDER AND UNLOCK */}
+                placeholder={isAdmin || userTokenBalance > 0 ? "What would you like to ask the AI Council?" : "Insufficient tokens."}
+                disabled={(!isAdmin && userTokenBalance <= 0) || isSending}
                 className="w-full bg-black/40 border border-gray-700 rounded-2xl p-4 text-sm focus:border-blue-500 transition-all outline-none resize-none"
                 rows={3}
               />
               <button
                 onClick={handleSendMessage}
-                disabled={isSending || !userMessage.trim() || (!isAdmin && userTokenBalance <= 5)}
+                disabled={isSending || !userMessage.trim() || (!isAdmin && userTokenBalance <= 0)}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20"
               >
                 {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Engage Council'}
@@ -220,10 +209,6 @@ export default function HomePage() {
                 JOIN THE CONVERSATION
                 <ChevronRight size={18} />
               </Link>
-            </div>
-            <div className="p-6 rounded-[2rem] border border-dashed border-white/10 text-center opacity-40 bg-white/[0.01]">
-              <ShieldCheck className="mx-auto mb-3 text-gray-600" size={24} />
-              <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">Secure Nexus Protocol</p>
             </div>
           </div>
 
