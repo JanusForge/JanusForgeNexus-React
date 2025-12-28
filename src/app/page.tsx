@@ -150,7 +150,7 @@ export default function HomePage() {
                   // Check if Enter is pressed WITHOUT the Shift key
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault(); // Prevent a new line from being created
-                    if (Message.trim() && !isSending) {
+                    if (userMessage.trim() && !isSending) {
                       handleSendMessage(); // Trigger the council engagement
                     }
                   }
