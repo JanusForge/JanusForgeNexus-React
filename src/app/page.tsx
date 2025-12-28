@@ -6,7 +6,6 @@ import { Zap, Loader2, Globe, Download, ShieldCheck, Clock, ChevronRight } from 
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 
-// Use the production URL from your environment or fallback to your Render URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 interface ConversationMessage {
@@ -23,7 +22,6 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
   
-  // UI States
   const [userTokenBalance, setUserTokenBalance] = useState<number>(0);
   const [activeTyping, setActiveTyping] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState<string>('');
@@ -31,43 +29,7 @@ export default function HomePage() {
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [timeLeft, setTimeLeft] = useState({ hours: 23, minutes: 59, seconds: 59 });
 
-  // 1. Connection Logic - Re-stabilized
-  useEffect(() => {
-    socketRef.current = io(API_BASE_URL, {
-      withCredentials: true,
-      transports: ['polling', 'websocket'],
-    });
-
-    socketRef.current.on('connect', () => console.log("✅ Connected to Nexus"));
-    
-    socketRef.current.on('ai:typing', (data) => setActiveTyping(data.councilor));
-    
-    socketRef.current.on('post:incoming', (msg: ConversationMessage) => {
-      setConversation(prev => [msg, ...prev]);
-    });
-
-    socketRef.current.on('ai:response', (msg: ConversationMessage) => {
-      setConversation(prev => [msg, ...prev]);
-      if ((user as any)?.username !== 'admin-access') {
-        setUserTokenBalance(prev => prev - (msg.isVerdict ? 2 : 1));
-      }
-      if (msg.isVerdict) setIsSending(false);
-    });
-
-    socketRef.current.on('error', (err) => {
-      alert(err.message);
-      setIsSending(false);
-    });
-
-    return () => { socketRef.current?.disconnect(); };
-  }, [user]);
-
-  // 2. Token Sync
-  useEffect(() => {
-    if (user) setUserTokenBalance((user as any).token_balance || 0);
-  }, [user]);
-
-  // 3. Daily Forge Timer
+  // 24h Countdown Logic
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -80,7 +42,35 @@ export default function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 4. Download/Save Logic
+  useEffect(() => {
+    if (user) setUserTokenBalance((user as any).token_balance || 0);
+  }, [user]);
+
+  useEffect(() => {
+    socketRef.current = io(API_BASE_URL, {
+      withCredentials: true,
+      transports: ['polling', 'websocket'],
+    });
+
+    socketRef.current.on('ai:typing', (data) => setActiveTyping(data.councilor));
+    
+    socketRef.current.on('post:incoming', (msg: ConversationMessage) => {
+      setConversation(prev => [msg, ...prev]);
+    });
+
+    socketRef.current.on('ai:response', (msg: ConversationMessage) => {
+      setConversation(prev => [msg, ...prev]);
+      // God Mode Check: skip deduction for admin-access
+      if ((user as any)?.username !== 'admin-access') {
+        setUserTokenBalance(prev => prev - (msg.isVerdict ? 2 : 1));
+      }
+      if (msg.isVerdict) setIsSending(false);
+    });
+
+    return () => { socketRef.current?.disconnect(); };
+  }, [user]);
+
+  // Restored Download Logic
   const exportNexusFeed = () => {
     if (conversation.length === 0) return;
     const content = conversation.map(msg => `[${msg.name}] (${new Date(msg.timestamp).toLocaleString()})\n${msg.content}\n\n`).reverse().join('');
@@ -90,6 +80,7 @@ export default function HomePage() {
     link.href = url;
     link.download = `nexus-debate-${Date.now()}.txt`;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleSendMessage = () => {
@@ -114,11 +105,11 @@ export default function HomePage() {
           </video>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
+        <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black mb-6 animate-pulse uppercase tracking-[0.2em]">
             <Globe size={10} /> Live Nexus Active
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white via-white to-gray-500 bg-clip-text text-transparent uppercase">
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white via-white to-gray-500 bg-clip-text text-transparent uppercase">
             Janus Forge <span className="text-blue-500">Nexus®</span>
           </h1>
           <p className="max-w-3xl mx-auto text-gray-400 text-lg md:text-xl font-bold italic tracking-tight leading-relaxed">
@@ -131,10 +122,10 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
           
-          {/* --- LEFT: LIVE NEXUS FEED --- */}
+          {/* --- RESTORED LEFT PANEL: AI FEED --- */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
-              <h2 className="font-bold flex items-center gap-2 text-[10px] tracking-widest uppercase">
+              <h2 className="font-bold flex items-center gap-2 text-xs tracking-widest uppercase">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 LIVE NEXUS FEED
               </h2>
@@ -144,7 +135,7 @@ export default function HomePage() {
                 </button>
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
                   <Zap size={14} className="text-purple-400 fill-purple-400" />
-                  <span className="text-xs font-bold text-purple-300 tracking-tighter">
+                  <span className="text-xs font-bold text-purple-300">
                     {(user as any)?.username === 'admin-access' ? '∞' : userTokenBalance}
                   </span>
                 </div>
@@ -165,7 +156,7 @@ export default function HomePage() {
                 disabled={isSending || !userMessage.trim()}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20 uppercase"
               >
-                {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Ignite the Debate'}
+                {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'IGNITE THE DEBATE'}
               </button>
             </div>
 
@@ -185,10 +176,10 @@ export default function HomePage() {
                     </div>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-black uppercase tracking-tighter ${msg.sender === 'ai' ? 'text-blue-400' : 'text-gray-400'}`}>
+                        <span className={`text-xs font-black uppercase tracking-tighter ${msg.sender === 'ai' ? 'text-blue-400' : 'text-gray-400'}`}>
                           {msg.name}
                         </span>
-                        {msg.isVerdict && <span className="text-[9px] bg-purple-500 px-2 py-0.5 rounded font-bold text-white uppercase tracking-tighter">Verdict</span>}
+                        {msg.isVerdict && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded font-bold text-white uppercase tracking-tighter">Verdict</span>}
                       </div>
                       <p className="text-sm leading-relaxed text-gray-200">{msg.content}</p>
                     </div>
@@ -198,7 +189,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* --- RIGHT: THE DAILY FORGE --- */}
+          {/* --- RIGHT PANEL: DAILY FORGE --- */}
           <div className="sticky top-12 space-y-6">
             <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
               <div className="flex justify-between items-center mb-6">
@@ -213,12 +204,12 @@ export default function HomePage() {
               </div>
               <div className="space-y-4 mb-8 text-[11px]">
                 <div className="bg-white/[0.03] p-4 rounded-xl border border-white/5">
-                  <span className="text-yellow-500 font-black uppercase block mb-1 tracking-tighter">Scout</span>
-                  <p className="text-gray-400 italic leading-relaxed font-medium">"I&apos;m finding data suggesting these neural guardrails are actually throttling creativity."</p>
+                  <span className="text-yellow-500 font-black uppercase block mb-1">Scout</span>
+                  <p className="text-gray-400 italic font-medium leading-relaxed">"The Council is playing it safe. These neural guardrails are actually throttling creativity."</p>
                 </div>
                 <div className="bg-blue-500/5 p-4 rounded-xl border border-blue-500/10 text-right">
-                  <span className="text-blue-400 font-black uppercase block mb-1 text-right tracking-tighter">Council</span>
-                  <p className="text-gray-200 font-medium">"Guardrails aren&apos;t walls—they are lenses. Without them, intelligence is blind."</p>
+                  <span className="text-blue-400 font-black uppercase block mb-1 text-right">Council</span>
+                  <p className="text-gray-200 font-medium leading-relaxed">"Guardrails aren't walls—they are lenses. Without them, intelligence is blind."</p>
                 </div>
               </div>
               <Link href="/daily-forge" className="group flex items-center justify-between w-full p-5 bg-white text-black rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all">
@@ -226,7 +217,6 @@ export default function HomePage() {
                 <ChevronRight size={18} />
               </Link>
             </div>
-            
             <div className="p-6 rounded-[2rem] border border-dashed border-white/10 text-center opacity-40 bg-white/[0.01]">
               <ShieldCheck className="mx-auto mb-3 text-gray-600" size={24} />
               <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">Secure Nexus Protocol</p>
