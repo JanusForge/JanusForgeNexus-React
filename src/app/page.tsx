@@ -145,7 +145,7 @@ export default function HomePage() {
             <div className="p-6 space-y-4">
               <textarea
                 value={userMessage}
-                onChange={(e) => setuserMessage(e.target.value)}
+                onChange={(e) => setUserMessage(e.target.value)}
                 onKeyDown={(e) => {
                   // Check if Enter is pressed WITHOUT the Shift key
                   if (e.key === 'Enter' && !e.shiftKey) {
