@@ -2,7 +2,8 @@
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
-import { Zap, Loader2, ShieldCheck, Globe, Download } from 'lucide-react';
+// Added Video back to imports
+温import { Zap, Loader2, ShieldCheck, Globe, Download, Video } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 
@@ -12,14 +13,12 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
-  // Economy & Live States
   const [userTokenBalance, setUserTokenBalance] = useState<number>(0);
   const [activeTyping, setActiveTyping] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   const [conversation, setConversation] = useState<any[]>([]);
 
-  // Sync initial token balance
   useEffect(() => {
     if (user) {
       setUserTokenBalance((user as any).token_balance || 0);
@@ -42,7 +41,6 @@ export default function HomePage() {
 
     socketRef.current.on('ai:response', (aiMessage: any) => {
       setConversation(prev => [aiMessage, ...prev]);
-      // Deduct locally for immediate UI feedback
       setUserTokenBalance(prev => prev - (aiMessage.isVerdict ? 2 : 1));
       if (aiMessage.isVerdict) setIsSending(false);
     });
@@ -50,22 +48,13 @@ export default function HomePage() {
     return () => { socketRef.current?.disconnect(); };
   }, []);
 
-  // --- NEW: EXPORT LOGIC ---
   const exportNexusFeed = () => {
     if (conversation.length === 0) return;
-    
     const content = conversation
       .map(msg => `[${msg.name}] (${new Date(msg.timestamp).toLocaleString()})\n${msg.content}\n\n`)
-      .reverse() // Keep chronological order in the file
+      .reverse()
       .join('');
-      
-    const blob = new Blob([
-      `JANUS FORGE NEXUS SESSION\n`,
-      `Date: ${new Date().toLocaleString()}\n`,
-      `------------------------------------------\n\n`,
-      content
-    ], { type: 'text/plain' });
-    
+    const blob = new Blob([`JANUS FORGE NEXUS® SESSION\nDate: ${new Date().toLocaleString()}\n\n${content}`], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -89,16 +78,16 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-black text-white selection:bg-purple-500/30">
       
-      {/* --- HERO SECTION --- */}
+      {/* --- HERO SECTION WITH TRADEMARK --- */}
       <div className="relative pt-24 pb-16 overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(37,99,235,0.1),transparent_50%)]"></div>
         <div className="max-w-7xl mx-auto px-4 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6 animate-pulse">
-            <Globe size={12} />
+            <Video size={12} className="text-blue-400" /> {/* RESTORED VIDEO LOGO */}
             LIVE NEXUS ACTIVE
           </div>
           <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white via-white to-gray-500 bg-clip-text text-transparent">
-            JANUS FORGE <span className="text-blue-500">NEXUS</span>
+            JANUS FORGE <span className="text-blue-500">NEXUS®</span> {/* RESTORED TRADEMARK */}
           </h1>
           <p className="max-w-2xl mx-auto text-gray-400 text-lg md:text-xl font-medium leading-relaxed">
             Archive your debates. Export the intelligence. <br/>
@@ -115,11 +104,13 @@ export default function HomePage() {
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                <h2 className="font-bold tracking-tight uppercase text-xs">Council Chamber</h2>
+                <h2 className="font-bold tracking-tight uppercase text-xs flex items-center gap-2">
+                  <Video size={14} className="text-gray-500" /> {/* SECONDARY VIDEO LOGO */}
+                  Council Chamber
+                </h2>
               </div>
               
               <div className="flex items-center gap-4">
-                {/* Export Button */}
                 <button 
                   onClick={exportNexusFeed}
                   disabled={conversation.length === 0}
@@ -129,7 +120,6 @@ export default function HomePage() {
                   Save Session
                 </button>
                 
-                {/* Token Display */}
                 <div className="flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full">
                   <Zap size={14} className="text-blue-400 fill-blue-400" />
                   <span className="text-sm font-black text-blue-300">{userTokenBalance}</span>
@@ -155,7 +145,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Typing Indicator */}
             {activeTyping && (
               <div className="px-8 py-3 bg-blue-500/5 text-[10px] font-black tracking-[0.2em] text-blue-400 flex items-center gap-3 border-y border-white/5 uppercase">
                 <Loader2 size={10} className="animate-spin" />
@@ -175,7 +164,7 @@ export default function HomePage() {
                         <span className={`text-xs font-black uppercase tracking-widest ${msg.sender === 'ai' ? 'text-blue-400' : 'text-gray-500'}`}>
                           {msg.name}
                         </span>
-                        {msg.isVerdict && <span className="text-[10px] bg-blue-500 px-2.5 py-1 rounded-md font-black text-white uppercase tracking-tighter">Verdict</span>}
+                        {msg.isVerdict && <span className="text-[10px] bg-blue-500 px-2.5 py-1 rounded-md font-black text-white uppercase tracking-tighter">Janus Verdict</span>}
                       </div>
                       <p className="text-[15px] leading-relaxed text-gray-300 font-medium">{msg.content}</p>
                     </div>
@@ -185,14 +174,15 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* --- RIGHT: THE DAILY FORGE --- */}
           <div className="sticky top-12 space-y-8">
             <div className="bg-gradient-to-b from-[#0F0F0F] to-black p-10 rounded-[2rem] border border-white/10 shadow-3xl">
               <div className="flex items-center gap-4 mb-8">
                 <div className="p-3 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
                   <Zap className="text-yellow-500 fill-yellow-500" size={24} />
                 </div>
-                <h2 className="text-3xl font-black tracking-tighter italic">THE DAILY FORGE</h2>
+                <h2 className="text-3xl font-black tracking-tighter italic uppercase tracking-widest flex items-center gap-2">
+                  THE DAILY FORGE
+                </h2>
               </div>
               <Link href="/daily-forge" className="group relative block w-full py-5 bg-white text-black rounded-2xl text-center font-black text-xl overflow-hidden transition-all hover:scale-[1.02]">
                 <span className="relative z-10">ENTER THE FORGE</span>
