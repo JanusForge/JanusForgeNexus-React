@@ -66,12 +66,13 @@ export default function TokenPurchase() {
       
       <div className="mb-6">
         <div className="text-gray-400 mb-2">Your Current Tokens:</div>
-        <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-          {(user.tokens_remaining + user.purchased_tokens).toLocaleString()}
-        </div>
-        <div className="text-gray-300 text-sm mt-1">
-          {user.tokens_remaining} monthly + {user.purchased_tokens} purchased
-        </div>
+      // Force 0 as a fallback for both values to satisfy TypeScript
+      <div className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        {((user?.tokens_remaining || 0) + (user?.purchased_tokens || 0)).toLocaleString()}
+      </div>
+      <div className="text-gray-300 text-sm mt-1">
+        {user?.tokens_remaining || 0} monthly + {user?.purchased_tokens || 0} purchased
+      </div>  
       </div>
 
       <div className="space-y-4 mb-6">
