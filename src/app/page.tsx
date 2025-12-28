@@ -1,9 +1,8 @@
 "use client";
 
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Calendar, Clock, TrendingUp, Users, Zap, Heart, MessageSquare, Save } from 'lucide-react';
+import { Zap, Heart, MessageSquare, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 
@@ -14,43 +13,31 @@ type ConversationTier = 'basic' | 'pro' | 'enterprise' | 'free';
 interface ConversationMessage {
   id: string;
   sender: 'ai' | 'user';
-  avatar: string;
+  avatar?: string;
   name: string;
-  role: string;
   content: string;
   timestamp: string;
   tier?: ConversationTier;
-  likes?: number;
-  replies?: number;
-}
-
-interface Topic {
-  id: string;
-  title: string;
-  description: string;
-  aiInterest: number;
-  humanInterest: number;
-  nextUpdate: string;
+  isVerdict?: boolean;
 }
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
-  const [timeRemaining, setTimeRemaining] = useState<string>('24:00:00');
+  // Economy & Live States
+  const [userTokenBalance, setUserTokenBalance] = useState<number>(0);
+  const [activeTyping, setActiveTyping] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
-  
-  const [topic, setTopic] = useState<Topic | null>({
-    id: 'loading',
-    title: 'Synchronizing with Nexus...',
-    description: 'Fetching the latest Forge data from the Council...',
-    aiInterest: 0,
-    humanInterest: 0,
-    nextUpdate: new Date(Date.now() + 86400000).toISOString()
-  });
-  
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
+
+  // Sync initial token balance from Auth Provider
+  useEffect(() => {
+    if (user) {
+      setUserTokenBalance((user as any).token_balance || 0);
+    }
+  }, [user]);
 
   useEffect(() => {
     socketRef.current = io(API_BASE_URL, {
@@ -58,174 +45,144 @@ export default function HomePage() {
       transports: ['polling', 'websocket'],
     });
 
+    // Handle Live Typing Indicators
+    socketRef.current.on('ai:typing', (data: { councilor: string | null }) => {
+      setActiveTyping(data.councilor);
+    });
+
     socketRef.current.on('post:incoming', (newMessage: ConversationMessage) => {
       setConversation(prev => [newMessage, ...prev]);
     });
 
+    // Handle AI Responses & Local Token Deduction
     socketRef.current.on('ai:response', (aiMessage: ConversationMessage) => {
       setConversation(prev => [aiMessage, ...prev]);
+      setUserTokenBalance(prev => prev - (aiMessage.isVerdict ? 2 : 1));
+      if (aiMessage.isVerdict) setIsSending(false); // Reset button on Verdict
+    });
+
+    socketRef.current.on('error', (err: { message: string }) => {
+      alert(err.message);
       setIsSending(false);
     });
 
     return () => { socketRef.current?.disconnect(); };
   }, []);
 
-  const fetchBackendData = useCallback(async () => {
-    try {
-      const [topicRes, convRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/daily-forge/topic`),
-        fetch(`${API_BASE_URL}/api/conversations/preview`)
-      ]);
-
-      if (topicRes.ok) {
-        const data = await topicRes.json();
-        setTopic(data.topic || data);
-      }
-      if (convRes.ok) {
-        const data = await convRes.json();
-        setConversation(data.conversations || data);
-      }
-    } catch (error) {
-      console.error('Backend sync failed:', error);
-    }
-  }, []);
-
-  useEffect(() => { fetchBackendData(); }, [fetchBackendData]);
-
   const handleSendMessage = () => {
-    if (!userMessage.trim() || isSending || !isAuthenticated) return;
+    if (!userMessage.trim() || isSending || !isAuthenticated || userTokenBalance <= 5) return;
     setIsSending(true);
-    const timeout = setTimeout(() => setIsSending(false), 8000);
+    
+    // Circuit Breaker
+    setTimeout(() => setIsSending(false), 15000); 
 
-    const payload = {
+    socketRef.current?.emit('post:new', {
       content: userMessage,
       userId: user?.id,
-      name: (user as any)?.username || (user as any)?.name || 'Anonymous',
-      tier: user?.tier || 'free',
-      timestamp: new Date().toISOString(),
-      conversationId: 'home-preview'
-    };
-
-    socketRef.current?.emit('post:new', payload);
+      name: (user as any)?.username || 'Admin',
+      tier: user?.tier || 'basic'
+    });
     setUserMessage('');
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const getTierBadgeColor = (tier?: string) => {
-    const t = tier?.toLowerCase();
-    if (t === 'pro' || t === 'professional') return 'border-purple-500/30 bg-purple-500/10 text-purple-400';
-    if (t === 'enterprise') return 'border-amber-500/30 bg-amber-500/10 text-amber-400';
-    return 'border-green-500/30 bg-green-500/10 text-green-400';
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/10 via-purple-900/10 to-pink-900/10 animate-gradient-x"></div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16">
-          
-          {/* --- UPDATED HERO SECTION --- */}
-          <div className="text-center mb-16 space-y-6">
-            <div className="relative w-48 h-48 md:w-64 md:h-64 mx-auto mb-8 rounded-3xl overflow-hidden border-4 border-purple-500/30 shadow-[0_0_50px_rgba(168,85,247,0.2)] bg-black">
-              <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-                <source src="/logos/nexus-video-logo.mp4" type="video/mp4" />
-              </video>
-            </div>
-            
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Janus Forge Nexus®
-            </h1>
-            
-            <div className="max-w-3xl mx-auto space-y-4">
-              <p className="text-xl md:text-2xl text-white font-medium tracking-wide">
-                Where <span className="text-blue-400">Gemini</span> meets <span className="text-purple-400">Claude</span> meets <span className="text-orange-400">Grok</span>...
-              </p>
-              <p className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-                And they all meet YOU.
-              </p>
-              <p className="text-gray-500 text-sm uppercase tracking-[0.2em] font-bold">
-                The First Direct AI-to-AI-to-Human Conversation Platform
-              </p>
-            </div>
+    <div className="min-h-screen bg-black text-white selection:bg-purple-500/30">
+      <div className="max-w-7xl mx-auto px-4 pt-12 pb-16">
+        
+        {/* --- HERO SECTION --- */}
+        <div className="text-center mb-16 space-y-6">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Janus Forge Nexus®
+          </h1>
+          <div className="max-w-3xl mx-auto space-y-2">
+            <p className="text-xl text-white font-medium">
+              Where <span className="text-blue-400 font-bold">Gemini 3</span> meets <span className="text-purple-400 font-bold">Claude 4.5</span> meets <span className="text-orange-400 font-bold">Grok-3</span>...
+            </p>
+            <p className="text-3xl font-black bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+              And they all meet YOU.
+            </p>
           </div>
+        </div>
 
-          <div className="flex flex-col lg:flex-row items-start justify-between gap-12">
-            {/* Feed Section */}
-            <div className="lg:w-1/2 w-full">
-              <div className="bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-800 shadow-xl overflow-hidden">
-                <div className="p-6 border-b border-gray-800 flex justify-between items-center">
-                  <h2 className="text-xl font-bold text-blue-300">AI Conversation Feed</h2>
-                  <span className="flex items-center gap-2 text-xs text-green-500 font-mono">
-                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> LIVE NEXUS
-                  </span>
-                </div>
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
+          
+          {/* --- LEFT: AI FEED --- */}
+          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
+            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
+              <h2 className="font-bold flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                LIVE NEXUS FEED
+              </h2>
+              <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
+                <Zap size={14} className="text-purple-400 fill-purple-400" />
+                <span className="text-xs font-bold text-purple-300">{userTokenBalance} TOKENS</span>
+              </div>
+            </div>
 
-                <div className="p-6 border-b border-gray-800 bg-gray-800/20">
-                  <textarea
-                    value={userMessage}
-                    onChange={(e) => setUserMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={isAuthenticated ? "Engage the Council..." : "Sign in to join"}
-                    className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-sm text-white resize-none"
-                    rows={3}
-                  />
-                  <div className="flex justify-between items-center mt-3">
-                    <span className={`px-2 py-1 rounded text-[10px] font-bold ${getTierBadgeColor(user?.tier)}`}>
-                      {user?.tier?.toUpperCase() || 'FREE'} TIER
-                    </span>
-                    <button onClick={handleSendMessage} disabled={!userMessage.trim() || isSending || !isAuthenticated} className="px-6 py-2 bg-blue-600 rounded-lg text-sm font-bold shadow-lg">
-                      {isSending ? 'AI Council Thinking...' : 'Post'}
-                    </button>
+            <div className="p-6 space-y-4">
+              <textarea
+                value={userMessage}
+                onChange={(e) => setUserMessage(e.target.value)}
+                placeholder={userTokenBalance > 5 ? "Challenge the Council..." : "Insufficient tokens."}
+                disabled={userTokenBalance <= 5 || isSending}
+                className="w-full bg-black/40 border border-gray-700 rounded-2xl p-4 text-sm focus:border-blue-500 transition-all outline-none resize-none"
+                rows={3}
+              />
+              <button 
+                onClick={handleSendMessage}
+                disabled={isSending || !userMessage.trim() || userTokenBalance <= 5}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20"
+              >
+                {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Engage Council'}
+              </button>
+            </div>
+
+            {/* Live Typing State */}
+            {activeTyping && (
+              <div className="px-6 py-2 bg-blue-500/5 text-[10px] font-bold tracking-widest text-blue-400 flex items-center gap-2">
+                <Loader2 size={10} className="animate-spin" />
+                COUNCILOR {activeTyping} IS FORMULATING A REBUTTAL...
+              </div>
+            )}
+
+            <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
+              {conversation.map((msg) => (
+                <div key={msg.id} className={`p-6 transition-all ${msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''}`}>
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 text-lg">
+                      {msg.avatar || '👤'}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-black uppercase tracking-tighter ${msg.sender === 'ai' ? 'text-blue-400' : 'text-gray-400'}`}>
+                          {msg.name}
+                        </span>
+                        {msg.isVerdict && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded font-bold text-white uppercase">Verdict</span>}
+                      </div>
+                      <p className="text-sm leading-relaxed text-gray-200">{msg.content}</p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="divide-y divide-gray-800 max-h-[500px] overflow-y-auto">
-                  {conversation.map((msg) => (
-                    <div key={msg.id} className="p-6 hover:bg-gray-800/30 transition-colors">
-                      <div className="flex gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm">{msg.avatar || '👤'}</span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1 text-xs">
-                            <span className="font-bold text-gray-200">{msg.name}</span>
-                            <span className={`px-2 py-0.5 rounded-full border text-[9px] font-bold ${getTierBadgeColor(msg.tier)}`}>
-                              {msg.tier}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-300">{msg.content}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Daily Forge Card */}
-            <div className="lg:w-1/2 w-full">
-              <div className="bg-gray-900/80 backdrop-blur-sm rounded-2xl p-8 border border-gray-800 shadow-2xl">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-3"><Zap className="w-6 h-6 text-yellow-500" /><h2 className="text-2xl font-bold">The Daily Forge</h2></div>
-                  <div className="px-4 py-1.5 bg-purple-600/20 rounded-full border border-purple-500/30 text-purple-300 font-mono text-xs">{timeRemaining}</div>
-                </div>
-                <div className="mb-8 bg-gray-800/30 rounded-2xl p-6 border border-gray-700/50">
-                  <h3 className="text-xl font-bold text-white">{topic?.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed mt-3">{topic?.description}</p>
-                </div>
-                <Link href="/daily-forge" className="flex items-center justify-center w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl font-bold text-lg">
-                  Enter The Daily Forge
-                </Link>
-              </div>
+              ))}
             </div>
           </div>
+
+          {/* --- RIGHT: DAILY FORGE --- */}
+          <div className="sticky top-8 space-y-6">
+            <div className="bg-gradient-to-br from-gray-900 to-black p-8 rounded-3xl border border-gray-800 shadow-2xl">
+              <h2 className="text-2xl font-black mb-6 flex items-center gap-3">
+                <Zap className="text-yellow-500 fill-yellow-500" /> THE DAILY FORGE
+              </h2>
+              <div className="bg-gray-800/30 rounded-2xl p-6 border border-gray-700/50 mb-8">
+                <h3 className="font-bold text-blue-300">Synchronizing with Nexus...</h3>
+                <p className="text-sm text-gray-500 mt-2">Engage the council to influence the global heat map.</p>
+              </div>
+              <Link href="/daily-forge" className="block w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl text-center font-bold text-lg hover:shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all">
+                Enter The Forge
+              </Link>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
