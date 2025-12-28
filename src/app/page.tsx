@@ -19,7 +19,7 @@ interface ConversationMessage {
 }
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
   // --- ADMIN GOD MODE CHECK ---
