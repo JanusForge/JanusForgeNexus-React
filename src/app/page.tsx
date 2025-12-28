@@ -128,7 +128,7 @@ export default function HomePage() {
     const payload = {
       content: userMessage,
       userId: user?.id,
-      name: user?.username || 'Anonymous', // Fixed to use username if available
+      name: (user as any)?.username || (user as any)?.name || 'Anonymous',
       tier: user?.tier || 'free',
       timestamp: new Date().toISOString(),
       conversationId: 'home-preview'
