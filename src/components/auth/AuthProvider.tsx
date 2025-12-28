@@ -26,6 +26,11 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
 }
 
+// --- ADDED THIS INTERFACE TO FIX COMPILATION ERROR ---
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function useAuth() {
@@ -34,10 +39,6 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-interface AuthProviderProps {
-  children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -66,19 +67,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await apiClient.authenticate(email, password);
 
       if (result.success && result.data) {
-        // Standardize the fields based on your formula: Remaining = Balance - Used
         const balance = result.data.token_balance ?? result.data.tokens_remaining ?? 0;
         const used = result.data.tokens_used ?? 0;
 
         const userData: User = {
           id: result.data.id || `user-${Date.now()}`,
           email: result.data.email || email,
-          name: result.data.name || result.data.username || email.split('@')[0] || 'user',
+          // Robust name fallback logic
+          name: result.data.name || result.data.username || email.split('@')[0] || 'User',
           username: result.data.username || email.split('@')[0],
           tier: (result.data.tier as User['tier']) || 'free',
           token_balance: balance,
           tokens_used: used,
-          tokens_remaining: balance - used, // Calculated locally for UI accuracy
+          tokens_remaining: balance - used, 
           purchased_tokens: result.data.purchased_tokens || 0,
           isAdmin: result.data.isAdmin || result.data.username === 'admin-access'
         };
@@ -113,10 +114,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userData: User = {
           id: result.data.id,
           email: result.data.email,
-          name: result.data.name || name,
+          name: result.data.name || name || 'User',
           username: result.data.username || name,
           tier: (result.data.tier as User['tier']) || 'free',
-          token_balance: result.data.token_balance ?? 50, // Default for new users
+          token_balance: result.data.token_balance ?? 50,
           tokens_used: 0,
           tokens_remaining: 50,
           purchased_tokens: 0,
@@ -145,7 +146,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           ...user,
           token_balance: balance,
           tokens_used: used,
-          tokens_remaining: balance - used, // Sync formula
+          tokens_remaining: balance - used,
           tier: (result.data.tier as User['tier']) || user.tier,
         };
         setUser(updatedUser);
