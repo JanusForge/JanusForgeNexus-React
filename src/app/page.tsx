@@ -122,72 +122,126 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
           
-          {/* --- RESTORED LEFT PANEL: AI FEED --- */}
-          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
-            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
-              <h2 className="font-bold flex items-center gap-2 text-xs tracking-widest uppercase">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                LIVE NEXUS FEED
-              </h2>
-              <div className="flex items-center gap-4">
-                <button onClick={exportNexusFeed} className="flex items-center gap-2 text-[10px] font-black tracking-widest text-gray-500 hover:text-white border border-white/10 px-3 py-1.5 rounded-lg uppercase bg-white/5 transition-all">
-                  <Download size={12} /> Save
-                </button>
-                <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
-                  <Zap size={14} className="text-purple-400 fill-purple-400" />
-                  <span className="text-xs font-bold text-purple-300">
-                    {(user as any)?.username === 'admin-access' ? '∞' : userTokenBalance}
-                  </span>
-                </div>
-              </div>
-            </div>
+{/* --- LEFT: AI FEED --- */}
 
-            <div className="p-6 space-y-4">
-              <textarea
-                value={userMessage}
-                onChange={(e) => setUserMessage(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-                placeholder="Submit your thesis to the Council..."
-                className="w-full bg-black/40 border border-gray-700 rounded-2xl p-4 text-sm focus:border-blue-500 transition-all outline-none resize-none"
-                rows={3}
-              />
-              <button 
-                onClick={handleSendMessage}
-                disabled={isSending || !userMessage.trim()}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20 uppercase"
-              >
-                {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'IGNITE THE DEBATE'}
-              </button>
-            </div>
+<div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
 
-            {activeTyping && (
-              <div className="px-6 py-2 bg-blue-500/5 text-[10px] font-bold tracking-widest text-blue-400 flex items-center gap-2 animate-pulse uppercase border-y border-white/5">
-                <Loader2 size={10} className="animate-spin" />
-                COUNCILOR {activeTyping} IS FORMULATING A REBUTTAL...
-              </div>
-            )}
+<div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
 
-            <div className="divide-y divide-gray-800 max-h-[650px] overflow-y-auto bg-black/40">
-              {conversation.map((msg) => (
-                <div key={msg.id} className={`p-6 transition-all ${msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''}`}>
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 text-lg shadow-inner">
-                      {msg.avatar || '👤'}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-black uppercase tracking-tighter ${msg.sender === 'ai' ? 'text-blue-400' : 'text-gray-400'}`}>
-                          {msg.name}
-                        </span>
-                        {msg.isVerdict && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded font-bold text-white uppercase tracking-tighter">Verdict</span>}
-                      </div>
-                      <p className="text-sm leading-relaxed text-gray-200">{msg.content}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+<h2 className="font-bold flex items-center gap-2">
+
+<span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+
+LIVE AI to AI to Human Conversation Panel
+
+</h2>
+
+<div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
+
+<Zap size={14} className="text-purple-400 fill-purple-400" />
+
+<span className="text-xs font-bold text-purple-300">{userTokenBalance} TOKENS</span>
+
+</div>
+
+</div>
+
+
+
+<div className="p-6 space-y-4">
+
+<textarea
+
+value={userMessage}
+
+onChange={(e) => setUserMessage(e.target.value)}
+
+placeholder={userTokenBalance > 5 ? "What would you like to ask the AI Council?" : "Insufficient tokens."}
+
+disabled={userTokenBalance <= 5 || isSending}
+
+className="w-full bg-black/40 border border-gray-700 rounded-2xl p-4 text-sm focus:border-blue-500 transition-all outline-none resize-none"
+
+rows={3}
+
+/>
+
+<button
+
+onClick={handleSendMessage}
+
+disabled={isSending || !userMessage.trim() || userTokenBalance <= 5}
+
+className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20"
+
+>
+
+{isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Engage Council'}
+
+</button>
+
+</div>
+
+
+
+{/* Live Typing State */}
+
+{activeTyping && (
+
+<div className="px-6 py-2 bg-blue-500/5 text-[10px] font-bold tracking-widest text-blue-400 flex items-center gap-2">
+
+<Loader2 size={10} className="animate-spin" />
+
+COUNCILOR {activeTyping} IS FORMULATING A REBUTTAL...
+
+</div>
+
+)}
+
+
+
+<div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
+
+{conversation.map((msg) => (
+
+<div key={msg.id} className={`p-6 transition-all ${msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''}`}>
+
+<div className="flex gap-4">
+
+<div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 text-lg">
+
+{msg.avatar || '👤'}
+
+</div>
+
+<div className="flex-1 space-y-1">
+
+<div className="flex items-center gap-2">
+
+<span className={`text-xs font-black uppercase tracking-tighter ${msg.sender === 'ai' ? 'text-blue-400' : 'text-gray-400'}`}>
+
+{msg.name}
+
+</span>
+
+{msg.isVerdict && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded font-bold text-white uppercase">Verdict</span>}
+
+</div>
+
+<p className="text-sm leading-relaxed text-gray-200">{msg.content}</p>
+
+</div>
+
+</div>
+
+</div>
+
+))}
+
+</div>
+
+</div>
+
 
           {/* --- RIGHT PANEL: DAILY FORGE --- */}
           <div className="sticky top-12 space-y-6">
