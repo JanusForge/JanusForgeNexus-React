@@ -49,7 +49,9 @@ export default function TierUpgrade() {
     );
   }
 
-  const currentTier = user.tier;
+  // Apply the same type-safety fix used in the main pages
+  const currentTier = (user?.tier?.toLowerCase() || 'free') as keyof typeof TIER_CONFIGS;
+  const tierConfig = TIER_CONFIGS[currentTier];
   const availableTiers = Object.keys(TIER_CONFIGS).filter(tier => 
     tier !== currentTier && tier !== 'admin'
   ) as UserTier[];
@@ -61,7 +63,8 @@ export default function TierUpgrade() {
       <div className="mb-6">
         <div className="text-gray-400 mb-2">Current Tier:</div>
         <div className="inline-block px-4 py-2 bg-gray-700 text-white rounded-lg font-semibold">
-          {TIER_CONFIGS[currentTier].name}
+          {tierConfig.name}
+        </div>
         </div>
       </div>
 
