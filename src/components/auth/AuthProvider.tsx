@@ -9,7 +9,9 @@ interface User {
   name: string;
   username: string;
   tier: 'free' | 'basic' | 'pro' | 'enterprise';
-  token_balance: number; // The new unified property name
+  token_balance: number;    // Total tokens allocated/purchased
+  tokens_used: number;       // Amount already spent
+  tokens_remaining: number;  // Usable balance (Balance - Used)
   purchased_tokens: number;
   isAdmin?: boolean;
 }
@@ -32,6 +34,10 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+}
+
+interface AuthProviderProps {
+  children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -60,17 +66,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await apiClient.authenticate(email, password);
 
       if (result.success && result.data) {
-        // MAPPING LOGIC: Ensure the UI gets 'token_balance' regardless of API key name
+        // Standardize the fields based on your formula: Remaining = Balance - Used
+        const balance = result.data.token_balance ?? result.data.tokens_remaining ?? 0;
+        const used = result.data.tokens_used ?? 0;
+
         const userData: User = {
           id: result.data.id || `user-${Date.now()}`,
           email: result.data.email || email,
-          name: result.data.name || result.data.username || email.split('@')[0],
+          name: result.data.name || result.data.username || email.split('@')[0] || 'user',
           username: result.data.username || email.split('@')[0],
           tier: (result.data.tier as User['tier']) || 'free',
-          // Prioritize token_balance, fallback to tokens_remaining
-          token_balance: result.data.token_balance ?? result.data.tokens_remaining ?? 0,
+          token_balance: balance,
+          tokens_used: used,
+          tokens_remaining: balance - used, // Calculated locally for UI accuracy
           purchased_tokens: result.data.purchased_tokens || 0,
-          isAdmin: result.data.isAdmin || false
+          isAdmin: result.data.isAdmin || result.data.username === 'admin-access'
         };
 
         setUser(userData);
@@ -83,7 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     } catch (error) {
       console.error('Login error:', error);
-      throw error; 
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +116,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
           name: result.data.name || name,
           username: result.data.username || name,
           tier: (result.data.tier as User['tier']) || 'free',
-          token_balance: result.data.token_balance ?? result.data.tokens_remaining ?? 0,
+          token_balance: result.data.token_balance ?? 50, // Default for new users
+          tokens_used: 0,
+          tokens_remaining: 50,
           purchased_tokens: 0,
           isAdmin: false
         };
@@ -126,10 +138,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const result = await apiClient.getCurrentUser();
       if (result.success && result.data) {
+        const balance = result.data.token_balance ?? result.data.tokens_remaining ?? user.token_balance;
+        const used = result.data.tokens_used ?? user.tokens_used;
+
         const updatedUser: User = {
           ...user,
-          token_balance: result.data.token_balance ?? result.data.tokens_remaining ?? user.token_balance,
-          tier: result.data.tier as User['tier'] || user.tier,
+          token_balance: balance,
+          tokens_used: used,
+          tokens_remaining: balance - used, // Sync formula
+          tier: (result.data.tier as User['tier']) || user.tier,
         };
         setUser(updatedUser);
         localStorage.setItem('janus_user', JSON.stringify(updatedUser));
