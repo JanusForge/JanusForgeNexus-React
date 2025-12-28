@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
-import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight } from 'lucide-react';
+import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Download } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 
@@ -22,10 +22,9 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
 
-  // --- CRITICAL ADMIN OVERRIDE LOGIC ---
+  // --- ADMIN GOD MODE CHECK ---
   const isAdmin = (user as any)?.username === 'admin-access';
-  
-  // Initialize with Infinity if admin to prevent "0 tokens" flicker on load
+
   const [userTokenBalance, setUserTokenBalance] = useState<number>(0);
   const [activeTyping, setActiveTyping] = useState<string | null>(null);
   const [userMessage, setUserMessage] = useState<string>('');
@@ -49,7 +48,6 @@ export default function HomePage() {
   // FORCE STATE SYNC
   useEffect(() => {
     if (user) {
-      // Force 999k tokens in the UI state if the username matches
       setUserTokenBalance(isAdmin ? 999999 : (user as any).token_balance || 0);
     }
   }, [user, isAdmin]);
@@ -60,7 +58,7 @@ export default function HomePage() {
       transports: ['polling', 'websocket'],
     });
 
-    socketRef.current.on('ai:typing', (data) => setActiveTyping(data.councilor));
+    socketRef.current.on('ai:typing', (data: { councilor: string }) => setActiveTyping(data.councilor));
 
     socketRef.current.on('post:incoming', (msg: ConversationMessage) => {
       setConversation(prev => [msg, ...prev]);
@@ -77,10 +75,21 @@ export default function HomePage() {
     return () => { socketRef.current?.disconnect(); };
   }, [user, isAdmin]);
 
+  // Restored Download Logic
+  const exportNexusFeed = () => {
+    if (conversation.length === 0) return;
+    const content = conversation.map(msg => `[${msg.name}] (${new Date(msg.timestamp).toLocaleString()})\n${msg.content}\n\n`).reverse().join('');
+    const blob = new Blob([`JANUS FORGE NEXUS® SESSION\n\n${content}`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `nexus-debate-${Date.now()}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSendMessage = () => {
-    // Admin bypasses the token check here entirely
     if (!userMessage.trim() || isSending || (!isAdmin && userTokenBalance <= 0)) return;
-    
     setIsSending(true);
     socketRef.current?.emit('post:new', {
       content: userMessage,
@@ -93,7 +102,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
 
-      {/* --- HERO SECTION --- */}
+      {/* --- HERO SECTION WITH VIDEO --- */}
       <div className="relative pt-12 pb-12 text-center border-b border-white/5">
         <div className="flex justify-center mb-6">
           <video autoPlay muted loop playsInline className="w-80 h-80 md:w-96 md:h-96 object-contain shadow-[0_0_80px_rgba(37,99,235,0.15)]">
@@ -118,19 +127,23 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
 
-          {/* --- LEFT: AI FEED --- */}
+          {/* --- LEFT PANEL: AI FEED --- */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
-              <h2 className="font-bold flex items-center gap-2">
+              <h2 className="font-bold flex items-center gap-2 text-sm">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                LIVE AI to AI to Human Conversation Panel
+                LIVE AI CONVERSATION PANEL
               </h2>
-              <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
-                <Zap size={14} className="text-purple-400 fill-purple-400" />
-                <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
-                  {/* DISPLAY OVERRIDE */}
-                  {isAdmin ? 'GOD MODE (∞)' : `${userTokenBalance} TOKENS`}
-                </span>
+              <div className="flex items-center gap-3">
+                <button onClick={exportNexusFeed} className="p-2 text-gray-400 hover:text-white transition-colors" title="Export Session">
+                  <Download size={16} />
+                </button>
+                <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
+                  <Zap size={14} className="text-purple-400 fill-purple-400" />
+                  <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
+                    {isAdmin ? 'GOD MODE (∞)' : `${userTokenBalance} TOKENS`}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -138,7 +151,6 @@ export default function HomePage() {
               <textarea
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
-                {/* DYNAMIC PLACEHOLDER AND UNLOCK */}
                 placeholder={isAdmin || userTokenBalance > 0 ? "What would you like to ask the AI Council?" : "Insufficient tokens."}
                 disabled={(!isAdmin && userTokenBalance <= 0) || isSending}
                 className="w-full bg-black/40 border border-gray-700 rounded-2xl p-4 text-sm focus:border-blue-500 transition-all outline-none resize-none"
@@ -153,28 +165,17 @@ export default function HomePage() {
               </button>
             </div>
 
-            {activeTyping && (
-              <div className="px-6 py-2 bg-blue-500/5 text-[10px] font-bold tracking-widest text-blue-400 flex items-center gap-2">
-                <Loader2 size={10} className="animate-spin" />
-                COUNCILOR {activeTyping} IS FORMULATING A REBUTTAL...
-              </div>
-            )}
-
             <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
               {conversation.map((msg) => (
                 <div key={msg.id} className={`p-6 transition-all ${msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''}`}>
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 text-lg">
-                      {msg.avatar || '👤'}
-                    </div>
+                  <div className="flex gap-4 text-sm">
+                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700">{msg.avatar || '👤'}</div>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className={`text-xs font-black uppercase tracking-tighter ${msg.sender === 'ai' ? 'text-blue-400' : 'text-gray-400'}`}>
-                          {msg.name}
-                        </span>
+                        <span className="text-xs font-black uppercase text-blue-400">{msg.name}</span>
                         {msg.isVerdict && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded font-bold text-white uppercase">Verdict</span>}
                       </div>
-                      <p className="text-sm leading-relaxed text-gray-200">{msg.content}</p>
+                      <p className="text-gray-200">{msg.content}</p>
                     </div>
                   </div>
                 </div>
@@ -209,6 +210,11 @@ export default function HomePage() {
                 JOIN THE CONVERSATION
                 <ChevronRight size={18} />
               </Link>
+            </div>
+            
+            <div className="p-6 rounded-[2rem] border border-dashed border-white/10 text-center opacity-40 bg-white/[0.01]">
+              <ShieldCheck className="mx-auto mb-3 text-gray-600" size={24} />
+              <p className="text-[8px] font-black text-gray-600 uppercase tracking-[0.4em]">Secure Nexus Protocol</p>
             </div>
           </div>
 
