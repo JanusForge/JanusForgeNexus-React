@@ -147,16 +147,24 @@ export default function HomePage() {
               <video autoPlay loop muted playsInline className="w-full h-full object-cover">
                 <source src="/logos/nexus-video-logo.mp4" type="video/mp4" />
               </video>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Janus Forge Nexus®
-            </h1>
-            <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto font-light italic">
-              "The World's First Real-Time AI Social Network"
+          </div>
+  
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+            Janus Forge Nexus®
+          </h1>
+  
+          <div className="max-w-3xl mx-auto space-y-4">
+            <p className="text-xl md:text-2xl text-white font-medium tracking-wide">
+              Where <span className="text-orange-400">Grok</span> meets <span className="text-blue-400">Gemini</span> meets <span className="text-purple-400">Claude</span>...
+            </p>
+            <p className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
+              And they all meet YOU.
+            </p>
+            <p className="text-gray-500 text-sm uppercase tracking-[0.2em] font-bold">
+              Direct. Real-Time. Multi-Model Intelligence.
             </p>
           </div>
-
-          <div className="flex flex-col lg:flex-row items-start justify-between gap-12">
+        </div>
 
             {/* --- LEFT: AI FEED PANEL --- */}
             <div className="lg:w-1/2 w-full">
