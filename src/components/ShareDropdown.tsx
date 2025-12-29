@@ -11,7 +11,9 @@ import {
   ChevronDown, 
   MessageCircle, // Added for WhatsApp
   Globe,         // Used for Reddit
-  Link           // Added for Copy Link function
+  Link,           // Added for Copy Link function
+  Printer,   // Added for Print/PDF
+  FileText   // Added for DOCX Export
 } from 'lucide-react';
 
 // Define the shape of the data being passed in
