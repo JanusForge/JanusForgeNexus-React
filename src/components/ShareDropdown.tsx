@@ -1,114 +1,62 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  Share2,
-  Twitter,
-  Facebook,
-  Linkedin,
-  MessageCircle,
-  Globe,
-  Link,
-  Printer,
-  FileText,
-  Mail
+  Twitter, Facebook, Linkedin, MessageCircle, Globe, Link, Printer, FileText, Mail, X
 } from 'lucide-react';
 
 interface ShareDropdownProps {
   conversationText: string;
   username: string;
+  setIsOpen: (val: boolean) => void; // Parent controls this now
 }
 
-const ShareDropdown = ({ conversationText, username }: ShareDropdownProps) => {
+const ShareDropdown = ({ conversationText, username, setIsOpen }: ShareDropdownProps) => {
   const referralLink = "https://www.janusforge.ai";
-  const [copied, setCopied] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleShare = (platform: string) => {
     const shareText = `Architect ${username} just forged a new decree at the Janus Forge Nexus. \n\n`;
     const encodedText = encodeURIComponent(shareText + referralLink);
-    const encodedUrl = encodeURIComponent(referralLink);
-
     const shareLinks: { [key: string]: string } = {
       twitter: `https://twitter.com/intent/tweet?text=${encodedText}`,
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(referralLink)}`,
       whatsapp: `https://api.whatsapp.com/send?text=${encodedText}`,
-      reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodeURIComponent(shareText)}`
+      reddit: `https://www.reddit.com/submit?url=${encodeURIComponent(referralLink)}&title=${encodeURIComponent(shareText)}`
     };
-
-    if (shareLinks[platform]) {
-      window.open(shareLinks[platform], '_blank');
-    }
-    setIsOpen(false);
+    if (shareLinks[platform]) window.open(shareLinks[platform], '_blank');
   };
 
-  // Safely handles long transcripts to prevent browser crashes
   const handleEmailShare = () => {
-    const subject = "Nexus Decree: The Tyranny of Comfort";
-    // Truncate to ~1500 chars to ensure mailto: links don't break
-    const safeBody = conversationText.length > 1500 
-      ? conversationText.substring(0, 1500) + "\n\n... [Transcript continues at JanusForge.ai]" 
-      : conversationText;
-    
-    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(safeBody)}`;
-    setIsOpen(false);
-  };
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const safeBody = conversationText.length > 1500 ? conversationText.substring(0, 1500) + "..." : conversationText;
+    window.location.href = `mailto:?subject=Nexus Decree&body=${encodeURIComponent(safeBody)}`;
   };
 
   return (
-    <div className="relative inline-block text-left">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="btn btn-ghost btn-circle border border-blue-500/20 hover:border-blue-400 transition-all"
-        type="button"
-      >
-        <Share2 className="w-5 h-5 text-blue-400" />
-      </button>
+    <div className="h-full bg-slate-900 border-l border-blue-500/20 p-4 flex flex-col animate-in slide-in-from-right duration-300">
+      <div className="flex justify-between items-center mb-4 border-b border-white/5 pb-2">
+        <span className="text-blue-400 uppercase text-[10px] font-black tracking-widest">Transmit Hub</span>
+        <button onClick={() => setIsOpen(false)} className="text-gray-500 hover:text-white transition-colors">
+          <X size={16}/>
+        </button>
+      </div>
 
-      {isOpen && (
-        <>
-          <div
-            className="fixed inset-0 z-[90] bg-transparent"
-            onClick={() => setIsOpen(false)}
-          ></div>
+      <div className="flex-1 overflow-y-auto space-y-4">
+        <div className="grid grid-cols-1 gap-2">
+          <button onClick={() => handleShare('twitter')} className="flex items-center gap-3 text-[11px] py-2 px-3 bg-white/5 hover:bg-blue-500/20 rounded-lg text-white transition-all"><Twitter size={14} className="text-sky-400"/> X / Twitter</button>
+          <button onClick={() => handleShare('whatsapp')} className="flex items-center gap-3 text-[11px] py-2 px-3 bg-white/5 hover:bg-green-500/20 rounded-lg text-white transition-all"><MessageCircle size={14} className="text-green-500"/> WhatsApp</button>
+          <button onClick={() => handleShare('reddit')} className="flex items-center gap-3 text-[11px] py-2 px-3 bg-white/5 hover:bg-orange-500/20 rounded-lg text-white transition-all"><Globe size={14} className="text-orange-400"/> Reddit</button>
+        </div>
 
-          <ul className="fixed right-[calc(50%-384px)] mt-12 p-3 shadow-2xl bg-slate-900 rounded-xl w-64 border border-blue-500/40 z-[999] animate-in fade-in zoom-in duration-200">
-            <li className="text-blue-400 uppercase text-[10px] tracking-widest mb-2 font-bold px-4 list-none">
-              Transmit to the World
-            </li>
+        <div className="border-t border-white/10 my-2"></div>
+        <span className="text-gray-500 uppercase text-[10px] tracking-widest font-bold">Archive</span>
 
-            <div className="grid grid-cols-2 gap-1 mb-2 px-2">
-              <button onClick={() => handleShare('twitter')} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Twitter className="w-4 h-4 text-sky-400"/> X</button>
-              <button onClick={() => handleShare('linkedin')} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Linkedin className="w-4 h-4 text-blue-600"/> LinkedIn</button>
-              <button onClick={() => handleShare('facebook')} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Facebook className="w-4 h-4 text-blue-500"/> Facebook</button>
-              <button onClick={() => handleShare('whatsapp')} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><MessageCircle className="w-4 h-4 text-green-500"/> WhatsApp</button>
-              <button onClick={() => handleShare('reddit')} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Globe className="w-4 h-4 text-orange-500"/> Reddit</button>
-              <button onClick={copyToClipboard} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white">
-                <Link className="w-4 h-4 text-gray-400"/> {copied ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-
-            <div className="border-t border-white/10 my-2 mx-2"></div>
-
-            <li className="text-gray-500 uppercase text-[10px] tracking-widest mb-1 px-4 list-none font-bold">Archive Decree</li>
-
-            <div className="flex flex-col gap-1 px-2">
-              <button onClick={() => window.print()} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Printer className="w-4 h-4"/> Print / PDF</button>
-              <button className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><FileText className="w-4 h-4 text-green-500"/> Export .DOCX</button>
-              {/* Updated to use the new handleEmailShare function */}
-              <button onClick={handleEmailShare} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white">
-                <Mail className="w-4 h-4"/> Email Transcript
-              </button>
-            </div>
-          </ul>
-        </>
-      )}
+        <div className="flex flex-col gap-2">
+          <button onClick={handleEmailShare} className="flex items-center gap-3 text-[11px] py-2 px-3 bg-white/5 hover:bg-purple-500/20 rounded-lg text-white transition-all"><Mail size={14} className="text-purple-400"/> Email</button>
+          <button onClick={() => window.print()} className="flex items-center gap-3 text-[11px] py-2 px-3 bg-white/5 hover:bg-gray-500/20 rounded-lg text-white transition-all"><Printer size={14}/> Print PDF</button>
+          <button className="flex items-center gap-3 text-[11px] py-2 px-3 bg-white/5 hover:bg-green-500/20 rounded-lg text-white transition-all"><FileText size={14} className="text-green-500"/> DOCX</button>
+        </div>
+      </div>
     </div>
   );
 };

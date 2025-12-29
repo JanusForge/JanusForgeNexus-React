@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
-import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Download } from 'lucide-react';
+import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Download, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import ShareDropdown from '@/components/ShareDropdown';
@@ -32,6 +32,9 @@ export default function HomePage() {
   const [isSending, setIsSending] = useState<boolean>(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [timeLeft, setTimeLeft] = useState({ hours: 23, minutes: 59, seconds: 59 });
+  
+  // New state to manage the sidebar compression
+  const [isShareOpen, setIsShareOpen] = useState(false);
 
   // 24h Countdown Logic
   useEffect(() => {
@@ -94,6 +97,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
+      {/* Header Section */}
       <div className="relative pt-12 pb-12 text-center border-b border-white/5">
         <div className="flex justify-center mb-6">
           <video autoPlay muted loop playsInline className="w-80 h-80 md:w-96 md:h-96 object-contain shadow-[0_0_80px_rgba(37,99,235,0.15)]">
@@ -115,19 +119,27 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
+          
+          {/* THE FORGE PANEL */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
-            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20 relative z-30">
+            
+            {/* Panel Header */}
+            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
               <h2 className="font-bold flex items-center gap-2 text-sm">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 LIVE AI CONVERSATION PANEL
               </h2>
               <div className="flex items-center gap-3">
-                <ShareDropdown
-                  conversationText={fullTranscript}
-                  username={(user as any)?.username || 'Architect'}
-                />
+                {/* Updated Share Toggle Button */}
+                <button 
+                   onClick={() => setIsShareOpen(!isShareOpen)}
+                   className={`btn btn-ghost btn-circle border border-blue-500/20 hover:border-blue-400 transition-all ${isShareOpen ? 'bg-blue-500/20 text-blue-400' : 'text-gray-400'}`}
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
                   < Zap size={14} className="text-purple-400 fill-purple-400" />
                   <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
@@ -137,33 +149,48 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Elevated z-index container to ensure it sits above any invisible dropdown overlaps */}
-            <div className="p-6 space-y-4 relative z-40 bg-gray-900/50">
-              <textarea
-                value={userMessage}
-                onChange={(e) => setUserMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (userMessage.trim() && !isSending) {
-                      handleSendMessage();
+            {/* SIDEBAR COMPRESSION ZONE */}
+            <div className="flex flex-col md:flex-row min-h-[250px] transition-all duration-500">
+              {/* Textarea Area: Compresses when isShareOpen is true */}
+              <div className={`p-6 space-y-4 transition-all duration-500 ${isShareOpen ? 'md:w-2/3 w-full border-b md:border-b-0 md:border-r border-gray-800' : 'w-full'}`}>
+                <textarea
+                  value={userMessage}
+                  onChange={(e) => setUserMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (userMessage.trim() && !isSending) {
+                        handleSendMessage();
+                      }
                     }
-                  }
-                }}
-                disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
-                placeholder="Press Enter to challenge the Council..."
-                className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[120px] relative z-50"
-              />
-              <button
-                onClick={handleSendMessage}
-                disabled={isSending || !userMessage.trim() || (!isAdmin && tokensRemaining <= 0)}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20 relative z-50"
-              >
-                {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Engage Council'}
-              </button>
+                  }}
+                  disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
+                  placeholder="Press Enter to challenge the Council..."
+                  className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[150px] resize-none"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isSending || !userMessage.trim() || (!isAdmin && tokensRemaining <= 0)}
+                  className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20"
+                >
+                  {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Engage Council'}
+                </button>
+              </div>
+
+              {/* Transmission Sidebar Hub */}
+              {isShareOpen && (
+                <div className="md:w-1/3 w-full animate-in slide-in-from-right duration-300">
+                  <ShareDropdown
+                    conversationText={fullTranscript}
+                    username={(user as any)?.username || 'Architect'}
+                    setIsOpen={setIsShareOpen}
+                  />
+                </div>
+              )}
             </div>
 
-            <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto relative z-10">
+            {/* Feed Section */}
+            <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
               {conversation.map((msg) => (
                 <div key={msg.id} className={`p-6 transition-all ${msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''}`}>
                   <div className="flex gap-4 text-sm">
@@ -173,7 +200,7 @@ export default function HomePage() {
                         <span className="text-xs font-black uppercase text-blue-400">{msg.name}</span>
                         {msg.isVerdict && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded font-bold text-white uppercase">Verdict</span>}
                       </div>
-                      <p className="text-gray-200">{msg.content}</p>
+                      <p className="text-gray-200 whitespace-pre-wrap">{msg.content}</p>
                     </div>
                   </div>
                 </div>
@@ -181,6 +208,7 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Daily Forge Sidebar */}
           <div className="sticky top-12 space-y-6">
             <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
               <div className="flex justify-between items-center mb-6">
