@@ -1,39 +1,53 @@
 "use client";
 
 import { TIER_CONFIGS, TOKEN_PACKAGES } from '@/config/tiers';
-import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useState } from 'react';
-import { Loader2, Zap, ShieldCheck, Star } from 'lucide-react';
+import { Loader2, Zap, ShieldCheck } from 'lucide-react';
 
 export default function PricingPage() {
   const { user, isAuthenticated } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
 
-  // Mark 'pro' tier as popular
+  // Update this to your LIVE Render backend URL
+  const BACKEND_URL = 'https://janusforgenexus-backend-1.onrender.com';
+
   const isPopularTier = (tierKey: string) => tierKey === 'pro';
 
-  const handleTokenPurchase = async (pkg: any) => {
+  const handleStripeCheckout = async (item: any, mode: 'payment' | 'subscription') => {
+    // 1. If not logged in, send to register first
     if (!isAuthenticated) {
-      window.location.href = '/login?callback=/pricing';
+      window.location.href = `/register?tier=${item.id || 'free'}`;
       return;
     }
 
-    setIsRedirecting(pkg.id);
+    // 2. Prevent multiple clicks
+    setIsRedirecting(item.id);
+
     try {
-      const response = await fetch('/api/checkout', {
+      // 3. Call your specific REST endpoint on Render
+      const response = await fetch(`${BACKEND_URL}/api/v1/billing/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId: pkg.stripePriceId,
+          priceId: item.stripePriceId,
           userId: user?.id,
-          tokens: pkg.tokens
+          tokens: item.tokens || item.monthly_tokens || 0,
+          mode: mode // Critical: Tells Stripe if it's recurring or one-time
         }),
       });
+
       const data = await response.json();
-      if (data.url) window.location.href = data.url;
+      
+      // 4. Redirect to the actual Stripe Checkout page
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
     } catch (err) {
-      console.error('Purchase error:', err);
+      console.error('Checkout error:', err);
+      alert('Checkout failed. Please try again.');
     } finally {
       setIsRedirecting(null);
     }
@@ -48,17 +62,19 @@ export default function PricingPage() {
             The Nexus <span className="text-blue-500">Economy</span>
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto font-medium">
-            Choose a monthly tier for consistent access or top up your forge with one-time token packs.
+            Choose a monthly tier for consistent access or top up your forge with one-time fuel packs.
           </p>
         </div>
 
-        {/* SUBSCRIPTION TIERS - Centered Grid */}
+        {/* SUBSCRIPTION TIERS */}
         <div className="flex justify-center mb-32">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl w-full">
             {Object.entries(TIER_CONFIGS)
               .filter(([tierKey]) => tierKey !== 'admin' && tierKey !== 'enterprise')
               .map(([tierKey, tier]) => {
                 const isPopular = isPopularTier(tierKey);
+                const tierWithId = { ...tier, id: tierKey };
+                
                 return (
                   <div
                     key={tierKey}
@@ -97,23 +113,25 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    <Link
-                      href={tierKey === 'free' ? '/register' : `/register?tier=${tierKey}`}
-                      className={`w-full py-4 text-center font-black uppercase tracking-widest text-xs rounded-xl transition-all ${
-                        isPopular
-                          ? 'bg-blue-600 hover:bg-blue-500 text-white'
-                          : 'bg-white/10 hover:bg-white/20 text-white'
+                    {/* REPLACED LINK WITH BUTTON */}
+                    <button
+                      onClick={() => tierKey !== 'free' && handleStripeCheckout(tierWithId, 'subscription')}
+                      disabled={isRedirecting === tierKey}
+                      className={`w-full py-4 text-center font-black uppercase tracking-widest text-xs rounded-xl transition-all flex items-center justify-center gap-2 ${
+                        tierKey === 'free' ? 'bg-white/5 text-gray-500 cursor-not-allowed' :
+                        isPopular ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
                       }`}
                     >
-                      {tierKey === 'free' ? 'Initialize' : 'Upgrade Nexus'}
-                    </Link>
+                      {isRedirecting === tierKey ? <Loader2 size={16} className="animate-spin" /> : 
+                       tierKey === 'free' ? 'Default Access' : 'Upgrade Nexus'}
+                    </button>
                   </div>
                 );
               })}
           </div>
         </div>
 
-        {/* ONE-TIME TOKEN PACKS - New Section */}
+        {/* ONE-TIME FUEL TOP-UP */}
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">One-Time Fuel Top-Up</h2>
@@ -139,7 +157,7 @@ export default function PricingPage() {
                 </div>
 
                 <button
-                  onClick={() => handleTokenPurchase(pkg)}
+                  onClick={() => handleStripeCheckout(pkg, 'payment')}
                   disabled={!!isRedirecting}
                   className="w-full py-3 bg-white text-black font-black text-[10px] uppercase tracking-widest rounded-lg hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-2"
                 >
