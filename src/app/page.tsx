@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import ShareDropdown from '@/components/ShareDropdown';
 
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 interface ConversationMessage {
@@ -77,18 +76,6 @@ export default function HomePage() {
     return () => { socketRef.current?.disconnect(); };
   }, [isAdmin]);
 
-  const exportNexusFeed = () => {
-    if (conversation.length === 0) return;
-    const content = conversation.map(msg => `[${msg.name}] (${new Date(msg.timestamp).toLocaleString()})\n${msg.content}\n\n`).reverse().join('');
-    const blob = new Blob([`JANUS FORGE NEXUS® SESSION\n\n${content}`], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `nexus-debate-${Date.now()}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   const handleSendMessage = () => {
     if (!userMessage.trim() || isSending || (!isAdmin && tokensRemaining <= 0)) return;
     setIsSending(true);
@@ -130,20 +117,19 @@ export default function HomePage() {
 
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
-          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl">
-            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
+          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
+            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20 relative z-30">
               <h2 className="font-bold flex items-center gap-2 text-sm">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 LIVE AI CONVERSATION PANEL
               </h2>
               <div className="flex items-center gap-3">
-                {/* The new Share/Export hub for the Council Decrees */}
-                <ShareDropdown 
-                  conversationText={fullTranscript} 
-                  username={(user as any)?.username || 'Architect'} 
+                <ShareDropdown
+                  conversationText={fullTranscript}
+                  username={(user as any)?.username || 'Architect'}
                 />
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
-                  <Zap size={14} className="text-purple-400 fill-purple-400" />
+                  < Zap size={14} className="text-purple-400 fill-purple-400" />
                   <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
                     {isAdmin ? 'GOD MODE (∞)' : `${tokensRemaining} TOKENS`}
                   </span>
@@ -151,34 +137,33 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="p-6 space-y-4">
+            {/* Elevated z-index container to ensure it sits above any invisible dropdown overlaps */}
+            <div className="p-6 space-y-4 relative z-40 bg-gray-900/50">
               <textarea
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
                 onKeyDown={(e) => {
-                  // Check if Enter is pressed WITHOUT the Shift key
                   if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault(); // Prevent a new line from being created
+                    e.preventDefault();
                     if (userMessage.trim() && !isSending) {
-                      handleSendMessage(); // Trigger the council engagement
+                      handleSendMessage();
                     }
                   }
                 }}
-                // Keeping the textarea unlocked so they can type during 'God Mode' spins
-                disabled={!isAuthenticated || ((user?.tokens_remaining || 0) <= 0 && !user?.isAdmin)}
+                disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
                 placeholder="Press Enter to challenge the Council..."
-                className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[120px]"
+                className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[120px] relative z-50"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={isSending || !userMessage.trim() || (!isAdmin && tokensRemaining <= 0)}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20 relative z-50"
               >
                 {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Engage Council'}
               </button>
             </div>
 
-            <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
+            <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto relative z-10">
               {conversation.map((msg) => (
                 <div key={msg.id} className={`p-6 transition-all ${msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''}`}>
                   <div className="flex gap-4 text-sm">
