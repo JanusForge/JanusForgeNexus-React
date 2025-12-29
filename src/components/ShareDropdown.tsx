@@ -43,6 +43,18 @@ const ShareDropdown = ({ conversationText, username }: ShareDropdownProps) => {
     setIsOpen(false);
   };
 
+  // Safely handles long transcripts to prevent browser crashes
+  const handleEmailShare = () => {
+    const subject = "Nexus Decree: The Tyranny of Comfort";
+    // Truncate to ~1500 chars to ensure mailto: links don't break
+    const safeBody = conversationText.length > 1500 
+      ? conversationText.substring(0, 1500) + "\n\n... [Transcript continues at JanusForge.ai]" 
+      : conversationText;
+    
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(safeBody)}`;
+    setIsOpen(false);
+  };
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
@@ -51,7 +63,7 @@ const ShareDropdown = ({ conversationText, username }: ShareDropdownProps) => {
 
   return (
     <div className="relative inline-block text-left">
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="btn btn-ghost btn-circle border border-blue-500/20 hover:border-blue-400 transition-all"
         type="button"
@@ -61,12 +73,12 @@ const ShareDropdown = ({ conversationText, username }: ShareDropdownProps) => {
 
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-[90] bg-transparent" 
+          <div
+            className="fixed inset-0 z-[90] bg-transparent"
             onClick={() => setIsOpen(false)}
           ></div>
 
-          <ul className="absolute right-0 mt-2 p-3 shadow-2xl bg-slate-900 rounded-xl w-64 border border-blue-500/40 z-[100] animate-in fade-in zoom-in duration-200">
+          <ul className="fixed right-[calc(50%-384px)] mt-12 p-3 shadow-2xl bg-slate-900 rounded-xl w-64 border border-blue-500/40 z-[999] animate-in fade-in zoom-in duration-200">
             <li className="text-blue-400 uppercase text-[10px] tracking-widest mb-2 font-bold px-4 list-none">
               Transmit to the World
             </li>
@@ -83,15 +95,16 @@ const ShareDropdown = ({ conversationText, username }: ShareDropdownProps) => {
             </div>
 
             <div className="border-t border-white/10 my-2 mx-2"></div>
-            
+
             <li className="text-gray-500 uppercase text-[10px] tracking-widest mb-1 px-4 list-none font-bold">Archive Decree</li>
 
             <div className="flex flex-col gap-1 px-2">
               <button onClick={() => window.print()} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Printer className="w-4 h-4"/> Print / PDF</button>
               <button className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><FileText className="w-4 h-4 text-green-500"/> Export .DOCX</button>
-              <a href={`mailto:?subject=Nexus Decree&body=${encodeURIComponent(conversationText)}`} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white">
+              {/* Updated to use the new handleEmailShare function */}
+              <button onClick={handleEmailShare} className="flex items-center gap-2 text-[11px] py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white">
                 <Mail className="w-4 h-4"/> Email Transcript
-              </a>
+              </button>
             </div>
           </ul>
         </>
