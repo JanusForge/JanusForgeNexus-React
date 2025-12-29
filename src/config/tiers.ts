@@ -1,6 +1,7 @@
 export const TIER_CONFIGS = {
   free: {
     id: 'free',
+    stripePriceId: 'price_1SYoVOGg8RUnSFObfyCZ9XQS', // Create as recurring in Stripe
     name: 'Free',
     max_ai_models: 2,
     monthly_tokens: 50,
@@ -10,7 +11,7 @@ export const TIER_CONFIGS = {
   },
   basic: {
     id: 'basic',
-    stripePriceId: 'price_YOUR_BASIC_SUB_ID', // Create as recurring in Stripe
+    stripePriceId: 'price_1ScOX7Gg8RUnSFObmqiclPbt', // Create as recurring in Stripe
     name: 'Basic',
     max_ai_models: 3,
     monthly_tokens: 500, // Increased for better engagement
@@ -20,7 +21,7 @@ export const TIER_CONFIGS = {
   },
   pro: {
     id: 'pro',
-    stripePriceId: 'price_YOUR_PRO_SUB_ID',
+    stripePriceId: 'price_1SVxLeGg8RUnSFObKobkPrcE',
     name: 'Professional',
     max_ai_models: 5,
     monthly_tokens: 2000,
