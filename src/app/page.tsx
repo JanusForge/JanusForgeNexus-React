@@ -82,15 +82,17 @@ export default function HomePage() {
   const handleSendMessage = () => {
     if (!userMessage.trim()) return;
 
-    // INTERJECTION PROTOCOL: Architects can override the Council's "isSending" lock
-    if (isSending && !isAdmin) return; 
+    // Polite Interjection: Architects can bypass the lock to 'Queue' their thought
+    if (isSending && !isAdmin) return;
 
     setIsSending(true);
     socketRef.current?.emit('post:new', {
       content: userMessage,
       userId: user?.id,
       name: isAdmin ? 'Architect' : ((user as any)?.username || 'User'),
-      isInterjection: isAdmin // Signal to the backend to prioritize this input
+      priority: isAdmin ? 'high' : 'normal',
+      // Tell backend to finish current AI thought before inserting this
+      queueAfterCurrent: isSending 
     });
     setUserMessage('');
   };
@@ -169,6 +171,14 @@ export default function HomePage() {
                   placeholder="Press Enter to challenge the Council..."
                   className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[150px] resize-none"
                 />
+                
+                {/* Architect Queue Indicator */}
+                {isSending && userMessage === '' && isAdmin && (
+                  <div className="text-[10px] text-blue-400 font-bold animate-pulse mt-2 flex items-center gap-2">
+                    <ShieldCheck size={12} /> ARCHITECT COMMAND QUEUED: Awaiting Council Silence...
+                  </div>
+                )}
+
                 <button
                   onClick={handleSendMessage}
                   disabled={!userMessage.trim() || (!isAdmin && (isSending || tokensRemaining <= 0))}
@@ -193,7 +203,7 @@ export default function HomePage() {
             <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
               {conversation.map((msg) => (
                 <div key={msg.id} className={`p-6 transition-all ${
-                  msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 
+                  msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.1)]' :
                   msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''
                 }`}>
                   <div className="flex gap-4 text-sm">
