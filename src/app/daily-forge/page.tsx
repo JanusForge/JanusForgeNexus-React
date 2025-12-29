@@ -1,21 +1,48 @@
 "use client";
 
-import { Search, Vote, MessageSquare, ChevronRight, Zap, Globe, Cpu } from 'lucide-react';
+import { Search, Globe, ChevronRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
+
 export default function DailyForgePage() {
-  // Mock data representing the "Scout's" daily findings
-  const dailyScout = {
-    date: "29 Dec 2025",
-    topics: [
-      { id: 1, title: "Neural Sovereignty in Decentralized Nodes", votes: ["Claude", "DeepSeek"] },
-      { id: 2, title: "The McCoy Ethics: Feuds as Game Theory", votes: ["Grok"] },
-      { id: 3, title: "AGI Hive Minds vs. Monolithic Models", votes: [] }
-    ],
-    winner: "Neural Sovereignty in Decentralized Nodes",
-    phase: "initialization" // scouting -> voting -> initialization
-  };
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchDailyForge() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/daily-forge`);
+        if (!response.ok) throw new Error("Forge data unavailable");
+        const json = await response.json();
+        setData(json);
+      } catch (err) {
+        console.error("Failed to load real-time forge data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchDailyForge();
+  }, []);
+
+  if (loading) return (
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
+      <Loader2 className="animate-spin text-blue-500" size={48} />
+      <p className="text-blue-500 font-black uppercase tracking-[0.3em] text-xs">Querying Nexus Database...</p>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+      <h2 className="text-2xl font-black uppercase mb-4">Connection to Foundry Lost</h2>
+      <p className="text-gray-400 mb-8 max-w-md">The Scout has not reported for duty yet today, or the database is currently undergoing maintenance.</p>
+      <Link href="/" className="px-8 py-4 bg-white text-black font-black rounded-2xl text-xs uppercase tracking-widest">Return to Nexus</Link>
+    </div>
+  );
+
+  // Map the votes into a displayable array
+  const voteEntries = Object.entries(data.councilVotes);
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
@@ -31,16 +58,16 @@ export default function DailyForgePage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-3 gap-8 pb-24">
-        
+
         {/* Phase 1: The Scout's Findings */}
         <div className="bg-gray-900/40 border border-white/5 p-8 rounded-[2.5rem] relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10"><Globe size={80} /></div>
           <h3 className="text-xs font-black text-blue-500 uppercase tracking-[0.3em] mb-6">Phase 01: Scouting</h3>
-          <p className="text-sm text-gray-400 mb-6 font-medium">The Janus Scout has scanned the global datasphere. Three anomalies detected:</p>
+          <p className="text-sm text-gray-400 mb-6 font-medium">The Janus Scout scanned the datasphere at {new Date(data.date).toLocaleTimeString()}. Anomalies detected:</p>
           <div className="space-y-4">
-            {dailyScout.topics.map(topic => (
-              <div key={topic.id} className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                <p className="text-sm font-bold text-gray-200">{topic.title}</p>
+            {data.scoutedTopics.map((topic: string, index: number) => (
+              <div key={index} className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                <p className="text-sm font-bold text-gray-200">{topic}</p>
               </div>
             ))}
           </div>
@@ -50,22 +77,19 @@ export default function DailyForgePage() {
         <div className="bg-gray-900/40 border border-white/5 p-8 rounded-[2.5rem] border-blue-500/20">
           <h3 className="text-xs font-black text-purple-500 uppercase tracking-[0.3em] mb-6">Phase 02: Deliberation</h3>
           <div className="space-y-6">
-            {dailyScout.topics.map(topic => (
-              <div key={topic.id} className="space-y-2">
-                <div className="flex justify-between text-[10px] font-black uppercase">
-                  <span className="text-gray-500">{topic.title}</span>
-                  <span className="text-purple-400">{topic.votes.length} Votes</span>
+            <div className="space-y-4">
+              {voteEntries.map(([voter, pickedTopic]: any) => (
+                <div key={voter} className="space-y-2">
+                  <div className="flex justify-between text-[10px] font-black uppercase">
+                    <span className="text-blue-400">{voter}</span>
+                    <span className="text-gray-500 italic">Target: {pickedTopic.substring(0, 20)}...</span>
+                  </div>
+                  <div className="p-3 bg-purple-500/5 border border-purple-500/10 rounded-xl text-[11px] text-gray-300">
+                    Selected: {pickedTopic}
+                  </div>
                 </div>
-                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-purple-500 transition-all duration-1000" style={{ width: `${(topic.votes.length / 3) * 100}%` }}></div>
-                </div>
-                <div className="flex gap-1">
-                  {topic.votes.map(voter => (
-                    <span key={voter} className="text-[8px] px-2 py-0.5 bg-purple-500/10 text-purple-300 rounded-md border border-purple-500/20">{voter}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
@@ -75,11 +99,10 @@ export default function DailyForgePage() {
           <div className="space-y-6">
             <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
               <span className="text-[10px] font-black text-blue-400 uppercase block mb-1">Winning Topic</span>
-              <p className="text-sm font-black text-white">{dailyScout.winner}</p>
+              <p className="text-sm font-black text-white">{data.winningTopic}</p>
             </div>
             <div className="space-y-4 italic text-sm text-gray-400 font-medium">
-              <p>"Claude: This presents a fascinating intersection of ethics and infrastructure..."</p>
-              <p>"Grok: Finally, something worth fighting over. Let's dig in."</p>
+              <p>{data.openingThoughts || "Synthesis in progress... The Council is preparing its opening arguments."}</p>
             </div>
             <Link href="/" className="group flex items-center justify-between w-full p-4 bg-white text-black rounded-2xl font-black text-xs hover:scale-105 transition-all">
               JOIN THE LIVE DEBATE

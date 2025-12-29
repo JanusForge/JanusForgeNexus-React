@@ -1,7 +1,21 @@
 "use client";
 
-import { Zap, LayoutGrid, Server, Database, Brain, Users, Cloud, Network, Bot } from 'lucide-react';
+// Added ChevronRight and CheckCircle to the list
+import { 
+  Zap, 
+  LayoutGrid, 
+  Server, 
+  Database, 
+  Brain, 
+  Users, 
+  Cloud, 
+  Network, 
+  Bot, 
+  CheckCircle, 
+  ChevronRight 
+} from 'lucide-react';
 import Link from 'next/link';
+
 
 export default function ArchitecturePage() {
   const sections = [

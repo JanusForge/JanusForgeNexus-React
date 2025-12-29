@@ -66,3 +66,5 @@ const ShareDropdown = ({ conversationText, username }) => {
     </div>
   );
 };
+
+export default ShareDropdown;
