@@ -8,7 +8,7 @@ import {
   Facebook, 
   Linkedin, 
   Check,
-  ChevronDown 
+  ChevronDown, 
   MessageCircle, // Added for WhatsApp
   Globe,         // Used for Reddit
   Link           // Added for Copy Link function
