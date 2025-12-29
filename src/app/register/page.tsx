@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+// FIXED: Correct import for Link to resolve Vercel build errors
+import Link from 'next/link'; 
 import { Loader2, ShieldCheck, UserPlus } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -22,7 +23,7 @@ export default function RegisterPage() {
     setStatus('loading');
 
     try {
-      // Connects to your live Render backend
+      // Points to your specific Render backend registration route
       const response = await fetch('https://janusforgenexus-backend-1.onrender.com/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,7 +37,7 @@ export default function RegisterPage() {
       }
 
       setStatus('success');
-      // Brief delay so the user sees the success state before redirecting to login
+      // Redirect to login after 2 seconds to allow the success message to be read
       setTimeout(() => {
         router.push('/login');
       }, 2000);
@@ -85,7 +86,7 @@ export default function RegisterPage() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
                   placeholder="Enter your handle"
                   required
                 />
@@ -99,7 +100,7 @@ export default function RegisterPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
                   placeholder="you@example.com"
                   required
                 />
@@ -113,7 +114,7 @@ export default function RegisterPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
                   placeholder="••••••••"
                   required
                   minLength={8}
@@ -123,7 +124,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={status === 'loading'}
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-black uppercase text-xs tracking-[0.2em] rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-900/20"
+                className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-black uppercase text-xs tracking-[0.2em] rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-blue-900/20"
               >
                 {status === 'loading' ? (
                   <Loader2 className="animate-spin mx-auto" size={18} />

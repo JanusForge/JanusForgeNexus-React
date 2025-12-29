@@ -2,7 +2,8 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/navigation';
+// FIXED: Correct import for the Link component
+import Link from 'next/link';
 import { Loader2, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
 
 function ResetPasswordContent() {
@@ -104,7 +105,7 @@ function ResetPasswordContent() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="text-white w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg placeholder-gray-500 focus:outline-none focus:border-blue-500"
               placeholder="••••••••"
               required
             />
