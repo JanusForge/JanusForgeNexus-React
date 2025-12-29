@@ -1,12 +1,27 @@
+"use client";
+
 import React, { useState } from 'react';
 import { 
-  Share2, FileText, Printer, Mail, Twitter, Linkedin, 
-  Facebook, MessageCircle, Link, Globe 
+  Share2, 
+  Copy, 
+  Twitter, 
+  Facebook, 
+  Linkedin, 
+  Check,
+  ChevronDown 
 } from 'lucide-react';
 
-const ShareDropdown = ({ conversationText, username }) => {
+// Define the shape of the data being passed in
+interface ShareDropdownProps {
+  conversationText: string;
+  username: string;
+}
+
+const ShareDropdown = ({ conversationText, username }: ShareDropdownProps) => {
   const referralLink = "https://www.janusforge.ai";
   const [copied, setCopied] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
 
   const handleShare = (platform) => {
     const shareText = `Architect ${username} just forged a new decree at the Janus Forge Nexus. \n\n`;
