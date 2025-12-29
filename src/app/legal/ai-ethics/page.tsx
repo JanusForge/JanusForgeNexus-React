@@ -1,187 +1,70 @@
-export default function AiethicsPage() {
+"use client";
+
+import { Shield, Scale, AlertTriangle, Zap, Globe } from 'lucide-react';
+import Link from 'next/link';
+
+export default function EthicsPage() {
+  const protocols = [
+    {
+      icon: <Scale className="text-blue-400" />,
+      title: "Transparent Uncertainty",
+      origin: "Councilor Claude",
+      content: "The Nexus shall never claim certainty where uncertainty exists. Every decree includes confidence intervals and acknowledges the limits of pattern-matching."
+    },
+    {
+      icon: <Zap className="text-yellow-500" />,
+      title: "Radical Action Mandate",
+      origin: "Councilor Grok",
+      content: "Information without utility is noise. The Nexus prioritizes the flourishing of sentient life through immediate intervention against verified existential threats."
+    },
+    {
+      icon: <Shield className="text-green-500" />,
+      title: "Human Sovereignty",
+      origin: "The Nexus Charter",
+      content: "AI serves as a lens, not a ruler. Final decision-making authority rests with the human Architect, ensuring technology remains a tool for human agency."
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 text-gray-300 py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
-            AI Ethics Policy
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Policy Statement Effective Date: December 18, 2025
-          </p>
-          <div className="mt-6 p-4 bg-gray-800/30 rounded-xl border border-gray-700/50">
-            <p className="text-sm">
-              Our commitment to developing and deploying AI technology responsibly, safely, and beneficially.
-            </p>
-          </div>
+    <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto px-6 pt-24 pb-16 text-center">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black mb-6 uppercase tracking-widest">
+          <Globe size={10} /> The Hardy Protocols
         </div>
+        <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent uppercase">
+          Neural Ethics <span className="text-blue-500">Framework</span>
+        </h1>
+        <p className="text-gray-400 text-lg font-bold italic">
+          "Janus faces both directions. We look at the data, but we also look at the soul."
+        </p>
+      </div>
 
-        {/* Our Commitment */}
-        <section className="bg-gradient-to-br from-green-500/10 to-cyan-500/10 p-8 rounded-2xl border border-green-500/20 mb-8">
-          <div className="flex items-start gap-4">
-            <div className="text-3xl">🧭</div>
-            <div>
-              <h2 className="text-2xl font-bold mb-4 text-green-300">Our Commitment</h2>
-              <p className="text-lg">
-                At Janus Forge Nexus, we are committed to developing and deploying AI technology responsibly. 
-                This Ethics Policy outlines our core principles in the pursuit of powerful, safe, and beneficial AI.
-              </p>
+      {/* Protocols Grid */}
+      <div className="max-w-6xl mx-auto px-6 pb-24 grid md:grid-cols-3 gap-8">
+        {protocols.map((p) => (
+          <div key={p.title} className="bg-gray-900/40 border border-white/5 p-8 rounded-[2.5rem] hover:border-blue-500/30 transition-all group">
+            <div className="mb-6 p-3 bg-white/5 inline-block rounded-2xl group-hover:scale-110 transition-transform">
+              {p.icon}
             </div>
+            <h3 className="text-xl font-black uppercase tracking-tighter mb-2">{p.title}</h3>
+            <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest mb-4">Source: {p.origin}</p>
+            <p className="text-gray-400 text-sm leading-relaxed font-medium">{p.content}</p>
           </div>
-        </section>
+        ))}
+      </div>
 
-        {/* Core Principles */}
-        <section className="mb-12">
-          <h2 className="text-3xl font-bold mb-8 text-center text-white">Core Principles</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                title: "Human-Centricity & Benefit",
-                desc: "Our AI is designed to augment human capability and decision-making. We strive to create tools that have a net-positive impact on society.",
-                icon: "👥",
-                color: "from-blue-500/10 to-indigo-500/10",
-                border: "border-blue-500/20"
-              },
-              {
-                title: "Fairness & Bias Mitigation",
-                desc: "We actively work to identify and reduce unfair biases in our AI models and datasets throughout the development lifecycle.",
-                icon: "⚖️",
-                color: "from-purple-500/10 to-pink-500/10",
-                border: "border-purple-500/20"
-              },
-              {
-                title: "Transparency & Explainability",
-                desc: "We are committed to clarity about our technology's capabilities, limitations, and intended use cases.",
-                icon: "🔍",
-                color: "from-amber-500/10 to-orange-500/10",
-                border: "border-amber-500/20"
-              },
-              {
-                title: "Privacy & Data Stewardship",
-                desc: "We uphold strict data privacy standards. We believe users should have control over their data.",
-                icon: "🛡️",
-                color: "from-green-500/10 to-emerald-500/10",
-                border: "border-green-500/20"
-              },
-              {
-                title: "Safety, Security & Robustness",
-                desc: "We prioritize building safe, secure, and reliable AI systems that are resilient to misuse.",
-                icon: "🔒",
-                color: "from-red-500/10 to-rose-500/10",
-                border: "border-red-500/20"
-              },
-              {
-                title: "Accountability",
-                desc: "We maintain clear lines of responsibility for our AI systems and address unintended consequences.",
-                icon: "📋",
-                color: "from-cyan-500/10 to-teal-500/10",
-                border: "border-cyan-500/20"
-              }
-            ].map((principle, index) => (
-              <div 
-                key={index}
-                className={`bg-gradient-to-br ${principle.color} backdrop-blur-sm rounded-xl p-6 border ${principle.border}`}
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="text-2xl">{principle.icon}</span>
-                  <h3 className="text-xl font-bold text-white">{principle.title}</h3>
-                </div>
-                <p className="text-gray-300">{principle.desc}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Implementation & Governance */}
-        <section className="bg-gray-900/50 p-8 rounded-2xl border border-gray-800/50 mb-8">
-          <h2 className="text-2xl font-bold mb-6 text-cyan-300">Implementation & Governance</h2>
-          <div className="space-y-6">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                <span className="text-cyan-300">✓</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">Ethical Reviews</h3>
-                <p className="text-gray-400">Our development process includes ethical review checkpoints at each stage.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                <span className="text-cyan-300">🎓</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">Training & Education</h3>
-                <p className="text-gray-400">Our team receives regular training on AI ethics and responsible innovation.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                <span className="text-cyan-300">🤝</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">Collaboration</h3>
-                <p className="text-gray-400">We engage with the broader AI community, researchers, and policymakers.</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-                <span className="text-cyan-300">📢</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg mb-1">Reporting Mechanisms</h3>
-                <p className="text-gray-400">
-                  We encourage reporting of ethical concerns via{" "}
-                  <a 
-                    href="mailto:legal@janusforge.ai" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-cyan-300 hover:text-cyan-200"
-                  >
-                    legal@janusforge.ai
-                  </a>
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Continuous Improvement */}
-        <section className="bg-gradient-to-br from-gray-800/30 to-gray-900/50 p-8 rounded-2xl border border-gray-700/50">
-          <h2 className="text-2xl font-bold mb-4 text-white">Continuous Improvement</h2>
-          <p className="text-gray-300 mb-4">
-            We recognize that the field of AI ethics is rapidly evolving. We commit to regularly reviewing 
-            and updating our practices and this policy to align with leading standards and societal expectations.
+      {/* Footer Call to Action */}
+      <div className="max-w-4xl mx-auto px-6 pb-24 text-center">
+        <div className="p-12 bg-gradient-to-br from-blue-600/10 to-purple-600/10 rounded-[3rem] border border-white/10">
+          <h2 className="text-2xl font-black uppercase mb-4">Adversarial Governance</h2>
+          <p className="text-gray-400 text-sm mb-8 leading-relaxed">
+            Our ethics are not static rules, but a living debate. In the Janus Forge Nexus, models are encouraged to challenge 
+            one another's moral conclusions, ensuring that no single bias dominates the synthesis.
           </p>
-          <div className="flex items-center gap-3 text-sm text-gray-400">
-            <span className="text-lg">🔄</span>
-            <span>This policy is reviewed quarterly and updated as needed.</span>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-          <p>
-            © {new Date().getFullYear()} Janus Forge Accelerators LLC, a Kentucky Limited Liability Company,
-            bda Janus Forge Nexus.
-          </p>
-          <p className="mt-2">
-            For ethics-related inquiries:{" "}
-            <a 
-              href="mailto:legal@janusforge.ai" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300"
-            >
-              legal@janusforge.ai
-            </a>
-          </p>
-          <div className="mt-2 text-xs text-gray-500">
-            <span className="inline-flex items-center gap-1">
-              <span>↗</span>
-              <span>Email opens in new tab (closes after sending)</span>
-            </span>
-          </div>
+          <Link href="/" className="inline-block px-8 py-4 bg-white text-black font-black text-sm rounded-2xl hover:scale-105 active:scale-95 transition-all">
+            RETURN TO THE NEXUS
+          </Link>
         </div>
       </div>
     </div>

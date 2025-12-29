@@ -5,6 +5,8 @@ import { useEffect, useState, useRef } from 'react';
 import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Download } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
+import ShareDropdown from '@/components/ShareDropdown';
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
@@ -98,6 +100,11 @@ export default function HomePage() {
     setUserMessage('');
   };
 
+  const fullTranscript = conversation
+    .map(msg => `[${msg.name}] (${new Date(msg.timestamp).toLocaleString()})\n${msg.content}`)
+    .reverse()
+    .join('\n\n');
+
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
       <div className="relative pt-12 pb-12 text-center border-b border-white/5">
@@ -130,9 +137,11 @@ export default function HomePage() {
                 LIVE AI CONVERSATION PANEL
               </h2>
               <div className="flex items-center gap-3">
-                <button onClick={exportNexusFeed} className="p-2 text-gray-400 hover:text-white transition-colors">
-                  <Download size={16} />
-                </button>
+                {/* The new Share/Export hub for the Council Decrees */}
+                <ShareDropdown 
+                  conversationText={fullTranscript} 
+                  username={(user as any)?.username || 'Architect'} 
+                />
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
                   <Zap size={14} className="text-purple-400 fill-purple-400" />
                   <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
