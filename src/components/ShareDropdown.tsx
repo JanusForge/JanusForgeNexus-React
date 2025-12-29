@@ -9,6 +9,9 @@ import {
   Linkedin, 
   Check,
   ChevronDown 
+  MessageCircle, // Added for WhatsApp
+  Globe,         // Used for Reddit
+  Link           // Added for Copy Link function
 } from 'lucide-react';
 
 // Define the shape of the data being passed in
