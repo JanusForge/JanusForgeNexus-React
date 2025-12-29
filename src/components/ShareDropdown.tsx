@@ -2,18 +2,19 @@
 
 import React, { useState } from 'react';
 import { 
-  Share2, 
-  Copy, 
-  Twitter, 
+  Share2,
+  Copy,
+  Twitter,
   Facebook, 
-  Linkedin, 
+  Linkedin,
   Check,
-  ChevronDown, 
-  MessageCircle, // Added for WhatsApp
-  Globe,         // Used for Reddit
-  Link,           // Added for Copy Link function
-  Printer,   // Added for Print/PDF
-  FileText   // Added for DOCX Export
+  ChevronDown,
+  MessageCircle,
+  Globe,
+  Link,
+  Printer,
+  FileText,
+  Mail
 } from 'lucide-react';
 
 // Define the shape of the data being passed in
