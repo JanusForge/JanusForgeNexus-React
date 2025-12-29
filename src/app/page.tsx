@@ -73,7 +73,12 @@ export default function HomePage() {
       if (!isAdmin) {
         setTokensRemaining(prev => Math.max(0, prev - (msg.isVerdict ? 2 : 1)));
       }
-      if (msg.isVerdict) setIsSending(false);
+      
+      // --- SAFETY RELEASE INTEGRATION ---
+      // Force unlock if it's a verdict OR if a long message likely missed the flag
+      if (msg.isVerdict || msg.content.length > 500) {
+        setIsSending(false);
+      }
     });
 
     return () => { socketRef.current?.disconnect(); };
@@ -92,7 +97,7 @@ export default function HomePage() {
       name: isAdmin ? 'Architect' : ((user as any)?.username || 'User'),
       priority: isAdmin ? 'high' : 'normal',
       // Tell backend to finish current AI thought before inserting this
-      queueAfterCurrent: isSending 
+      queueAfterCurrent: isSending
     });
     setUserMessage('');
   };
@@ -126,7 +131,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
 
@@ -171,7 +175,7 @@ export default function HomePage() {
                   placeholder="Press Enter to challenge the Council..."
                   className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white focus:ring-2 focus:ring-blue-500 outline-none transition-all min-h-[150px] resize-none"
                 />
-                
+
                 {/* Architect Queue Indicator */}
                 {isSending && userMessage === '' && isAdmin && (
                   <div className="text-[10px] text-blue-400 font-bold animate-pulse mt-2 flex items-center gap-2">
