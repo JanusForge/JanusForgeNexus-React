@@ -22,23 +22,24 @@ const ShareDropdown = ({ conversationText, username }: ShareDropdownProps) => {
   const [copied, setCopied] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-
-  const handleShare = (platform) => {
+  const handleShare = (platform: string) => {
     const shareText = `Architect ${username} just forged a new decree at the Janus Forge Nexus. \n\n`;
     const encodedText = encodeURIComponent(shareText + referralLink);
     const encodedUrl = encodeURIComponent(referralLink);
 
-    const shareUrls = {
+    // Added WhatsApp and Reddit to the registry
+    const shareLinks: { [key: string]: string } = {
       twitter: `https://twitter.com/intent/tweet?text=${encodedText}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      whatsapp: `https://wa.me/?text=${encodedText}`,
-      reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodeURIComponent("Decree from Janus Forge")}`
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      whatsapp: `https://api.whatsapp.com/send?text=${encodedText}`,
+      reddit: `https://www.reddit.com/submit?url=${encodedUrl}&title=${encodeURIComponent(shareText)}`
     };
 
-    if (shareUrls[platform]) {
-      window.open(shareUrls[platform], '_blank', 'noopener,noreferrer');
+    if (shareLinks[platform]) {
+      window.open(shareLinks[platform], '_blank');
     }
+    setIsOpen(false);
   };
 
   const copyToClipboard = () => {
