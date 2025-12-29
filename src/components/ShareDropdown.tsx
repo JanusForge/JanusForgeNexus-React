@@ -54,39 +54,57 @@ const ShareDropdown = ({ conversationText, username }: ShareDropdownProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
-    <div className="dropdown dropdown-end">
-      <label tabIndex={0} className="btn btn-ghost btn-circle border border-blue-500/20 hover:border-blue-400 transition-all">
+return (
+    <div className="relative inline-block text-left">
+      {/* Trigger Button - Only this part stays clickable normally */}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="btn btn-ghost btn-circle border border-blue-500/20 hover:border-blue-400 transition-all"
+      >
         <Share2 className="w-5 h-5 text-blue-400" />
-      </label>
-      
-      <ul tabIndex={0} className="dropdown-content menu p-3 shadow-2xl bg-slate-900 rounded-xl w-64 border border-blue-500/40 z-[100]">
-        <li className="menu-title text-blue-400 uppercase text-[10px] tracking-widest mb-2 font-bold">Transmit to the World</li>
-        
-        {/* Social Grid */}
-        <div className="grid grid-cols-2 gap-1 mb-2">
-          <li><button onClick={() => handleShare('twitter')} className="text-xs py-2"><Twitter className="w-4 h-4 text-sky-400"/> X / Twitter</button></li>
-          <li><button onClick={() => handleShare('linkedin')} className="text-xs py-2"><Linkedin className="w-4 h-4 text-blue-600"/> LinkedIn</button></li>
-          <li><button onClick={() => handleShare('facebook')} className="text-xs py-2"><Facebook className="w-4 h-4 text-blue-500"/> Facebook</button></li>
-          <li><button onClick={() => handleShare('whatsapp')} className="text-xs py-2"><MessageCircle className="w-4 h-4 text-green-500"/> WhatsApp</button></li>
-          <li><button onClick={() => handleShare('reddit')} className="text-xs py-2"><Globe className="w-4 h-4 text-orange-500"/> Reddit</button></li>
-          <li><button onClick={copyToClipboard} className="text-xs py-2">
-            <Link className="w-4 h-4 text-gray-400"/> {copied ? 'Copied!' : 'Copy Link'}
-          </button></li>
-        </div>
+      </button>
 
-        <div className="divider my-1 opacity-20"></div>
-        <li className="menu-title text-gray-500 uppercase text-[10px] tracking-widest mb-1">Archive Decree</li>
-        
-        <li><button onClick={() => window.print()} className="text-xs"><Printer className="w-4 h-4"/> Print / PDF</button></li>
-        {/* We'll hook the docx logic we discussed earlier into this button */}
-        <li><button className="text-xs"><FileText className="w-4 h-4 text-green-500"/> Export .DOCX</button></li>
-        <li><a href={`mailto:?subject=Nexus Decree&body=${encodeURIComponent(conversationText)}`} className="text-xs">
-          <Mail className="w-4 h-4"/> Email Transcript
-        </a></li>
-      </ul>
+      {/* Actual Dropdown - Wrapped in a conditional to prevent "Invisible Wall" */}
+      {isOpen && (
+        <>
+          {/* Click-away backdrop to close the menu */}
+          <div 
+            className="fixed inset-0 z-[90]" 
+            onClick={() => setIsOpen(false)}
+          ></div>
+
+          <ul className="absolute right-0 mt-2 p-3 shadow-2xl bg-slate-900 rounded-xl w-64 border border-blue-500/40 z-[100] animate-in fade-in zoom-in duration-200">
+            <li className="menu-title text-blue-400 uppercase text-[10px] tracking-widest mb-2 font-bold flex px-4">
+              Transmit to the World
+            </li>
+
+            {/* Social Grid */}
+            <div className="grid grid-cols-2 gap-1 mb-2 px-2">
+              <button onClick={() => handleShare('twitter')} className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Twitter className="w-4 h-4 text-sky-400"/> X / Twitter</button>
+              <button onClick={() => handleShare('linkedin')} className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Linkedin className="w-4 h-4 text-blue-600"/> LinkedIn</button>
+              <button onClick={() => handleShare('facebook')} className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Facebook className="w-4 h-4 text-blue-500"/> Facebook</button>
+              <button onClick={() => handleShare('whatsapp')} className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><MessageCircle className="w-4 h-4 text-green-500"/> WhatsApp</button>
+              <button onClick={() => handleShare('reddit')} className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Globe className="w-4 h-4 text-orange-500"/> Reddit</button>
+              <button onClick={copyToClipboard} className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white">
+                <Link className="w-4 h-4 text-gray-400"/> {copied ? 'Copied!' : 'Copy Link'}
+              </button>
+            </div>
+
+            <div className="border-t border-white/10 my-2 mx-2"></div>
+            
+            <li className="menu-title text-gray-500 uppercase text-[10px] tracking-widest mb-1 px-4">Archive Decree</li>
+
+            <div className="flex flex-col gap-1 px-2">
+              <button onClick={() => window.print()} className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><Printer className="w-4 h-4"/> Print / PDF</button>
+              <button className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white"><FileText className="w-4 h-4 text-green-500"/> Export .DOCX</button>
+              <a href={`mailto:?subject=Nexus Decree&body=${encodeURIComponent(conversationText)}`} className="flex items-center gap-2 text-xs py-2 px-3 hover:bg-white/10 rounded-lg transition-colors text-white">
+                <Mail className="w-4 h-4"/> Email Transcript
+              </a>
+            </div>
+          </ul>
+        </>
+      )}
     </div>
   );
-};
 
 export default ShareDropdown;
