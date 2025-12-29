@@ -2,8 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-// FIXED: Correct import for the Link component
-import Link from 'next/link';
+import Link from 'next/link'; // FIXED: Changed from 'next/navigation'
 import { Loader2, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
 
 function ResetPasswordContent() {

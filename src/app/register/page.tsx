@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-// FIXED: Correct import for Link to resolve Vercel build errors
-import Link from 'next/link'; 
+import Link from 'next/link'; // FIXED: Changed from 'next/navigation'
 import { Loader2, ShieldCheck, UserPlus } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
