@@ -32,7 +32,7 @@ export default function HomePage() {
   const [isSending, setIsSending] = useState<boolean>(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
   const [timeLeft, setTimeLeft] = useState({ hours: 23, minutes: 59, seconds: 59 });
-  
+
   // New state to manage the sidebar compression
   const [isShareOpen, setIsShareOpen] = useState(false);
 
@@ -80,12 +80,17 @@ export default function HomePage() {
   }, [isAdmin]);
 
   const handleSendMessage = () => {
-    if (!userMessage.trim() || isSending || (!isAdmin && tokensRemaining <= 0)) return;
+    if (!userMessage.trim()) return;
+
+    // INTERJECTION PROTOCOL: Architects can override the Council's "isSending" lock
+    if (isSending && !isAdmin) return; 
+
     setIsSending(true);
     socketRef.current?.emit('post:new', {
       content: userMessage,
       userId: user?.id,
-      name: (user as any)?.username || 'Admin'
+      name: isAdmin ? 'Architect' : ((user as any)?.username || 'User'),
+      isInterjection: isAdmin // Signal to the backend to prioritize this input
     });
     setUserMessage('');
   };
@@ -122,10 +127,10 @@ export default function HomePage() {
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
-          
+
           {/* THE FORGE PANEL */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
-            
+
             {/* Panel Header */}
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
               <h2 className="font-bold flex items-center gap-2 text-sm">
@@ -133,10 +138,9 @@ export default function HomePage() {
                 LIVE AI CONVERSATION PANEL
               </h2>
               <div className="flex items-center gap-3">
-                {/* Updated Share Toggle Button */}
-                <button 
-                   onClick={() => setIsShareOpen(!isShareOpen)}
-                   className={`btn btn-ghost btn-circle border border-blue-500/20 hover:border-blue-400 transition-all ${isShareOpen ? 'bg-blue-500/20 text-blue-400' : 'text-gray-400'}`}
+                <button
+                    onClick={() => setIsShareOpen(!isShareOpen)}
+                    className={`btn btn-ghost btn-circle border border-blue-500/20 hover:border-blue-400 transition-all ${isShareOpen ? 'bg-blue-500/20 text-blue-400' : 'text-gray-400'}`}
                 >
                   <Share2 className="w-5 h-5" />
                 </button>
@@ -151,7 +155,6 @@ export default function HomePage() {
 
             {/* SIDEBAR COMPRESSION ZONE */}
             <div className="flex flex-col md:flex-row min-h-[250px] transition-all duration-500">
-              {/* Textarea Area: Compresses when isShareOpen is true */}
               <div className={`p-6 space-y-4 transition-all duration-500 ${isShareOpen ? 'md:w-2/3 w-full border-b md:border-b-0 md:border-r border-gray-800' : 'w-full'}`}>
                 <textarea
                   value={userMessage}
@@ -159,9 +162,7 @@ export default function HomePage() {
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      if (userMessage.trim() && !isSending) {
-                        handleSendMessage();
-                      }
+                      handleSendMessage();
                     }
                   }}
                   disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
@@ -170,14 +171,13 @@ export default function HomePage() {
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={isSending || !userMessage.trim() || (!isAdmin && tokensRemaining <= 0)}
+                  disabled={!userMessage.trim() || (!isAdmin && (isSending || tokensRemaining <= 0))}
                   className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-xl font-bold transition-all active:scale-95 shadow-lg shadow-blue-900/20"
                 >
                   {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Engage Council'}
                 </button>
               </div>
 
-              {/* Transmission Sidebar Hub */}
               {isShareOpen && (
                 <div className="md:w-1/3 w-full animate-in slide-in-from-right duration-300">
                   <ShareDropdown
@@ -192,13 +192,21 @@ export default function HomePage() {
             {/* Feed Section */}
             <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
               {conversation.map((msg) => (
-                <div key={msg.id} className={`p-6 transition-all ${msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''}`}>
+                <div key={msg.id} className={`p-6 transition-all ${
+                  msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.1)]' : 
+                  msg.isVerdict ? 'bg-purple-900/10 border-l-4 border-purple-500' : ''
+                }`}>
                   <div className="flex gap-4 text-sm">
-                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700">{msg.avatar || '👤'}</div>
+                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 font-bold text-xs">
+                      {msg.name === 'Architect' ? 'A' : (msg.avatar || '👤')}
+                    </div>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black uppercase text-blue-400">{msg.name}</span>
+                        <span className={`text-xs font-black uppercase ${msg.name === 'Architect' ? 'text-blue-400 tracking-widest' : 'text-gray-400'}`}>
+                          {msg.name}
+                        </span>
                         {msg.isVerdict && <span className="text-[10px] bg-purple-500 px-2 py-0.5 rounded font-bold text-white uppercase">Verdict</span>}
+                        {msg.name === 'Architect' && <span className="text-[10px] bg-blue-500/20 border border-blue-500/40 px-2 py-0.5 rounded font-bold text-blue-300 uppercase">Interjection</span>}
                       </div>
                       <p className="text-gray-200 whitespace-pre-wrap">{msg.content}</p>
                     </div>
