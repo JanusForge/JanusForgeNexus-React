@@ -94,7 +94,7 @@ export default function TokenPurchase() {
                   {pkg.tokens.toLocaleString()} tokens • ${pkg.price}
                 </div>
                 <div className="text-green-400 text-xs mt-1">
-                  ${(pkg.pricePerToken * 1000).toFixed(3)} per 1K tokens
+                  ${((pkg.price / pkg.tokens) * 1000).toFixed(3)} per 1K tokens
                 </div>
               </div>
               <button
