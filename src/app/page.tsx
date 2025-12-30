@@ -56,10 +56,21 @@ export default function HomePage() {
     }
   }, [user, isAdmin]);
 
-  useEffect(() => {
+useEffect(() => {
+    // Force the connection to the Render URL
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
-      transports: ['polling', 'websocket'],
+      transports: ['polling', 'websocket'], // Polling first is safer for Vercel -> Render handshakes
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('🏛️ Council Connection Verified');
+    });
+
+    socketRef.current.on('connect_error', (err) => {
+      console.error('❌ Council Connection Refused:', err.message);
     });
 
     socketRef.current.on('ai:typing', (data: { councilor: string }) => setActiveTyping(data.councilor));
@@ -69,20 +80,21 @@ export default function HomePage() {
     });
 
     socketRef.current.on('ai:response', (msg: ConversationMessage) => {
+      console.log('✨ Council Member Speaking:', msg.name);
       setConversation(prev => [msg, ...prev]);
-      if (!isAdmin) {
-        setTokensRemaining(prev => Math.max(0, prev - (msg.isVerdict ? 2 : 1)));
-      }
       
-      // --- SAFETY RELEASE INTEGRATION ---
-      // Force unlock if it's a verdict OR if a long message likely missed the flag
-      if (msg.isVerdict || msg.content.length > 500) {
-        setIsSending(false);
+      if (!isAdmin) {
+        setTokensRemaining(prev => Math.max(0, prev - 1));
       }
+
+      // Unlock UI when responses arrive
+      setIsSending(false);
     });
 
-    return () => { socketRef.current?.disconnect(); };
-  }, [isAdmin]);
+    return () => { 
+      socketRef.current?.disconnect(); 
+    };
+  }, [isAdmin]);  
 
   const handleSendMessage = () => {
     if (!userMessage.trim()) return;
