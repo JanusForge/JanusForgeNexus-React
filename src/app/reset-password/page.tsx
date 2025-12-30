@@ -2,15 +2,17 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link'; // FIXED: Changed from 'next/navigation'
+import Link from 'next/link'; 
 import { Loader2, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend-1.onrender.com';
 
 function ResetPasswordContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
-  
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -26,7 +28,8 @@ function ResetPasswordContent() {
     setError('');
 
     try {
-      const response = await fetch('https://janusforgenexus-backend-1.onrender.com/api/auth/reset-password', {
+      // UPDATED: Using the dynamic API_BASE_URL constant
+      const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword: password }),
@@ -58,20 +61,20 @@ function ResetPasswordContent() {
   return (
     <div className="w-full max-w-md bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 p-8 shadow-2xl">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-white">New Password</h1>
-        <p className="text-gray-400 mt-2">Establish your new credentials for the Nexus.</p>
+        <h1 className="text-3xl font-bold text-white uppercase tracking-tighter">New Password</h1>
+        <p className="text-gray-400 mt-2 italic text-sm">Establish your new credentials for the Nexus.</p>
       </div>
 
       {status === 'success' ? (
-        <div className="text-center animate-in fade-in zoom-in">
-          <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="text-center animate-in fade-in zoom-in duration-500">
+          <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/20">
             <ShieldCheck className="text-green-500" size={32} />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Password Updated</h2>
-          <p className="text-gray-400 mb-6">Your access has been restored. Redirecting to login...</p>
-          <button 
+          <h2 className="text-xl font-bold text-white mb-2 uppercase">Access Restored</h2>
+          <p className="text-gray-400 mb-6 text-sm">Your password has been updated. Redirecting...</p>
+          <button
             onClick={() => router.push('/login')}
-            className="flex items-center justify-center gap-2 mx-auto text-blue-400 font-bold hover:text-blue-300"
+            className="flex items-center justify-center gap-2 mx-auto text-blue-400 font-bold hover:text-blue-300 text-xs uppercase tracking-widest"
           >
             Go to Login <ArrowRight size={16} />
           </button>
@@ -81,17 +84,17 @@ function ResetPasswordContent() {
           {error && (
             <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg flex items-center gap-3">
               <AlertCircle className="text-red-500" size={18} />
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="text-red-400 text-xs font-bold uppercase">{error}</p>
             </div>
           )}
 
           <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">New Password</label>
+            <label className="block text-gray-500 text-[10px] font-black uppercase mb-2 tracking-widest">New Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500 transition-all"
               placeholder="••••••••"
               required
               minLength={8}
@@ -99,12 +102,12 @@ function ResetPasswordContent() {
           </div>
 
           <div>
-            <label className="block text-gray-300 text-sm font-medium mb-2">Confirm Password</label>
+            <label className="block text-gray-500 text-[10px] font-black uppercase mb-2 tracking-widest">Confirm Password</label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="text-white w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              className="text-white w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-all"
               placeholder="••••••••"
               required
             />
@@ -113,9 +116,9 @@ function ResetPasswordContent() {
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+            className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-lg"
           >
-            {status === 'loading' ? <Loader2 className="animate-spin" size={18} /> : 'Update Password'}
+            {status === 'loading' ? <Loader2 className="animate-spin" size={18} /> : 'Update Credentials'}
           </button>
         </form>
       )}
@@ -125,7 +128,7 @@ function ResetPasswordContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4">
       <Suspense fallback={<Loader2 className="animate-spin text-blue-500" size={32} />}>
         <ResetPasswordContent />
       </Suspense>
