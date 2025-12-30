@@ -1,42 +1,48 @@
+'use client';
+
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 
 export const BillingSuccess = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
-    // Automatically redirect back to the Nexus after 5 seconds
+    // Give the user 5 seconds to celebrate before redirecting to dashboard
     const timer = setTimeout(() => {
-      navigate('/dashboard'); 
+      router.push('/dashboard');
     }, 5000);
+
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [router]);
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white px-4">
-      {/* The "Glow" Core */}
-      <div className="relative w-32 h-32 mb-8">
-        <div className="absolute inset-0 bg-blue-500 rounded-full blur-2xl animate-pulse opacity-50"></div>
-        <div className="relative border-4 border-blue-400 w-full h-full rounded-full flex items-center justify-center">
-          <span className="text-4xl">⚡</span>
+    <div className="min-h-screen bg-black flex flex-center justify-center p-4">
+      <div className="max-w-md w-full bg-zinc-900 border border-blue-500/30 rounded-2xl p-8 text-center shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)]">
+        <div className="flex justify-center mb-6">
+          <div className="p-4 bg-blue-500/10 rounded-full border border-blue-500/20 animate-pulse">
+            <CheckCircle2 className="w-12 h-12 text-blue-500" />
+          </div>
         </div>
-      </div>
+        
+        <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">FORGE REFUELED</h1>
+        <p className="text-blue-400 font-mono text-sm mb-8 uppercase tracking-widest">Transaction Verified • Energy Restored</p>
+        
+        <div className="space-y-4 mb-8">
+          <div className="h-1 w-full bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-500 animate-[loading_5s_linear_forwards]" />
+          </div>
+          <p className="text-zinc-500 text-xs">Redirecting to Council Chambers...</p>
+        </div>
 
-      <h1 className="text-4xl font-black tracking-tighter mb-2">FORGE REFUELED</h1>
-      <p className="text-zinc-400 uppercase tracking-widest text-sm mb-8">Council Energy Synchronized</p>
-      
-      <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-2xl max-w-sm text-center">
-        <p className="text-zinc-300 text-sm leading-relaxed">
-          Your transaction was successful. The Pentarchy has acknowledged the contribution and your tokens are being credited to your vault.
-        </p>
+        <button 
+          onClick={() => router.push('/dashboard')}
+          className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2"
+        >
+          <Loader2 className="w-4 h-4 animate-spin" />
+          ENTER DASHBOARD
+        </button>
       </div>
-
-      <button 
-        onClick={() => navigate('/dashboard')}
-        className="mt-10 text-blue-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest"
-      >
-        Return to Nexus Manually →
-      </button>
     </div>
   );
 };
