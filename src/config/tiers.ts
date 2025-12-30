@@ -69,3 +69,27 @@ export const TOKEN_PACKAGES = [
     description: '500 High-Level Syntheses.',
   },
 ];
+
+// CRITICAL EXPORTS FOR VERCEL BUILD
+export const AI_TOKEN_COSTS = {
+  'gpt-4': { provider: 'OpenAI', input: 0.00003, output: 0.00006, yourCostPerToken: 0.000045 },
+  'claude-3': { provider: 'Anthropic', input: 0.000015, output: 0.000075, yourCostPerToken: 0.000045 },
+  'gemini-pro': { provider: 'Google', input: 0.0000005, output: 0.0000015, yourCostPerToken: 0.000001 },
+  'grok': { provider: 'xAI', input: 0.00001, output: 0.00002, yourCostPerToken: 0.000015 },
+  'deepseek': { provider: 'DeepSeek', input: 0.00000014, output: 0.00000028, yourCostPerToken: 0.00000021 },
+};
+
+export function getTierColor(tier: UserTier): string {
+  const colors = {
+    free: 'bg-gray-500',
+    basic: 'bg-blue-500',
+    pro: 'bg-purple-500',
+    admin: 'bg-red-500',
+  };
+  return colors[tier] || 'bg-gray-500';
+}
+
+export function formatTokens(tokens: number): string {
+  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}k`;
+  return tokens.toString();
+}
