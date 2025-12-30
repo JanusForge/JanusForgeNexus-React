@@ -2,30 +2,33 @@
 
 import { TIER_CONFIGS, TOKEN_PACKAGES } from '@/config/tiers';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useState } from 'react';
-import { Loader2, Zap, ShieldCheck } from 'lucide-react';
+import { useState, Suspense } from 'react'; // Added Suspense for Next.js safety
+import { useSearchParams } from 'next/navigation'; // Added this import
+import { Loader2, Zap, ShieldCheck, AlertTriangle } from 'lucide-react';
 
-export default function PricingPage() {
+// We wrap the content in a small inner component because useSearchParams 
+// requires a Suspense boundary in Next.js App Router
+function PricingContent() {
   const { user, isAuthenticated } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  
+  // --- SAFETY ALERT LOGIC ---
+  const isCanceled = searchParams.get('canceled') === 'true';
 
-  // Update this to your LIVE Render backend URL
   const BACKEND_URL = 'https://janusforgenexus-backend-1.onrender.com';
 
   const isPopularTier = (tierKey: string) => tierKey === 'pro';
 
   const handleStripeCheckout = async (item: any, mode: 'payment' | 'subscription') => {
-    // 1. If not logged in, send to register first
     if (!isAuthenticated) {
       window.location.href = `/register?tier=${item.id || 'free'}`;
       return;
     }
 
-    // 2. Prevent multiple clicks
     setIsRedirecting(item.id);
 
     try {
-      // 3. Call your specific REST endpoint on Render
       const response = await fetch(`${BACKEND_URL}/api/v1/billing/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -33,13 +36,12 @@ export default function PricingPage() {
           priceId: item.stripePriceId,
           userId: user?.id,
           tokens: item.tokens || item.monthly_tokens || 0,
-          mode: mode // Critical: Tells Stripe if it's recurring or one-time
+          mode: mode
         }),
       });
 
       const data = await response.json();
-      
-      // 4. Redirect to the actual Stripe Checkout page
+
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -56,6 +58,19 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-black pt-24 pb-24">
       <div className="container mx-auto px-4">
+        
+        {/* --- SAFETY ALERT UI --- */}
+        {isCanceled && (
+          <div className="max-w-4xl mx-auto mb-12 animate-in fade-in slide-in-from-top duration-500">
+            <div className="bg-red-500/10 border border-red-500/50 rounded-2xl p-4 flex items-center justify-center gap-4">
+              <AlertTriangle className="text-red-500" size={20} />
+              <p className="text-red-200 text-xs uppercase tracking-[0.2em] font-black text-center">
+                Transaction Aborted. Your Forge energy remains at current levels.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center mb-20">
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent uppercase">
@@ -74,13 +89,13 @@ export default function PricingPage() {
               .map(([tierKey, tier]) => {
                 const isPopular = isPopularTier(tierKey);
                 const tierWithId = { ...tier, id: tierKey };
-                
+
                 return (
                   <div
                     key={tierKey}
                     className={`flex flex-col rounded-3xl border transition-all duration-300 ${
-                      isPopular 
-                        ? 'border-blue-500 bg-blue-500/5 shadow-[0_0_40px_rgba(37,99,235,0.1)] scale-105 z-10' 
+                      isPopular
+                        ? 'border-blue-500 bg-blue-500/5 shadow-[0_0_40px_rgba(37,99,235,0.1)] scale-105 z-10'
                         : 'border-white/10 bg-white/5'
                     } p-8 relative`}
                   >
@@ -113,7 +128,6 @@ export default function PricingPage() {
                       ))}
                     </ul>
 
-                    {/* REPLACED LINK WITH BUTTON */}
                     <button
                       onClick={() => tierKey !== 'free' && handleStripeCheckout(tierWithId, 'subscription')}
                       disabled={isRedirecting === tierKey}
@@ -122,7 +136,7 @@ export default function PricingPage() {
                         isPopular ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
                       }`}
                     >
-                      {isRedirecting === tierKey ? <Loader2 size={16} className="animate-spin" /> : 
+                      {isRedirecting === tierKey ? <Loader2 size={16} className="animate-spin" /> :
                        tierKey === 'free' ? 'Default Access' : 'Upgrade Nexus'}
                     </button>
                   </div>
@@ -169,5 +183,14 @@ export default function PricingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrap in Suspense to prevent Next.js hydration errors with useSearchParams
+export default function PricingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <PricingContent />
+    </Suspense>
   );
 }

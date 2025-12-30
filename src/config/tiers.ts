@@ -43,33 +43,35 @@ export const TIER_CONFIGS = {
 export type UserTier = keyof typeof TIER_CONFIGS;
 
 // UPDATED TO MATCH YOUR STRIPE PRICE IDs
+
 export const TOKEN_PACKAGES = [
   {
     id: 'spark',
-    stripePriceId: 'price_1SjTjWGg8RUnSFObr9hUvKeU',
+    stripePriceId: 'price_1SjqQsGg8RUnSFObmCiJWcDY',
     name: 'Spark Pack',
-    tokens: 100,
-    price: 9.99,
-    description: 'Small top-up for light users',
+    tokens: 50,
+    price: 5.00,
+    description: '50 Full Council Summonings. Perfect for testing the Forge.',
   },
   {
     id: 'ignition',
-    stripePriceId: 'price_1SjTlMGg8RUnSFObr907yovd',
+    stripePriceId: 'price_1SjqU8Gg8RUnSFOb7F5ad5c4',
     name: 'Ignition Pack',
-    tokens: 500,
-    price: 29.99,
+    tokens: 150,
+    price: 12.00,
     popular: true,
-    description: 'Best value for regular use',
+    description: '150 Deliberations. The sweet spot for active Architects.',
   },
   {
     id: 'supernova',
-    stripePriceId: 'price_1SjTnEGg8RUnSFOba2IQ0mRr',
+    stripePriceId: 'price_1SjqW0Gg8RUnSFOb3s7uxK3q',
     name: 'Supernova Pack',
-    tokens: 2000,
-    price: 79.99,
-    description: 'For the ultimate Architect',
+    tokens: 500,
+    price: 35.00,
+    description: '500 High-Level Syntheses. Maximum power for the serious seeker.',
   },
 ];
+
 
 // ... (Keep your AI_TOKEN_COSTS and Utility functions below this)
 
