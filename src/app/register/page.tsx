@@ -8,7 +8,7 @@ import { Loader2, ShieldCheck, UserPlus, AlertCircle } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
 // Use environment variable with the current Render address as a fallback
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend-1.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');

@@ -15,7 +15,7 @@ function BillingContent() {
   const [history, setHistory] = useState<any[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
 
-  const BACKEND_URL = 'https://janusforgenexus-backend-1.onrender.com';
+  const BACKEND_URL = 'https://janusforgenexus-backend.onrender.com';
 
   useEffect(() => {
     if (searchParams.get('success')) {

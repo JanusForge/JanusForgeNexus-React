@@ -16,7 +16,7 @@ function PricingContent() {
   // --- SAFETY ALERT LOGIC ---
   const isCanceled = searchParams.get('canceled') === 'true';
 
-  const BACKEND_URL = 'https://janusforgenexus-backend-1.onrender.com';
+  const BACKEND_URL = 'https://janusforgenexus-backend.onrender.com';
 
   const isPopularTier = (tierKey: string) => tierKey === 'pro';
 

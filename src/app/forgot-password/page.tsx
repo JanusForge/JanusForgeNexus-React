@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
 
     try {
       // Point this to your Render backend endpoint
-      const response = await fetch('https://janusforgenexus-backend-1.onrender.com/api/auth/forgot-password', {
+      const response = await fetch('https://janusforgenexus-backend.onrender.com/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
