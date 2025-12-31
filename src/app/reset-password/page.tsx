@@ -2,9 +2,10 @@
 
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link'; 
+import Link from 'next/link';
 import { Loader2, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
 
+// Using standard variable name for stability
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 function ResetPasswordContent() {
@@ -28,11 +29,11 @@ function ResetPasswordContent() {
     setError('');
 
     try {
-      // UPDATED: Using the dynamic API_BASE_URL constant
+      // ALIGNED: Sending 'password' instead of 'newPassword' to match backend
       const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, newPassword: password }),
+        body: JSON.stringify({ token, password }), 
       });
 
       const data = await response.json();
@@ -51,9 +52,9 @@ function ResetPasswordContent() {
     return (
       <div className="text-center p-8 bg-red-900/20 border border-red-800 rounded-2xl">
         <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
-        <h2 className="text-xl font-bold text-white mb-2">Invalid Access Link</h2>
-        <p className="text-gray-400 mb-6">This password reset link is missing its security token.</p>
-        <Link href="/login" className="text-blue-500 hover:underline">Back to Login</Link>
+        <h2 className="text-xl font-bold text-white mb-2 uppercase tracking-tighter">Invalid Access Link</h2>
+        <p className="text-gray-400 mb-6 text-sm">This password reset link is missing its security token.</p>
+        <Link href="/login" className="text-blue-500 hover:underline text-xs font-black uppercase tracking-widest">Back to Login</Link>
       </div>
     );
   }
@@ -70,7 +71,7 @@ function ResetPasswordContent() {
           <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/20">
             <ShieldCheck className="text-green-500" size={32} />
           </div>
-          <h2 className="text-xl font-bold text-white mb-2 uppercase">Access Restored</h2>
+          <h2 className="text-xl font-bold text-white mb-2 uppercase tracking-tighter">Access Restored</h2>
           <p className="text-gray-400 mb-6 text-sm">Your password has been updated. Redirecting...</p>
           <button
             onClick={() => router.push('/login')}
@@ -84,7 +85,7 @@ function ResetPasswordContent() {
           {error && (
             <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg flex items-center gap-3">
               <AlertCircle className="text-red-500" size={18} />
-              <p className="text-red-400 text-xs font-bold uppercase">{error}</p>
+              <p className="text-red-400 text-xs font-bold uppercase tracking-tight">{error}</p>
             </div>
           )}
 
