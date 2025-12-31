@@ -1,8 +1,8 @@
 "use client";
 
-import { 
-  Search, Globe, ChevronRight, Loader2, 
-  Rss, Printer, Save, Share2, MessageSquare, Volume2, Square, Mail, CheckCircle2 
+import {
+  Search, Globe, ChevronRight, Loader2,
+  Rss, Printer, Save, Share2, MessageSquare, Volume2, Square, Mail, CheckCircle2, History, Zap
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -13,33 +13,81 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus
 export default function DailyForgePage() {
   const { user, isAuthenticated } = useAuth();
   const [data, setData] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
   const [loading, setLoading] = useState(true);
   const [isReading, setIsReading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [syncingSubscription, setSyncingSubscription] = useState(false);
+  const [interjection, setInterjection] = useState("");
+  const [sendingInterjection, setSendingInterjection] = useState(false);
 
   useEffect(() => {
-    async function fetchDailyForge() {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/daily-forge`, { cache: 'no-store' });
-        if (!response.ok) throw new Error("Forge data unavailable");
-        const json = await response.json();
-        setData(json);
-      } catch (err) {
-        console.error("Failed to load real-time forge data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchDailyForge();
-
-    // Set initial subscription state from user data
-    if (user) {
-      setIsSubscribed((user as any).digest_subscribed ?? true);
-    }
+    fetchHistory();
+    if (user) setIsSubscribed((user as any).digest_subscribed ?? true);
   }, [user]);
 
-  // --- 🎙️ AI VOICE LOGIC ---
+  async function fetchDailyForge() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/daily-forge`, { cache: 'no-store' });
+      if (!response.ok) throw new Error("Forge data unavailable");
+      const json = await response.json();
+      setData(json);
+    } catch (err) {
+      console.error("Failed to load real-time forge data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchHistory() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/daily-forge/history`);
+      if (response.ok) {
+        const json = await response.json();
+        setHistory(json);
+      }
+    } catch (err) {
+      console.error("Archive fetch failed:", err);
+    }
+  }
+
+  const handleInterjection = async () => {
+    if (!interjection.trim() || sendingInterjection) return;
+    setSendingInterjection(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/daily-forge/interject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id, content: interjection })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setInterjection("");
+        
+        // ✨ UI ENHANCEMENT: Inject the AI response directly into the local state
+        const newThought = { model: "CLAUDE (OPUS 4.5)", content: result.aiResponse };
+        setData((prev: any) => ({
+          ...prev,
+          openingThoughts: Array.isArray(prev.openingThoughts) 
+            ? [newThought, ...prev.openingThoughts]
+            : JSON.stringify([newThought, ...JSON.parse(prev.openingThoughts || "[]")])
+        }));
+
+        alert("Directive Transmitted. The Council has responded.");
+      } else {
+        alert(result.error || "Transmission failed.");
+      }
+    } catch (err) {
+      console.error("Transmission error:", err);
+    } finally {
+      setSendingInterjection(false);
+    }
+  };
+
   const handleReadAloud = () => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
     if (isReading) {
@@ -47,32 +95,24 @@ export default function DailyForgePage() {
       setIsReading(false);
       return;
     }
-    const thoughts = Array.isArray(data.openingThoughts)
-      ? data.openingThoughts
-      : (typeof data.openingThoughts === 'string' ? JSON.parse(data.openingThoughts) : []);
-
+    const thoughts = Array.isArray(data.openingThoughts) ? data.openingThoughts : JSON.parse(data.openingThoughts || "[]");
     const fullText = thoughts.map((t: any) => `${t.model} perspective: ${t.content}`).join(". Next. ");
     const utterance = new SpeechSynthesisUtterance(fullText);
-    utterance.rate = 0.85; 
     utterance.onstart = () => setIsReading(true);
     utterance.onend = () => setIsReading(false);
-    utterance.onerror = () => setIsReading(false);
     window.speechSynthesis.speak(utterance);
   };
 
-  // --- 📧 SUBSCRIPTION TOGGLE LOGIC ---
   const toggleSubscription = async () => {
-    if (!isAuthenticated) return; // Prompt login or handle redirect
+    if (!isAuthenticated) return;
     setSyncingSubscription(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/user/toggle-digest`, {
+      await fetch(`${API_BASE_URL}/api/user/toggle-digest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user?.id, subscribe: !isSubscribed })
       });
-      if (response.ok) setIsSubscribed(!isSubscribed);
-    } catch (err) {
-      console.error("Subscription sync failed:", err);
+      setIsSubscribed(!isSubscribed);
     } finally {
       setSyncingSubscription(false);
     }
@@ -85,147 +125,114 @@ export default function DailyForgePage() {
     </div>
   );
 
-  if (!data) return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
-      <h2 className="text-2xl font-black uppercase mb-4 tracking-tighter">Connection to Foundry Lost</h2>
-      <p className="text-gray-400 mb-8 max-w-md italic">The Scout has not reported for duty yet today, or the database is currently undergoing maintenance.</p>
-      <Link href="/" className="px-8 py-4 bg-white text-black font-black rounded-2xl text-xs uppercase tracking-widest hover:scale-105 transition-all">Return to Nexus</Link>
-    </div>
-  );
-
-  const thoughts = Array.isArray(data.openingThoughts)
-    ? data.openingThoughts
-    : (typeof data.openingThoughts === 'string' ? JSON.parse(data.openingThoughts) : []);
-
-  const voteEntries = typeof data.councilVotes === 'string'
-    ? Object.entries(JSON.parse(data.councilVotes))
-    : Object.entries(data.councilVotes || {});
+  const thoughts = data ? (Array.isArray(data.openingThoughts) ? data.openingThoughts : JSON.parse(data.openingThoughts || "[]")) : [];
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30 pb-24">
       {/* Header */}
       <div className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black mb-8 uppercase tracking-[0.3em] animate-pulse">
-          <Globe size={12} /> Synchronization Active
-        </div>
-        <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
+        <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase text-shadow-glow">
           The Daily <span className="text-blue-500">Forge</span>
         </h1>
-        <p className="text-gray-500 font-bold italic text-lg tracking-tight">"Synthesizing the adversarial landscape of {new Date(data.date).toLocaleDateString()}."</p>
+
+        {/* Tab Switcher */}
+        <div className="flex justify-center gap-4 mt-8">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${activeTab === 'active' ? 'bg-blue-500 border-blue-500 text-black shadow-[0_0_20px_rgba(59,130,246,0.5)]' : 'border-white/10 text-gray-500 hover:text-white'}`}
+          >
+            Active Synthesis
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border ${activeTab === 'history' ? 'bg-purple-500 border-purple-500 text-black shadow-[0_0_20px_rgba(168,85,247,0.5)]' : 'border-white/10 text-gray-500 hover:text-white'}`}
+          >
+            The Archives
+          </button>
+        </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 space-y-24">
-
-        {/* Phase 1: Scouting */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4">
-            <h3 className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] whitespace-nowrap">Phase 01: Scouting</h3>
-            <div className="h-px flex-1 bg-gradient-to-r from-blue-500/30 to-transparent"></div>
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            {data.scoutedTopics.map((topic: string, index: number) => (
-              <div key={index} className="p-6 bg-gray-900/30 border border-white/5 rounded-3xl hover:border-blue-500/30 transition-all flex gap-4 items-start">
-                <Search size={16} className="text-blue-500 shrink-0 mt-1" />
-                <p className="text-sm font-bold text-gray-300 leading-relaxed">{topic}</p>
+      <div className="max-w-4xl mx-auto px-6">
+        {activeTab === 'active' ? (
+          <div className="space-y-24">
+            {/* Phase 3: Synthesis Display */}
+            <section className="bg-gradient-to-b from-blue-600/10 to-transparent border border-blue-500/20 p-8 md:p-12 rounded-[3.5rem] shadow-[0_0_80px_rgba(37,99,235,0.1)]">
+              <div className="text-center mb-16">
+                <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] block mb-4">Winning Thesis</span>
+                <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter text-white leading-tight">{data.winningTopic}</h2>
               </div>
-            ))}
-          </div>
-        </section>
 
-        {/* Phase 2: Deliberation Bubbles */}
-        <section className="space-y-8">
-          <div className="flex items-center gap-4">
-            <div className="h-px flex-1 bg-gradient-to-l from-purple-500/30 to-transparent"></div>
-            <h3 className="text-[10px] font-black text-purple-500 uppercase tracking-[0.4em] whitespace-nowrap">Phase 02: Deliberation</h3>
-          </div>
-          <div className="space-y-12">
-            {voteEntries.map(([voter, pickedTopic]: any, idx) => (
-              <div key={voter} className={`flex flex-col ${idx % 2 === 0 ? 'items-start' : 'items-end'}`}>
-                <span className="text-[9px] font-black text-gray-500 uppercase mb-3 tracking-widest px-4">{voter} Strategic Target</span>
-                <div className={`relative max-w-[85%] p-6 rounded-3xl text-sm font-medium leading-relaxed border shadow-2xl transition-transform hover:scale-[1.02] ${
-                  idx % 2 === 0
-                  ? 'bg-purple-500/5 border-purple-500/20 rounded-tl-none'
-                  : 'bg-white/5 border-white/10 rounded-tr-none text-right'
-                }`}>
-                  {pickedTopic}
-                </div>
+              <div className="space-y-16 mb-16">
+                {thoughts.map((thought: any, i: number) => (
+                  <div key={i} className="relative pl-12 border-l border-blue-500/20 animate-in fade-in slide-in-from-left-4 duration-700">
+                    <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.6)]"></div>
+                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] block mb-4">{thought.model} Internal Logic</span>
+                    <div className="text-gray-300 text-base leading-relaxed whitespace-pre-wrap font-medium">
+                      {thought.content}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
 
-        {/* Phase 3: Final Synthesis */}
-        <section className="space-y-10">
-          <div className="flex items-center gap-4">
-            <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] whitespace-nowrap">Phase 03: Final Synthesis</h3>
-            <div className="h-px flex-1 bg-gradient-to-r from-blue-400/30 to-transparent"></div>
-          </div>
-
-          <div className="bg-gradient-to-b from-blue-600/10 to-transparent border border-blue-500/20 p-8 md:p-12 rounded-[3.5rem] shadow-[0_0_80px_rgba(37,99,235,0.1)]">
-            <div className="text-center mb-16">
-              <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] block mb-4">Winning Thesis</span>
-              <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter text-white leading-tight">{data.winningTopic}</h2>
-            </div>
-
-            <div className="space-y-16 mb-16">
-              {thoughts.map((thought: any, i: number) => (
-                <div key={i} className="relative pl-12 border-l border-blue-500/20">
-                  <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.6)]"></div>
-                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] block mb-4">{thought.model} Internal Logic</span>
-                  <div className="text-gray-300 text-base leading-relaxed whitespace-pre-wrap font-medium selection:bg-blue-500/50">
-                    {thought.content}
+              {/* Interjection Zone */}
+              <div className="pt-12 border-t border-white/5">
+                {isAuthenticated && (user as any).tokens_remaining > 0 ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2"><Zap size={12}/> Architect Interjection</span>
+                       <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{(user as any).tokens_remaining} Tokens Avail.</span>
+                    </div>
+                    <textarea
+                      value={interjection}
+                      onChange={(e) => setInterjection(e.target.value)}
+                      placeholder="Insert directive into the Council logic stream..."
+                      className="w-full bg-black/40 border border-white/10 p-6 rounded-[2rem] text-sm text-white placeholder:text-gray-700 focus:border-blue-500 outline-none transition-all h-32 resize-none"
+                    />
+                    <button
+                      onClick={handleInterjection}
+                      disabled={sendingInterjection || !interjection.trim()}
+                      className="w-full py-6 bg-white text-black rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-3 active:scale-95"
+                    >
+                      {sendingInterjection ? <Loader2 className="animate-spin" size={16}/> : <><MessageSquare size={16}/> Transmit Directive</>}
+                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Digest Subscription Panel */}
-            <div className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] mb-10 flex flex-col md:flex-row items-center justify-between gap-6">
-               <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 border border-blue-500/20">
-                    <Mail size={20} />
+                ) : (
+                  <div className="text-center p-12 border border-dashed border-white/5 rounded-[2.5rem]">
+                    <p className="text-gray-600 font-bold italic">Insufficient tokens for Council Interjection.</p>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-black uppercase tracking-widest text-white">Nightly Digest</h4>
-                    <p className="text-[11px] text-gray-500 font-bold">The Council's daily synthesis, delivered to your inbox.</p>
-                  </div>
-               </div>
-               <button 
-                onClick={toggleSubscription}
-                disabled={!isAuthenticated || syncingSubscription}
-                className={`w-full md:w-auto px-8 py-3 rounded-2xl text-xs font-black uppercase transition-all border flex items-center justify-center gap-2 ${
-                  !isAuthenticated ? 'opacity-50 cursor-not-allowed border-white/10' :
-                  isSubscribed ? 'bg-blue-500/10 border-blue-500/40 text-blue-400' : 'bg-transparent border-white/20 text-gray-400 hover:border-white'
-                }`}
-               >
-                 {syncingSubscription ? <Loader2 className="animate-spin" size={14} /> : 
-                  isSubscribed ? <><CheckCircle2 size={14} /> Subscribed</> : 'Opt In Now'}
-               </button>
-            </div>
+                )}
+              </div>
 
-            {/* Utility Bar & Join Button */}
-            <div className="pt-10 border-t border-white/5 space-y-8">
-              <div className="flex flex-wrap justify-center gap-8 text-gray-500">
-                <button onClick={handleReadAloud} className={`flex items-center gap-2 text-[10px] font-black uppercase transition-all ${isReading ? 'text-red-500 scale-110' : 'hover:text-white'}`}>
-                  {isReading ? <Square size={14} fill="currentColor"/> : <Volume2 size={14}/>} {isReading ? 'Stop Reading' : 'AI Voice - Read Aloud'}
+              {/* Utility Bar */}
+              <div className="flex flex-wrap justify-center gap-8 mt-12 text-gray-500 border-t border-white/5 pt-10">
+                <button onClick={handleReadAloud} className={`flex items-center gap-2 text-[10px] font-black uppercase transition-all ${isReading ? 'text-red-500' : 'hover:text-white'}`}>
+                  {isReading ? <Square size={14} fill="currentColor"/> : <Volume2 size={14}/>} Read Aloud
                 </button>
-                <button className="flex items-center gap-2 text-[10px] font-black uppercase hover:text-white transition-colors"><Rss size={14}/> RSS</button>
                 <button className="flex items-center gap-2 text-[10px] font-black uppercase hover:text-white transition-colors"><Printer size={14}/> Print</button>
                 <button className="flex items-center gap-2 text-[10px] font-black uppercase hover:text-white transition-colors"><Save size={14}/> Save PDF</button>
                 <button className="flex items-center gap-2 text-[10px] font-black uppercase hover:text-white transition-colors"><Share2 size={14}/> Share</button>
               </div>
-
-              <Link href="/" className="group flex items-center justify-between w-full p-6 md:p-8 bg-white text-black rounded-[2.5rem] font-black text-sm hover:bg-blue-600 hover:text-white transition-all shadow-3xl">
-                <span className="flex items-center gap-4">
-                  <MessageSquare size={20} />
-                  JOIN THE LIVE DEBATE NOW
-                </span>
-                <ChevronRight size={24} className="group-hover:translate-x-2 transition-transform" />
-              </Link>
-            </div>
+            </section>
           </div>
-        </section>
-
+        ) : (
+          <section className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {history.length > 0 ? history.map((entry: any) => (
+              <div key={entry.id} className="p-8 bg-gray-900/30 border border-white/5 rounded-[2.5rem] hover:border-purple-500/30 transition-all group cursor-pointer">
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{new Date(entry.date).toLocaleDateString()}</span>
+                  <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Printer size={14} className="text-gray-500 hover:text-white"/>
+                    <Save size={14} className="text-gray-500 hover:text-white"/>
+                    <Share2 size={14} className="text-gray-500 hover:text-white"/>
+                  </div>
+                </div>
+                <h3 className="text-xl font-black uppercase italic tracking-tight text-white group-hover:text-purple-400 transition-colors">{entry.winningTopic}</h3>
+              </div>
+            )) : (
+              <p className="text-center text-gray-600 italic py-24">The Archives are currently empty.</p>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );
