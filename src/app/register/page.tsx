@@ -59,6 +59,12 @@ export default function RegisterPage() {
     }
   };
 
+// Temporary Debugger
+const testConnection = () => {
+  console.log("Attempting to reach:", `${API_BASE_URL}/api/auth/register`);
+  alert(`Testing connection to: ${API_BASE_URL}`);
+};
+
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 selection:bg-blue-500/30">
       <div className="w-full max-w-md">
@@ -131,6 +137,14 @@ export default function RegisterPage() {
                   minLength={8}
                 />
               </div>
+
+              <button 
+  type="button"
+  onClick={testConnection}
+  className="text-[9px] text-blue-400 underline mb-4 block mx-auto uppercase tracking-widest"
+>
+  🔍 Identify Target Server
+</button>
 
               <button
                 type="submit"
