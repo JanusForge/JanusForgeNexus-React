@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
-import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Share2, ArrowRight, Radio, Info,Coins } from 'lucide-react';
+import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Share2, Radio, Info, Coins } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import ShareDropdown from '@/components/ShareDropdown';
@@ -23,7 +23,7 @@ interface ForgeStatus {
   topic: string;
   scoutQuote: string;
   councilQuote: string;
-  nextReset: string; 
+  nextReset: string;
 }
 
 export default function HomePage() {
@@ -38,10 +38,32 @@ export default function HomePage() {
   const [forgeStatus, setForgeStatus] = useState<ForgeStatus | null>(null);
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [isShareOpen, setIsShareOpen] = useState(false);
-  
-  // --- 🚀 FIRST TIME VISITOR STATE ---
   const [showBriefing, setShowBriefing] = useState(false);
 
+  // --- 🛰️ HELPER: TEASER GENERATOR ---
+  // This cleans up the raw JSON "spilled beans" into a punchy teaser
+  const getTeaser = (rawData: string | undefined, fallback: string) => {
+    if (!rawData) return fallback;
+    try {
+      const parsed = JSON.parse(rawData);
+      // If it's the Scout array from aiScout, extract the first content block
+      if (Array.isArray(parsed)) {
+        const text = parsed[0]?.content || "";
+        return text.length > 150 ? text.substring(0, 150) + "..." : text;
+      }
+      // If it's a key-value object (like the Council response)
+      if (typeof parsed === 'object') {
+        const firstVal = Object.values(parsed)[0] as string;
+        return firstVal.length > 120 ? firstVal.substring(0, 120) + "..." : firstVal;
+      }
+      return rawData;
+    } catch {
+      // If not JSON, just trim the string
+      return rawData.length > 150 ? rawData.substring(0, 150) + "..." : rawData;
+    }
+  };
+
+  // --- 🚀 FIRST TIME VISITOR STATE ---
   useEffect(() => {
     const hasSeenBriefing = localStorage.getItem('janus_briefing_seen');
     if (isAuthenticated && !hasSeenBriefing) {
@@ -119,20 +141,17 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
-      
+
       {/* 🚀 FIRST TIME VISITOR BRIEFING */}
       {showBriefing && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500">
           <div className="max-w-xl bg-gray-900 border border-blue-500/30 rounded-[3rem] p-12 shadow-3xl text-center relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
-            
             <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
               <ShieldCheck className="text-blue-400" size={40} />
             </div>
-
             <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4 text-white">Architect Briefing</h2>
             <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8">Protocol: Synthesis Induction</p>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 text-left">
               <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
                 <div className="flex items-center gap-3 mb-3 text-yellow-500">
@@ -153,11 +172,7 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-
-            <button 
-              onClick={closeBriefing}
-              className="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:scale-[1.02] transition-all active:scale-95 shadow-xl shadow-blue-900/40"
-            >
+            <button onClick={closeBriefing} className="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:scale-[1.02] transition-all active:scale-95 shadow-xl shadow-blue-900/40">
               Initialize Connection
             </button>
           </div>
@@ -183,7 +198,7 @@ export default function HomePage() {
 
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
-          
+
           {/* 🛡️ THE COUNCIL OF SYNTHESIS PANEL */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
@@ -196,7 +211,6 @@ export default function HomePage() {
                   </div>
                 </h2>
                 <span className="text-[10px] text-gray-500 font-bold uppercase ml-6 tracking-tighter">Real-time Multiversal Debate</span>
-                
                 <div className="absolute top-10 left-0 w-64 p-4 bg-black/90 border border-blue-500/30 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 backdrop-blur-xl">
                   <p className="text-[10px] text-blue-400 font-black uppercase mb-2 tracking-widest text-left">Synthesis Protocol</p>
                   <p className="text-[11px] text-gray-300 leading-relaxed italic text-left">
@@ -204,7 +218,6 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
-              
               <div className="flex items-center gap-3">
                 <button onClick={() => setIsShareOpen(!isShareOpen)} className={`btn btn-ghost btn-circle border border-blue-500/20 ${isShareOpen ? 'text-blue-400' : 'text-gray-400'}`}>
                   <Share2 className="w-5 h-5" />
@@ -220,7 +233,7 @@ export default function HomePage() {
 
             <div className="flex flex-col md:flex-row border-b border-gray-800">
                <div className={`p-6 space-y-4 ${isShareOpen ? 'md:w-2/3 w-full' : 'w-full'}`}>
-                 <textarea 
+                 <textarea
                    value={userMessage}
                    onChange={(e) => setUserMessage(e.target.value)}
                    onKeyDown={(e) => {
@@ -248,7 +261,7 @@ export default function HomePage() {
               {conversation.map((msg) => (
                 <div key={msg.id} className={`p-6 transition-all ${msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500' : ''}`}>
                   <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 font-bold text-xs uppercase">
+                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 font-bold text-xs uppercase shadow-inner">
                       {msg.name[0]}
                     </div>
                     <div className="flex-1 space-y-1">
@@ -277,18 +290,18 @@ export default function HomePage() {
               <div className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-6 px-3 py-1 bg-blue-500/5 rounded-lg border border-blue-500/10 inline-block">
                 {forgeStatus?.topic || 'Initializing Neural Link...'}
               </div>
-              
+
               <div className="space-y-4 mb-8 text-[11px]">
                 <div className="bg-white/[0.03] p-4 rounded-xl border border-white/5">
                   <span className="text-yellow-500 font-black uppercase block mb-1">Scout</span>
                   <p className="text-gray-400 italic font-medium leading-relaxed">
-                    "{forgeStatus?.scoutQuote || 'Scouting live intelligence...'}"
+                    "{getTeaser(forgeStatus?.scoutQuote, 'Scouting live intelligence...')}"
                   </p>
                 </div>
                 <div className="bg-blue-500/5 p-4 rounded-xl border border-blue-500/10 text-right">
                   <span className="text-blue-400 font-black uppercase block mb-1">Council</span>
                   <p className="text-gray-200 font-medium leading-relaxed">
-                    "{forgeStatus?.councilQuote || 'Analyzing global synthesis...'}"
+                    "{getTeaser(forgeStatus?.councilQuote, 'Analyzing global synthesis...')}"
                   </p>
                 </div>
               </div>
