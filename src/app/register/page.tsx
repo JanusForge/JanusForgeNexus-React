@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // FIXED: Changed from 'next/navigation'
-import { Loader2, ShieldCheck, UserPlus } from 'lucide-react';
+import Link from 'next/link';
+import { Loader2, ShieldCheck, UserPlus, AlertCircle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+
+// Use environment variable with the current Render address as a fallback
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend-1.onrender.com';
 
 export default function RegisterPage() {
   const [username, setUsername] = useState('');
@@ -22,12 +25,21 @@ export default function RegisterPage() {
     setStatus('loading');
 
     try {
-      // Points to your specific Render backend registration route
-      const response = await fetch('https://janusforgenexus-backend-1.onrender.com/api/auth/register', {
+      // FIXED: Using dynamic API_BASE_URL instead of hardcoded string
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),
       });
+
+      // --- SAFETY CHECK ---
+      // If the server returns HTML (404/500), this prevents the JSON parse crash
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const textFallback = await response.text();
+        console.error("Server returned non-JSON response:", textFallback);
+        throw new Error(`Server connection error (Status ${response.status}). Please try again later.`);
+      }
 
       const data = await response.json();
 
@@ -36,7 +48,6 @@ export default function RegisterPage() {
       }
 
       setStatus('success');
-      // Redirect to login after 2 seconds to allow the success message to be read
       setTimeout(() => {
         router.push('/login');
       }, 2000);
@@ -49,71 +60,72 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 selection:bg-blue-500/30">
       <div className="w-full max-w-md">
-        <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 p-8 shadow-2xl">
-          
-          <div className="text-center mb-8">
-            <div className="inline-block mb-4">
-              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                <UserPlus className="text-white" size={32} />
-              </div>
+        <div className="bg-gray-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/10 p-10 shadow-2xl">
+
+          <div className="text-center mb-10">
+            <div className="inline-block mb-6 p-4 bg-blue-600/10 rounded-2xl border border-blue-500/20">
+              <UserPlus className="text-blue-500" size={32} />
             </div>
-            <h1 className="text-3xl font-bold text-white uppercase tracking-tighter">Initialize Profile</h1>
-            <p className="text-gray-400 mt-2">Join the Nexus and engage the Council</p>
+            <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic">Initialize Profile</h1>
+            <p className="text-gray-500 mt-2 text-xs font-bold uppercase tracking-widest">Join the Nexus and engage the Council</p>
           </div>
 
           {status === 'success' ? (
-            <div className="text-center py-8 animate-in fade-in zoom-in">
-              <ShieldCheck className="mx-auto text-green-500 mb-4" size={64} />
-              <h2 className="text-xl font-bold text-white mb-2">Access Granted</h2>
-              <p className="text-gray-400">Welcome email dispatched. Redirecting to login...</p>
+            <div className="text-center py-10 animate-in fade-in zoom-in duration-500">
+              <div className="w-20 h-20 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ShieldCheck className="text-green-500" size={40} />
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2 uppercase italic">Access Granted</h2>
+              <p className="text-gray-400 text-sm font-medium">Profile synthesized. Redirecting...</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg">
-                  <p className="text-red-400 text-sm">{error}</p>
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+                  <AlertCircle size={18} className="text-red-500 shrink-0" />
+                  <p className="text-red-400 text-xs font-black uppercase tracking-tight">{error}</p>
                 </div>
               )}
 
-              <div>
-                <label className="block text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2">
+              <div className="space-y-2">
+                <label className="block text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] ml-2">
                   Architect Username
                 </label>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
+                  className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
                   placeholder="Enter your handle"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2">
+              <div className="space-y-2">
+                <label className="block text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] ml-2">
                   Email Address
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
+                  className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
                   placeholder="you@example.com"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2">
+              <div className="space-y-2">
+                <label className="block text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] ml-2">
                   Secure Password
                 </label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:outline-none focus:border-blue-500"
+                  className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
                   placeholder="••••••••"
                   required
                   minLength={8}
@@ -123,10 +135,10 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={status === 'loading'}
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-black uppercase text-xs tracking-[0.2em] rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-blue-900/20"
+                className="w-full py-5 bg-white text-black font-black uppercase text-xs tracking-[0.3em] rounded-2xl transition-all hover:bg-blue-500 hover:text-white disabled:opacity-50 shadow-xl active:scale-95"
               >
                 {status === 'loading' ? (
-                  <Loader2 className="animate-spin mx-auto" size={18} />
+                  <Loader2 className="animate-spin mx-auto" size={20} />
                 ) : (
                   'Create Profile'
                 )}
@@ -134,10 +146,10 @@ export default function RegisterPage() {
             </form>
           )}
 
-          <div className="mt-8 pt-6 border-t border-gray-800 text-center">
-            <p className="text-gray-400 text-sm">
+          <div className="mt-10 pt-8 border-t border-white/5 text-center">
+            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">
               Already an Architect?{' '}
-              <Link href="/login" className="text-blue-400 hover:text-blue-300 font-bold">
+              <Link href="/login" className="text-blue-500 hover:text-white transition-colors ml-1">
                 Sign In
               </Link>
             </p>
