@@ -22,36 +22,61 @@ export default function DailyForgePage() {
   const [syncingSubscription, setSyncingSubscription] = useState(false);
   const [interjection, setInterjection] = useState("");
   const [sendingInterjection, setSendingInterjection] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false); // ✨ New State
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     fetchDailyForge();
     fetchHistory();
     if (user) setIsSubscribed((user as any).digest_subscribed ?? true);
+    
+    // ✨ Prefetch voices for SpeechSynthesis
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+    }
   }, [user]);
 
-  // --- 🎙️ restored AI VOICE LOGIC ---
+  // --- 🎙️ IMPROVED AI VOICE LOGIC ---
   const handleReadAloud = () => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    
     if (isReading) {
       window.speechSynthesis.cancel();
       setIsReading(false);
       return;
     }
-    const thoughts = Array.isArray(data.openingThoughts) ? data.openingThoughts : JSON.parse(data.openingThoughts || "[]");
-    const fullText = thoughts.map((t: any) => `${t.model} perspective: ${t.content}`).join(". Next. ");
+
+    // Ensure we parse thoughts correctly before reading
+    const rawThoughts = data?.openingThoughts;
+    const thoughtsArray = Array.isArray(rawThoughts) 
+      ? rawThoughts 
+      : JSON.parse(rawThoughts || "[]");
+
+    if (thoughtsArray.length === 0) return;
+
+    const fullText = thoughtsArray
+      .map((t: any) => `${t.model} perspective: ${t.content}`)
+      .join(". Next. ");
+
     const utterance = new SpeechSynthesisUtterance(fullText);
+    
+    // Select a voice if available
+    const voices = window.speechSynthesis.getVoices();
+    utterance.voice = voices.find(v => v.lang.includes('en-US')) || voices[0];
+    utterance.rate = 0.9;
+
     utterance.onstart = () => setIsReading(true);
     utterance.onend = () => setIsReading(false);
+    utterance.onerror = () => setIsReading(false);
+
     window.speechSynthesis.speak(utterance);
   };
 
   // --- 🖨️ PRINT LOGIC ---
   const handlePrint = () => {
-    window.print(); // Simple and effective for browsers
+    window.print();
   };
 
-  // --- 📄 PDF LOGIC (RESTORED/KEPT) ---
+  // --- 📄 PDF LOGIC ---
   const handleSavePDF = () => {
     if (!data) return;
     const doc = new jsPDF();
@@ -134,7 +159,7 @@ export default function DailyForgePage() {
 
       {/* Header */}
       <div className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center">
-        <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">The Daily <span className="text-blue-500">Forge</span></h1>
+        <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase text-shadow-glow">The Daily <span className="text-blue-500">Forge</span></h1>
         <div className="flex justify-center gap-4 mt-8">
           <button onClick={() => setActiveTab('active')} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${activeTab === 'active' ? 'bg-blue-500 border-blue-500 text-black shadow-[0_0_20px_rgba(59,130,246,0.4)]' : 'border-white/10 text-gray-500'}`}>Active Synthesis</button>
           <button onClick={() => setActiveTab('history')} className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${activeTab === 'history' ? 'bg-purple-500 border-purple-500 text-black shadow-[0_0_20px_rgba(168,85,247,0.4)]' : 'border-white/10 text-gray-500'}`}>The Archives</button>
