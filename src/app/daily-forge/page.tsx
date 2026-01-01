@@ -2,7 +2,7 @@
 
 import {
   Search, Globe, ChevronRight, Loader2,
-  Rss, Printer, Save, Share2, MessageSquare, Volume2, Square, Mail, CheckCircle2, History, Zap, X
+  Rss, Printer, Save, Share2, MessageSquare, Volume2, Square, Mail, CheckCircle2, History, Zap, X, Star
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -28,55 +28,35 @@ export default function DailyForgePage() {
     fetchDailyForge();
     fetchHistory();
     if (user) setIsSubscribed((user as any).digest_subscribed ?? true);
-    
-    // ✨ Prefetch voices for SpeechSynthesis
+
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
     }
   }, [user]);
 
-  // --- 🎙️ IMPROVED AI VOICE LOGIC ---
   const handleReadAloud = () => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    
     if (isReading) {
       window.speechSynthesis.cancel();
       setIsReading(false);
       return;
     }
-
-    // Ensure we parse thoughts correctly before reading
     const rawThoughts = data?.openingThoughts;
-    const thoughtsArray = Array.isArray(rawThoughts) 
-      ? rawThoughts 
-      : JSON.parse(rawThoughts || "[]");
-
+    const thoughtsArray = Array.isArray(rawThoughts) ? rawThoughts : JSON.parse(rawThoughts || "[]");
     if (thoughtsArray.length === 0) return;
-
-    const fullText = thoughtsArray
-      .map((t: any) => `${t.model} perspective: ${t.content}`)
-      .join(". Next. ");
-
+    const fullText = thoughtsArray.map((t: any) => `${t.model} perspective: ${t.content}`).join(". Next. ");
     const utterance = new SpeechSynthesisUtterance(fullText);
-    
-    // Select a voice if available
     const voices = window.speechSynthesis.getVoices();
     utterance.voice = voices.find(v => v.lang.includes('en-US')) || voices[0];
     utterance.rate = 0.9;
-
     utterance.onstart = () => setIsReading(true);
     utterance.onend = () => setIsReading(false);
     utterance.onerror = () => setIsReading(false);
-
     window.speechSynthesis.speak(utterance);
   };
 
-  // --- 🖨️ PRINT LOGIC ---
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => { window.print(); };
 
-  // --- 📄 PDF LOGIC ---
   const handleSavePDF = () => {
     if (!data) return;
     const doc = new jsPDF();
@@ -113,7 +93,12 @@ export default function DailyForgePage() {
       });
       const result = await response.json();
       if (response.ok) {
-        const userDirective = { model: "ARCHITECT", content: interjection, isUser: true };
+        const userDirective = { 
+          model: "ARCHITECT", 
+          content: interjection, 
+          isUser: true,
+          role: (user as any)?.role // ✨ Passing role to maintain badge in local state
+        };
         const aiReaction = { model: "CLAUDE (OPUS 4.5)", content: result.aiResponse };
         setData((prev: any) => ({
           ...prev,
@@ -135,7 +120,6 @@ export default function DailyForgePage() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30 pb-24">
-      {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-6">
           <div className="bg-gray-900 border border-white/10 p-8 rounded-[2.5rem] max-w-sm w-full space-y-6 relative">
@@ -157,7 +141,6 @@ export default function DailyForgePage() {
         </div>
       )}
 
-      {/* Header */}
       <div className="max-w-5xl mx-auto px-6 pt-24 pb-16 text-center">
         <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase text-shadow-glow">The Daily <span className="text-blue-500">Forge</span></h1>
         <div className="flex justify-center gap-4 mt-8">
@@ -179,20 +162,33 @@ export default function DailyForgePage() {
                 {thoughts.map((thought: any, i: number) => (
                   <div key={i} className={`relative pl-12 border-l ${thought.isUser ? 'border-white bg-white/5 p-6 rounded-r-3xl' : 'border-blue-500/20'} animate-in fade-in slide-in-from-left-4 duration-700`}>
                     <div className={`absolute -left-1.5 top-0 w-3 h-3 rounded-full ${thought.isUser ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]' : 'bg-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.6)]'}`}></div>
-                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] block mb-4 ${thought.isUser ? 'text-white' : 'text-blue-400'}`}>
-                      {thought.model === "ARCHITECT" ? `DIRECTIVE FROM ARCHITECT ${user?.username || ''}` : `${thought.model} Internal Logic`}
+                    
+                    {/* ✨ UPDATED BADGE LOGIC: Displays BETA ARCHITECT role for specific users */}
+                    <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${thought.isUser ? 'text-white' : 'text-blue-400'}`}>
+                      {thought.model === "ARCHITECT" ? (
+                        <>
+                          {(user as any)?.role === 'BETA_ARCHITECT' || thought.role === 'BETA_ARCHITECT' ? (
+                            <span className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500 text-black rounded-md shadow-[0_0_10px_rgba(59,130,246,0.5)]">
+                              <Star size={10} fill="currentColor" /> BETA ARCHITECT {user?.username}
+                            </span>
+                          ) : (
+                            `DIRECTIVE FROM ARCHITECT ${user?.username || ''}`
+                          )}
+                        </>
+                      ) : (
+                        `${thought.model} Internal Logic`
+                      )}
                     </span>
                     <div className={`${thought.isUser ? 'text-white font-bold italic' : 'text-gray-300 font-medium'} text-base leading-relaxed whitespace-pre-wrap`}>{thought.content}</div>
                   </div>
                 ))}
               </div>
 
-              {/* Interjection Zone */}
               <div className="pt-12 border-t border-white/5">
                 {isAuthenticated && (user as any).tokens_remaining > 0 ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between"><span className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2"><Zap size={12}/> Architect Interjection</span><span className="text-[10px] font-bold text-gray-500">{(user as any).tokens_remaining} Tokens Avail.</span></div>
-                    <textarea value={interjection} onChange={(e) => setInterjection(e.target.value)} placeholder="Insert directive..." className="w-full bg-black/40 border border-white/10 p-6 rounded-[2rem] text-sm text-white focus:border-blue-500 h-32 resize-none" />
+                    <textarea value={interjection} onChange={(e) => setInterjection(e.target.value)} placeholder="Insert directive..." className="w-full bg-black/40 border border-white/10 p-6 rounded-[2rem] text-sm text-white focus:border-blue-500 h-32 resize-none font-bold" />
                     <button onClick={handleInterjection} disabled={sendingInterjection || !interjection.trim()} className="w-full py-6 bg-white text-black rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-3">
                       {sendingInterjection ? <Loader2 className="animate-spin" size={16}/> : <><MessageSquare size={16}/> Transmit Directive</>}
                     </button>
@@ -200,7 +196,6 @@ export default function DailyForgePage() {
                 ) : <div className="text-center p-12 border border-dashed border-white/5 rounded-[2.5rem] text-gray-600 font-bold italic">Insufficient tokens for Council Interjection.</div>}
               </div>
 
-              {/* Utility Bar */}
               <div className="flex flex-wrap justify-center gap-8 mt-12 text-gray-500 border-t border-white/5 pt-10">
                 <button onClick={handleReadAloud} className={`flex items-center gap-2 text-[10px] font-black uppercase transition-all ${isReading ? 'text-red-500' : 'hover:text-white'}`}>
                   {isReading ? <Square size={14} fill="currentColor"/> : <Volume2 size={14}/>} Read Aloud
