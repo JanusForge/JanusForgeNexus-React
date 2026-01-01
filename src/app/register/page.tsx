@@ -21,6 +21,8 @@ function RegisterForm() {
   const searchParams = useSearchParams();
   const referralCode = searchParams.get('ref') || ''; // ✨ Capture BETA_2026
 
+  console.log("DEBUG: Detected Ref Code from URL:", referralCode);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
