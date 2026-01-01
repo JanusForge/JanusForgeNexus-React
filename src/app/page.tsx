@@ -17,7 +17,7 @@ interface ConversationMessage {
   content: string;
   timestamp: string;
   isVerdict?: boolean;
-  tokens_remaining?: number; // Added to catch ledger sync
+  tokens_remaining?: number; 
 }
 
 interface ForgeStatus {
@@ -30,7 +30,7 @@ interface ForgeStatus {
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
-  const isAdmin = (user as any)?.username === 'admin-access' || (user as any)?.role === 'GOD_MODE';
+  const isAdmin = (user as any)?.username === 'admin-access' || (user as any)?.role === 'GOD_MODE' || (user as any)?.role === 'ENTERPRISE';
 
   const [tokensRemaining, setTokensRemaining] = useState<number>(0);
   const [userMessage, setUserMessage] = useState<string>('');
@@ -114,29 +114,21 @@ export default function HomePage() {
 
     socketRef.current.on('connect', () => console.log('🏛️ Council Connection Verified'));
 
-    // 🛠️ THE FIX: Listen for global incoming to unlock UI and sync tokens
+    // Listen for global incoming to unlock UI and sync tokens
     socketRef.current.on('post:incoming', (msg: ConversationMessage) => {
       setConversation(prev => [msg, ...prev]);
-      
-      // Update tokens if ledger data is attached
+
       if (msg.tokens_remaining !== undefined) {
         setTokensRemaining(msg.tokens_remaining);
       }
-      
-      // UNLOCK INPUT: Reset sending state immediately
-      setIsSending(false);
-    });
 
-    // Support legacy response event for redundancy
-    socketRef.current.on('ai:response', (msg: ConversationMessage) => {
-      setConversation(prev => [msg, ...prev]);
-      if (!isAdmin) setTokensRemaining(prev => Math.max(0, prev - 1));
+      // UNLOCK INPUT: Release spinner on first incoming confirmed packet
       setIsSending(false);
     });
 
     socketRef.current.on('error', (err: any) => {
       console.error("Socket Error:", err);
-      setIsSending(false); // Failsafe unlock
+      setIsSending(false); 
     });
 
     return () => { socketRef.current?.disconnect(); };
@@ -160,7 +152,6 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
 
-      {/* 🚀 FIRST TIME VISITOR BRIEFING */}
       {showBriefing && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500">
           <div className="max-w-xl bg-gray-900 border border-blue-500/30 rounded-[3rem] p-12 shadow-3xl text-center relative overflow-hidden">
@@ -185,9 +176,7 @@ export default function HomePage() {
                   <Coins size={18} />
                   <span className="font-black uppercase text-xs tracking-widest">Expansion</span>
                 </div>
-                <p className="text-gray-400 text-[11px] leading-relaxed">
-                  Running low? Access the <span className="text-white font-bold">Pricing sector</span> to purchase Spark Packs.
-                </p>
+                <p className="text-gray-400 text-[11px] leading-relaxed">Spark Packs available in the Pricing sector.</p>
               </div>
             </div>
             <button onClick={closeBriefing} className="w-full py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:scale-[1.02] transition-all active:scale-95 shadow-xl shadow-blue-900/40">
@@ -197,7 +186,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 🎬 HEADER */}
       <div className="relative pt-12 pb-12 text-center border-b border-white/5">
         <div className="flex justify-center mb-6">
           <video autoPlay muted loop playsInline className="w-80 h-80 md:w-96 md:h-96 object-contain">
@@ -217,7 +205,6 @@ export default function HomePage() {
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
 
-          {/* 🛡️ THE COUNCIL OF SYNTHESIS PANEL */}
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
               <div className="flex flex-col relative group">
@@ -279,6 +266,7 @@ export default function HomePage() {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{msg.name}</span>
+                        {['GEMINI', 'DEEPSEEK', 'GROK', 'CLAUDE', 'GPT_4'].includes(msg.name) && <span className="text-[8px] bg-red-500 px-2 py-0.5 rounded font-black text-white uppercase">Council Response</span>}
                         {msg.name === 'Architect' && <span className="text-[8px] bg-blue-500 px-2 py-0.5 rounded font-black text-white uppercase">Primary Intel</span>}
                       </div>
                       <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
@@ -289,7 +277,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* ⏲️ SYNC DAILY FORGE SIDEBAR */}
           <div className="sticky top-12 space-y-6">
             <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
               <div className="flex justify-between items-center mb-6">
