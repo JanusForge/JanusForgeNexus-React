@@ -159,7 +159,7 @@ export default function HomePage() {
                   <span className="font-black uppercase text-xs tracking-widest">Initial Fuel</span>
                 </div>
                 <p className="text-gray-400 text-[11px] leading-relaxed">
-                  Your account is pre-loaded with <span className="text-white font-bold">10 Neural Tokens</span>. Each query to the Council consumes 1 token.
+                  Your account is pre-loaded with <span className="text-white font-bold">50 Neural Tokens</span>. Each query to the Council consumes 1 token.
                 </p>
               </div>
               <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
@@ -203,9 +203,9 @@ export default function HomePage() {
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
               <div className="flex flex-col relative group">
-                <h2 className="font-black flex items-center gap-2 text-sm tracking-widest text-white uppercase cursor-help">
+                <h2 className="font-black flex items-center gap-2 text-base tracking-widest text-white uppercase cursor-pointer">
                   <Radio className="text-red-500 animate-pulse" size={16} />
-                  The Council of Synthesis
+                  Live Multi-AI Realtime Chat Showdown
                   <div className="p-1 bg-white/5 rounded-full">
                     <Info size={12} className="text-blue-400" />
                   </div>
