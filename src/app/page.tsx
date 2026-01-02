@@ -5,7 +5,7 @@ import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Share2, Radio, I
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import ShareDropdown from '@/components/ShareDropdown';
-import ConversationSidebar from '@/app/components/ConversationSidebar'; // ← NEW: Sidebar component
+import ConversationSidebar from '@/app/components/ConversationSidebar'; // ← Sidebar component
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
@@ -40,7 +40,7 @@ export default function HomePage() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
 
-  // === NEW: Sidebar state ===
+  // === Sidebar state ===
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
@@ -148,16 +148,35 @@ export default function HomePage() {
     setUserMessage('');
   };
 
-  // === NEW: Handle conversation selection from sidebar ===
-  const handleSelectConversation = (convId: string) => {
+  // === Load full history when selecting from sidebar ===
+  const handleSelectConversation = async (convId: string) => {
     setCurrentConversationId(convId);
-    // Future: Load full history for convId
-    // For now, it highlights and prepares for extension
+    setConversation([]); // Clear current view
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/conversations/${convId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const formattedPosts = data.conversation.posts.map((p: any) => ({
+          id: p.id,
+          name: p.is_human ? (user?.username || 'Architect') : (p.ai_model || 'Council'),
+          content: p.content,
+          sender: p.is_human ? 'user' : 'ai' as 'user' | 'ai',
+          timestamp: p.created_at,
+          tokens_remaining: undefined
+        }));
+        setConversation(formattedPosts.reverse()); // Newest on top
+      } else {
+        console.error("Failed to load conversation:", res.status);
+      }
+    } catch (err) {
+      console.error("Failed to load conversation history:", err);
+    }
   };
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30 flex relative">
-      {/* === NEW: Conversation Sidebar === */}
+      {/* Conversation Sidebar */}
       <ConversationSidebar
         onSelectConversation={handleSelectConversation}
         currentConversationId={currentConversationId}
