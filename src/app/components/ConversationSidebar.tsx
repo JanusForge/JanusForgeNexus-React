@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, Clock, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -26,6 +26,8 @@ export default function ConversationSidebar({
 }) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +39,7 @@ export default function ConversationSidebar({
         if (res.ok) {
           const data = await res.json();
           setConversations(data);
+          setFilteredConversations(data);
         }
       } catch (err) {
         console.error("Failed to load conversations:", err);
@@ -47,6 +50,21 @@ export default function ConversationSidebar({
 
     fetchConversations();
   }, [user]);
+
+  // Live search filter
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredConversations(conversations);
+      return;
+    }
+
+    const lowerQuery = searchQuery.toLowerCase();
+    const filtered = conversations.filter(conv => 
+      conv.title.toLowerCase().includes(lowerQuery) ||
+      conv.preview.toLowerCase().includes(lowerQuery)
+    );
+    setFilteredConversations(filtered);
+  }, [searchQuery, conversations]);
 
   const formatDate = (date: Date) => {
     const now = new Date();
@@ -74,17 +92,31 @@ export default function ConversationSidebar({
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-800 flex items-center justify-between">
-            <h2 className="text-xl font-black uppercase tracking-tighter text-white">
-              Your Syntheses
-            </h2>
-            <button
-              onClick={onToggle}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
-            >
-              <ChevronLeft size={20} className="text-gray-400" />
-            </button>
+          {/* Header with Search */}
+          <div className="p-6 border-b border-gray-800">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-black uppercase tracking-tighter text-white">
+                Your Syntheses
+              </h2>
+              <button
+                onClick={onToggle}
+                className="lg:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                <ChevronLeft size={20} className="text-gray-400" />
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search conversations..."
+                className="w-full pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
           </div>
 
           {/* Conversation List */}
@@ -93,15 +125,15 @@ export default function ConversationSidebar({
               <div className="p-8 text-center text-gray-500">
                 <div className="animate-pulse">Loading history...</div>
               </div>
-            ) : conversations.length === 0 ? (
+            ) : filteredConversations.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <MessageSquare size={48} className="mx-auto mb-4 text-gray-700" />
-                <p>No conversations yet.</p>
-                <p className="text-sm mt-2">Start one on the main panel →</p>
+                <p>{searchQuery ? 'No matches found' : 'No conversations yet'}</p>
+                {!searchQuery && <p className="text-sm mt-2">Start one on the main panel →</p>}
               </div>
             ) : (
               <div className="divide-y divide-gray-800">
-                {conversations.map((conv) => (
+                {filteredConversations.map((conv) => (
                   <button
                     key={conv.id}
                     onClick={() => {
@@ -129,14 +161,6 @@ export default function ConversationSidebar({
               </div>
             )}
           </div>
-
-          {/* Mobile Toggle Button (visible when closed) */}
-          <button
-            onClick={onToggle}
-            className="hidden lg:hidden fixed bottom-6 left-6 z-30 p-4 bg-blue-600 rounded-full shadow-2xl hover:bg-blue-500 transition-all"
-          >
-            <ChevronRight size={24} className="text-white" />
-          </button>
         </div>
       </div>
     </>
