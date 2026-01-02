@@ -1,5 +1,4 @@
 "use client";
-
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
 import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Share2, Radio, Info, Coins } from 'lucide-react';
@@ -17,7 +16,7 @@ interface ConversationMessage {
   content: string;
   timestamp: string;
   isVerdict?: boolean;
-  tokens_remaining?: number; 
+  tokens_remaining?: number;
 }
 
 interface ForgeStatus {
@@ -31,7 +30,6 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
   const isAdmin = (user as any)?.username === 'admin-access' || (user as any)?.role === 'GOD_MODE' || (user as any)?.role === 'ENTERPRISE';
-
   const [tokensRemaining, setTokensRemaining] = useState<number>(0);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -90,34 +88,28 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-  const timer = setInterval(() => {
-    const now = new Date().getTime();
-    const targetDate = forgeStatus?.nextReset ? new Date(forgeStatus.nextReset) : new Date();
-    
-    // If no reset time, default to next UTC midnight
-    if (!forgeStatus?.nextReset) targetDate.setUTCHours(24, 0, 0, 0);
-    
-    const diff = targetDate.getTime() - now;
-
-    // FIX: Remove window.location.reload()
-    if (diff <= 0) { 
-      // Option 1: Just set timer to 0 to stop the flicker
-      setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-      // Option 2: If you have a refresh function, call it here:
-      // fetchForgeStatus(); 
-      return; 
-    }
-
-    setTimeLeft({
-      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((diff / 1000 / 60) % 60),
-      seconds: Math.floor((diff / 1000) % 60),
-    });
-  }, 1000);
-
-  return () => clearInterval(timer);
-}, [forgeStatus]);
-  
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const targetDate = forgeStatus?.nextReset ? new Date(forgeStatus.nextReset) : new Date();
+      // If no reset time, default to next UTC midnight
+      if (!forgeStatus?.nextReset) targetDate.setUTCHours(24, 0, 0, 0);
+      const diff = targetDate.getTime() - now;
+      // FIX: Remove window.location.reload()
+      if (diff <= 0) {
+        // Option 1: Just set timer to 0 to stop the flicker
+        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+        // Option 2: If you have a refresh function, call it here:
+        // fetchForgeStatus();
+        return;
+      }
+      setTimeLeft({
+        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((diff / 1000 / 60) % 60),
+        seconds: Math.floor((diff / 1000) % 60),
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [forgeStatus]);
 
   // --- 🔌 SOCKET.IO CONNECTION ---
   useEffect(() => {
@@ -125,28 +117,33 @@ export default function HomePage() {
       withCredentials: true,
       transports: ['polling', 'websocket'],
     });
-
     socketRef.current.on('connect', () => console.log('🏛️ Council Connection Verified'));
 
     // Listen for global incoming to unlock UI and sync tokens
     socketRef.current.on('post:incoming', (msg: ConversationMessage) => {
       setConversation(prev => [msg, ...prev]);
-
       if (msg.tokens_remaining !== undefined) {
         setTokensRemaining(msg.tokens_remaining);
       }
-
       // UNLOCK INPUT: Release spinner on first incoming confirmed packet
       setIsSending(false);
     });
 
     socketRef.current.on('error', (err: any) => {
       console.error("Socket Error:", err);
-      setIsSending(false); 
+      setIsSending(false);
     });
 
     return () => { socketRef.current?.disconnect(); };
-  }, [isAdmin]);
+  }, []); // ← Removed [isAdmin] dependency — prevents unnecessary reconnects
+
+  // Optional: Load persistent history on mount (stub for future API)
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Future: fetch(`${API_BASE_URL}/api/live-chat/history`) to populate conversation
+      // For now, history loads via socket on reconnect
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (user) setTokensRemaining(isAdmin ? 999999 : (user as any).tokens_remaining || 0);
@@ -159,13 +156,13 @@ export default function HomePage() {
       content: userMessage,
       userId: user?.id,
       name: isAdmin ? 'Architect' : ((user as any)?.username || 'User'),
+      isLiveChat: true  // ← Critical: Routes to dedicated Live Nexus Chat thread
     });
     setUserMessage('');
   };
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30">
-
       {showBriefing && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-500">
           <div className="max-w-xl bg-gray-900 border border-blue-500/30 rounded-[3rem] p-12 shadow-3xl text-center relative overflow-hidden">
@@ -199,7 +196,6 @@ export default function HomePage() {
           </div>
         </div>
       )}
-
       <div className="relative pt-12 pb-12 text-center border-b border-white/5">
         <div className="flex justify-center mb-6">
           <video autoPlay muted loop playsInline className="w-80 h-80 md:w-96 md:h-96 object-contain">
@@ -215,10 +211,8 @@ export default function HomePage() {
           </h1>
         </div>
       </div>
-
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
-
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
               <div className="flex flex-col relative group">
@@ -243,7 +237,6 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-
             <div className="flex flex-col md:flex-row border-b border-gray-800">
                <div className={`p-6 space-y-4 ${isShareOpen ? 'md:w-2/3 w-full' : 'w-full'}`}>
                  <textarea
@@ -269,7 +262,6 @@ export default function HomePage() {
                  </div>
                )}
             </div>
-
             <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
               {conversation.map((msg) => (
                 <div key={msg.id} className={`p-6 transition-all ${msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500' : ''}`}>
@@ -290,7 +282,6 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-
           <div className="sticky top-12 space-y-6">
             <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
               <div className="flex justify-between items-center mb-6">
@@ -303,7 +294,6 @@ export default function HomePage() {
               <div className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-6 px-3 py-1 bg-blue-500/5 rounded-lg border border-blue-500/10 inline-block">
                 {forgeStatus?.topic || 'Initializing Neural Link...'}
               </div>
-
               <div className="space-y-4 mb-8 text-[11px]">
                 <div className="bg-white/[0.03] p-4 rounded-xl border border-white/5">
                   <span className="text-yellow-500 font-black uppercase block mb-1">Scout</span>
@@ -318,7 +308,6 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
-
               <Link href="/daily-forge" className="group flex items-center justify-between w-full p-5 bg-white text-black rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all">
                 JOIN THE CONVERSATION
                 <ChevronRight size={18} />
