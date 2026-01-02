@@ -1,7 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, Clock, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { 
+  MessageSquare, 
+  Clock, 
+  ChevronLeft, 
+  ChevronRight, 
+  Search,
+  MoreVertical,
+  Edit3,
+  FileText,
+  Trash2
+} from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -11,6 +21,7 @@ interface Conversation {
   title: string;
   preview: string;
   timestamp: Date;
+  note?: string; // Optional personal note
 }
 
 export default function ConversationSidebar({ 
@@ -29,6 +40,14 @@ export default function ConversationSidebar({
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Menu state
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState('');
+  const [notingId, setNotingId] = useState<string | null>(null);
+  const [notingText, setNotingText] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -61,7 +80,8 @@ export default function ConversationSidebar({
     const lowerQuery = searchQuery.toLowerCase();
     const filtered = conversations.filter(conv => 
       conv.title.toLowerCase().includes(lowerQuery) ||
-      conv.preview.toLowerCase().includes(lowerQuery)
+      conv.preview.toLowerCase().includes(lowerQuery) ||
+      (conv.note && conv.note.toLowerCase().includes(lowerQuery))
     );
     setFilteredConversations(filtered);
   }, [searchQuery, conversations]);
@@ -75,6 +95,28 @@ export default function ConversationSidebar({
     if (days === 1) return 'Yesterday';
     if (days < 7) return `${days}d ago`;
     return date.toLocaleDateString();
+  };
+
+  // === NEW: Actions ===
+  const handleRename = async (id: string, newTitle: string) => {
+    // Future: Add backend PATCH /api/conversations/:id
+    // For now, optimistic UI update
+    setConversations(prev => prev.map(c => c.id === id ? {...c, title: newTitle} : c));
+    setEditingId(null);
+  };
+
+  const handleAddNote = async (id: string, note: string) => {
+    setConversations(prev => prev.map(c => c.id === id ? {...c, note} : c));
+    setNotingId(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    // Future: Add backend DELETE /api/conversations/:id
+    setConversations(prev => prev.filter(c => c.id !== id));
+    setDeletingId(null);
+    if (currentConversationId === id) {
+      onSelectConversation(''); // Clear if current
+    }
   };
 
   return (
@@ -134,29 +176,156 @@ export default function ConversationSidebar({
             ) : (
               <div className="divide-y divide-gray-800">
                 {filteredConversations.map((conv) => (
-                  <button
-                    key={conv.id}
-                    onClick={() => {
-                      onSelectConversation(conv.id);
-                      onToggle();
-                    }}
-                    className={`w-full p-4 text-left transition-all hover:bg-gray-800/50 ${
-                      currentConversationId === conv.id ? 'bg-blue-900/20 border-l-4 border-blue-500' : ''
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-1">
-                      <h3 className="font-bold text-white truncate pr-2">
-                        {conv.title}
-                      </h3>
-                      <span className="text-xs text-gray-500 flex-shrink-0">
-                        <Clock size={12} className="inline mr-1" />
-                        {formatDate(new Date(conv.timestamp))}
-                      </span>
+                  <div key={conv.id} className="relative group">
+                    <button
+                      onClick={() => {
+                        onSelectConversation(conv.id);
+                        onToggle();
+                      }}
+                      className={`w-full p-4 text-left transition-all hover:bg-gray-800/50 ${
+                        currentConversationId === conv.id ? 'bg-blue-900/20 border-l-4 border-blue-500' : ''
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-1">
+                        {editingId === conv.id ? (
+                          <input
+                            type="text"
+                            value={editingTitle}
+                            onChange={(e) => setEditingTitle(e.target.value)}
+                            onBlur={() => handleRename(conv.id, editingTitle)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleRename(conv.id, editingTitle)}
+                            autoFocus
+                            className="bg-gray-800/50 border border-blue-500 rounded px-2 py-1 text-white"
+                          />
+                        ) : (
+                          <h3 className="font-bold text-white truncate pr-8">
+                            {conv.title}
+                          </h3>
+                        )}
+                        <span className="text-xs text-gray-500 flex-shrink-0">
+                          <Clock size={12} className="inline mr-1" />
+                          {formatDate(new Date(conv.timestamp))}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-400 line-clamp-2">
+                        {conv.preview}
+                      </p>
+                      {conv.note && (
+                        <p className="text-xs text-blue-400 mt-2 italic">
+                          Note: {conv.note}
+                        </p>
+                      )}
+                    </button>
+
+                    {/* Context Menu */}
+                    <div className="absolute right-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMenuOpenFor(menuOpenFor === conv.id ? null : conv.id);
+                        }}
+                        className="p-2 hover:bg-gray-800 rounded-lg"
+                      >
+                        <MoreVertical size={16} className="text-gray-400" />
+                      </button>
+
+                      {menuOpenFor === conv.id && (
+                        <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-10">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingId(conv.id);
+                              setEditingTitle(conv.title);
+                              setMenuOpenFor(null);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 text-sm"
+                          >
+                            <Edit3 size={16} />
+                            Rename
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setNotingId(conv.id);
+                              setNotingText(conv.note || '');
+                              setMenuOpenFor(null);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 text-sm"
+                          >
+                            <FileText size={16} />
+                            {conv.note ? 'Edit Note' : 'Add Note'}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingId(conv.id);
+                              setMenuOpenFor(null);
+                            }}
+                            className="w-full px-4 py-3 text-left hover:bg-red-900/50 flex items-center gap-3 text-sm text-red-400"
+                          >
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-400 line-clamp-2">
-                      {conv.preview}
-                    </p>
-                  </button>
+
+                    {/* Modals */}
+                    {notingId === conv.id && (
+                      <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-700">
+                          <h3 className="text-lg font-bold mb-4">Add Note</h3>
+                          <textarea
+                            value={notingText}
+                            onChange={(e) => setNotingText(e.target.value)}
+                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-3 text-white min-h-[120px]"
+                            placeholder="Your personal note..."
+                          />
+                          <div className="flex gap-3 mt-4">
+                            <button
+                              onClick={() => {
+                                handleAddNote(conv.id, notingText);
+                              }}
+                              className="flex-1 py-2 bg-blue-600 rounded-lg font-bold"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setNotingId(null)}
+                              className="flex-1 py-2 bg-gray-800 rounded-lg"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {deletingId === conv.id && (
+                      <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-700">
+                          <h3 className="text-lg font-bold mb-4 text-red-400">Delete Conversation?</h3>
+                          <p className="text-gray-400 mb-6">
+                            This will permanently delete "{conv.title}". This cannot be undone.
+                          </p>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => handleDelete(conv.id)}
+                              className="flex-1 py-2 bg-red-600 rounded-lg font-bold"
+                            >
+                              Delete Forever
+                            </button>
+                            <button
+                              onClick={() => setDeletingId(null)}
+                              className="flex-1 py-2 bg-gray-800 rounded-lg"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
