@@ -200,9 +200,9 @@ export default function ConversationSidebar({
                     <button
                       onClick={() => {
                         onSelectConversation(conv.id);
-                        onToggle();
+                        onToggle(); // Close on mobile
                       }}
-                      className={`w-full p-4 text-left transition-all hover:bg-gray-800/50 cursor-pointer ${
+                      className={`w-full p-4 text-left transition-all hover:bg-gray-800/50 cursor-pointer focus:outline-none ${
                         currentConversationId === conv.id ? 'bg-blue-900/20 border-l-4 border-blue-500' : ''
                       }`}
                     >
