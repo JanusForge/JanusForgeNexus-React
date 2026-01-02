@@ -1,7 +1,8 @@
 'use client';
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { apiClient } from '@/lib/api/client';
+
+// Use the public backend URL to bypass Vercel /api proxy
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 export interface User {
   id: string;
@@ -14,6 +15,7 @@ export interface User {
   tokens_remaining: number;
   purchased_tokens?: number;
   isAdmin?: boolean;
+  role?: string; // Added for GOD_MODE / ENTERPRISE support
 }
 
 interface AuthContextType {
@@ -47,7 +49,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     const savedUser = localStorage.getItem('janus_user');
-
     if (token && savedUser) {
       try {
         setUser(JSON.parse(savedUser));
@@ -63,36 +64,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const result = await apiClient.authenticate(email, password);
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
+      });
 
-      if (result.success && result.data) {
-        const data = result.data as any; // Bypass strict typing for build stability
-
-        const balance = data.token_balance ?? data.tokens_remaining ?? 0;
-        const used = data.tokens_used ?? 0;
-
-        const userData: User = {
-          id: data.id || `user-${Date.now()}`,
-          email: data.email || email,
-          name: data.name || data.username || email.split('@')[0] || 'User',
-          username: data.username || email.split('@')[0],
-          tier: data.tier || 'free',
-          token_balance: balance,
-          tokens_used: used,
-          tokens_remaining: balance - used,
-          purchased_tokens: data.purchased_tokens || 0,
-          isAdmin: data.isAdmin || data.username === 'admin-access'
-        };
-
-        setUser(userData);
-        if (data.token) {
-          localStorage.setItem('auth_token', data.token);
-        }
-        localStorage.setItem('janus_user', JSON.stringify(userData));
-      } else {
-        throw new Error(result.error || 'Login failed');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Login failed');
       }
-    } catch (error) {
+
+      const data = await response.json();
+
+      const balance = data.token_balance ?? data.tokens_remaining ?? 0;
+      const used = data.tokens_used ?? 0;
+
+      const userData: User = {
+        id: data.id || `user-${Date.now()}`,
+        email: data.email || email,
+        name: data.name || data.username || email.split('@')[0] || 'User',
+        username: data.username || email.split('@')[0],
+        tier: data.tier || 'free',
+        token_balance: balance,
+        tokens_used: used,
+        tokens_remaining: balance - used,
+        purchased_tokens: data.purchased_tokens || 0,
+        isAdmin: data.isAdmin || data.username === 'admin-access',
+        role: data.role || 'USER'
+      };
+
+      setUser(userData);
+      localStorage.setItem('janus_user', JSON.stringify(userData));
+      // Note: Your backend currently doesn't return a JWT — remove token storage if not used
+    } catch (error: any) {
       console.error('Login error:', error);
       throw error;
     } finally {
@@ -109,27 +114,38 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (email: string, name: string, password: string) => {
     setIsLoading(true);
     try {
-      const result = await apiClient.register(email, password, name);
-      if (result.success && result.data) {
-        const data = result.data as any; // Bypass strict typing
-        const userData: User = {
-          id: data.id,
-          email: data.email,
-          name: data.name || name || 'User',
-          username: data.username || name,
-          tier: data.tier || 'free',
-          token_balance: 50,
-          tokens_used: 0,
-          tokens_remaining: 50,
-          purchased_tokens: 0,
-          isAdmin: false
-        };
-        setUser(userData);
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('janus_user', JSON.stringify(userData));
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase().trim(), username: name, password }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Registration failed');
       }
+
+      const data = await response.json();
+
+      const userData: User = {
+        id: data.id,
+        email: data.email,
+        name: data.name || name || 'User',
+        username: data.username || name,
+        tier: data.tier || 'free',
+        token_balance: data.token_balance ?? data.tokens_remaining ?? 50,
+        tokens_used: data.tokens_used ?? 0,
+        tokens_remaining: data.tokens_remaining ?? 50,
+        purchased_tokens: 0,
+        isAdmin: false,
+        role: data.role || 'USER'
+      };
+
+      setUser(userData);
+      localStorage.setItem('janus_user', JSON.stringify(userData));
     } catch (error) {
       console.error('Registration error:', error);
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -137,29 +153,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshUser = async () => {
     if (!user) return;
-    try {
-      const result = await apiClient.getCurrentUser();
-      if (result.success && result.data) {
-        const data = result.data as any; // Bypass strict typing
-        const balance = data.token_balance ?? data.tokens_remaining ?? user.token_balance;
-        const used = data.tokens_used ?? user.tokens_used;
-
-        const updatedUser: User = {
-          ...user,
-          token_balance: balance,
-          tokens_used: used,
-          tokens_remaining: balance - used,
-          tier: data.tier || user.tier,
-        };
-        setUser(updatedUser);
-        localStorage.setItem('janus_user', JSON.stringify(updatedUser));
-      }
-    } catch (error) {
-      console.error('Failed to refresh user:', error);
-    }
+    // Optional: Add a /api/auth/me endpoint later for true refresh
+    // For now, rely on localStorage
   };
 
-  const value = { user, isAuthenticated: !!user, isLoading, login, logout, register, refreshUser };
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    logout,
+    register,
+    refreshUser
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
