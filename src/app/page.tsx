@@ -148,32 +148,7 @@ export default function HomePage() {
     setUserMessage('');
   };
 
-  // === AUTO-LOAD LAST ACTIVE CONVERSATION ON LOGIN ===
-  useEffect(() => {
-    if (!user || currentConversationId) return;
-
-    const loadLastConversation = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`);
-        if (!res.ok) return;
-
-        const data = await res.json();
-        if (data.length > 0) {
-          // Prefer "Live Nexus Chat" if exists, otherwise most recent
-          const liveChat = data.find((c: any) => c.title === "Live Nexus Chat");
-          const target = liveChat || data[0];
-          setCurrentConversationId(target.id);
-          handleSelectConversation(target.id);
-        }
-      } catch (err) {
-        console.error("Failed to auto-load conversation:", err);
-      }
-    };
-
-    loadLastConversation();
-  }, [user, currentConversationId]);
-
-  // === LOAD FULL HISTORY WHEN SELECTING FROM SIDEBAR ===
+  // === Load full history when selecting from sidebar ===
   const handleSelectConversation = async (convId: string) => {
     setCurrentConversationId(convId);
     setConversation([]); // Clear current view
@@ -285,89 +260,90 @@ export default function HomePage() {
                   <button onClick={() => setIsShareOpen(!isShareOpen)} className={`btn btn-ghost btn-circle border border-blue-500/20 ${isShareOpen ? 'text-blue-400' : 'text-gray-400'}`}>
                     <Share2 className="w-5 h-5" />
                   </button>
-                  <div className="flex items...
-                  <Zap size={14} className="text-purple-400 fill-purple-400" />
-                  <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
-                    {isAdmin ? 'GOD MODE' : `${tokensRemaining} TOKENS`}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-col md:flex-row border-b border-gray-800">
-              <div className={`p-6 space-y-4 ${isShareOpen ? 'md:w-2/3 w-full' : 'w-full'}`}>
-                <textarea
-                  value={userMessage}
-                  onChange={(e) => setUserMessage(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
-                  placeholder="Enter your query to challenge the Council..."
-                  className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white min-h-[150px] outline-none focus:border-blue-500 transition-all resize-none font-medium placeholder:italic"
-                />
-                <button onClick={handleSendMessage} disabled={!userMessage.trim() || isSending} className="w-full py-4 bg-blue-600 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all shadow-lg active:scale-95 disabled:opacity-50">
-                  {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Execute Synthesis'}
-                </button>
-              </div>
-              {isShareOpen && (
-                <div className="md:w-1/3 w-full p-4 border-l border-gray-800 bg-black/20">
-                  <ShareDropdown conversationText={conversation.map(m => `[${m.name}]: ${m.content}`).join('\n\n')} username={(user as any)?.username || 'User'} setIsOpen={setIsShareOpen} />
-                </div>
-              )}
-            </div>
-            <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
-              {conversation.map((msg) => (
-                <div key={msg.id} className={`p-6 transition-all ${msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500' : ''}`}>
-                  <div className="flex gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 font-bold text-xs uppercase shadow-inner">
-                      {msg.name[0]}
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{msg.name}</span>
-                        {['GEMINI', 'DEEPSEEK', 'GROK', 'CLAUDE', 'GPT_4'].includes(msg.name) && <span className="text-[8px] bg-red-500 px-2 py-0.5 rounded font-black text-white uppercase">Council Response</span>}
-                        {msg.name === 'Architect' && <span className="text-[8px] bg-blue-500 px-2 py-0.5 rounded font-black text-white uppercase">Primary Intel</span>}
-                      </div>
-                      <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                    </div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
+                    <Zap size={14} className="text-purple-400 fill-purple-400" />
+                    <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
+                      {isAdmin ? 'GOD MODE' : `${tokensRemaining} TOKENS`}
+                    </span>
                   </div>
                 </div>
-              ))}
+              </div>
+              <div className="flex flex-col md:flex-row border-b border-gray-800">
+                 <div className={`p-6 space-y-4 ${isShareOpen ? 'md:w-2/3 w-full' : 'w-full'}`}>
+                   <textarea
+                     value={userMessage}
+                     onChange={(e) => setUserMessage(e.target.value)}
+                     onKeyDown={(e) => {
+                       if (e.key === 'Enter' && !e.shiftKey) {
+                         e.preventDefault();
+                         handleSendMessage();
+                       }
+                     }}
+                     disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
+                     placeholder="Enter your query to challenge the Council..."
+                     className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white min-h-[150px] outline-none focus:border-blue-500 transition-all resize-none font-medium placeholder:italic"
+                   />
+                   <button onClick={handleSendMessage} disabled={!userMessage.trim() || isSending} className="w-full py-4 bg-blue-600 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all shadow-lg active:scale-95 disabled:opacity-50">
+                     {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Execute Synthesis'}
+                   </button>
+                 </div>
+                 {isShareOpen && (
+                   <div className="md:w-1/3 w-full p-4 border-l border-gray-800 bg-black/20">
+                     <ShareDropdown conversationText={conversation.map(m => `[${m.name}]: ${m.content}`).join('\n\n')} username={(user as any)?.username || 'User'} setIsOpen={setIsShareOpen} />
+                   </div>
+                 )}
+              </div>
+              <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
+                {conversation.map((msg) => (
+                  <div key={msg.id} className={`p-6 transition-all ${msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500' : ''}`}>
+                    <div className="flex gap-4">
+                      <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 font-bold text-xs uppercase shadow-inner">
+                        {msg.name[0]}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{msg.name}</span>
+                          {['GEMINI', 'DEEPSEEK', 'GROK', 'CLAUDE', 'GPT_4'].includes(msg.name) && <span className="text-[8px] bg-red-500 px-2 py-0.5 rounded font-black text-white uppercase">Council Response</span>}
+                          {msg.name === 'Architect' && <span className="text-[8px] bg-blue-500 px-2 py-0.5 rounded font-black text-white uppercase">Primary Intel</span>}
+                        </div>
+                        <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="sticky top-12 space-y-6">
-            <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-2 text-yellow-500 font-black text-xs">
-                  <Clock size={14} className="animate-pulse" />
-                  <span>{timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s</span>
+            <div className="sticky top-12 space-y-6">
+              <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-2 text-yellow-500 font-black text-xs">
+                    <Clock size={14} className="animate-pulse" />
+                    <span>{timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s</span>
+                  </div>
                 </div>
-              </div>
-              <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-2 text-white">The Daily Forge</h2>
-              <div className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-6 px-3 py-1 bg-blue-500/5 rounded-lg border border-blue-500/10 inline-block">
-                {forgeStatus?.topic || 'Initializing Neural Link...'}
-              </div>
-              <div className="space-y-4 mb-8 text-[11px]">
-                <div className="bg-white/[0.03] p-4 rounded-xl border border-white/5">
-                  <span className="text-yellow-500 font-black uppercase block mb-1">Scout</span>
-                  <p className="text-gray-400 italic font-medium leading-relaxed">
-                    "{getTeaser(forgeStatus?.scoutQuote, 'Scouting live intelligence...')}"
-                  </p>
+                <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-2 text-white">The Daily Forge</h2>
+                <div className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-6 px-3 py-1 bg-blue-500/5 rounded-lg border border-blue-500/10 inline-block">
+                  {forgeStatus?.topic || 'Initializing Neural Link...'}
                 </div>
-                <div className="bg-blue-500/5 p-4 rounded-xl border border-blue-500/10 text-right">
-                  <span className="text-blue-400 font-black uppercase block mb-1">Council</span>
-                  <p className="text-gray-200 font-medium leading-relaxed">
-                    "{getTeaser(forgeStatus?.councilQuote, 'Analyzing global synthesis...')}"
-                  </p>
+                <div className="space-y-4 mb-8 text-[11px]">
+                  <div className="bg-white/[0.03] p-4 rounded-xl border border-white/5">
+                    <span className="text-yellow-500 font-black uppercase block mb-1">Scout</span>
+                    <p className="text-gray-400 italic font-medium leading-relaxed">
+                      "{getTeaser(forgeStatus?.scoutQuote, 'Scouting live intelligence...')}"
+                    </p>
+                  </div>
+                  <div className="bg-blue-500/5 p-4 rounded-xl border border-blue-500/10 text-right">
+                    <span className="text-blue-400 font-black uppercase block mb-1">Council</span>
+                    <p className="text-gray-200 font-medium leading-relaxed">
+                      "{getTeaser(forgeStatus?.councilQuote, 'Analyzing global synthesis...')}"
+                    </p>
+                  </div>
                 </div>
+                <Link href="/daily-forge" className="group flex items-center justify-between w-full p-5 bg-white text-black rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all">
+                  JOIN THE CONVERSATION
+                  <ChevronRight size={18} />
+                </Link>
               </div>
-              <Link href="/daily-forge" className="group flex items-center justify-between w-full p-5 bg-white text-black rounded-2xl font-black text-sm hover:scale-105 active:scale-95 transition-all">
-                JOIN THE CONVERSATION
-                <ChevronRight size={18} />
-              </Link>
             </div>
           </div>
         </div>
