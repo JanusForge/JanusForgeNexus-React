@@ -196,12 +196,13 @@ export default function ConversationSidebar({
               <div className="divide-y divide-gray-800">
                 {filteredConversations.map((conv) => (
                   <div key={conv.id} className="relative group">
+                    {/* Main clickable row */}
                     <button
                       onClick={() => {
                         onSelectConversation(conv.id);
                         onToggle();
                       }}
-                      className={`w-full p-4 text-left transition-all hover:bg-gray-800/50 ${
+                      className={`w-full p-4 text-left transition-all hover:bg-gray-800/50 cursor-pointer ${
                         currentConversationId === conv.id ? 'bg-blue-900/20 border-l-4 border-blue-500' : ''
                       }`}
                     >
@@ -213,11 +214,12 @@ export default function ConversationSidebar({
                             onChange={(e) => setEditingTitle(e.target.value)}
                             onBlur={() => handleRename(conv.id, editingTitle)}
                             onKeyDown={(e) => e.key === 'Enter' && handleRename(conv.id, editingTitle)}
+                            onClick={(e) => e.stopPropagation()}
                             autoFocus
                             className="bg-gray-800/50 border border-blue-500 rounded px-2 py-1 text-white"
                           />
                         ) : (
-                          <h3 className="font-bold text-white truncate pr-8">
+                          <h3 className="font-bold text-white truncate pr-8 group-hover:text-blue-300 transition-colors">
                             {conv.title}
                           </h3>
                         )}
@@ -226,7 +228,7 @@ export default function ConversationSidebar({
                           {formatDate(new Date(conv.timestamp))}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-400 line-clamp-2">
+                      <p className="text-sm text-gray-400 line-clamp-2 group-hover:text-gray-300 transition-colors">
                         {conv.preview}
                       </p>
                       {conv.note && (
@@ -237,7 +239,7 @@ export default function ConversationSidebar({
                     </button>
 
                     {/* Context Menu */}
-                    <div className="absolute right-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute right-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
