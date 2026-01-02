@@ -148,10 +148,46 @@ export default function HomePage() {
     setUserMessage('');
   };
 
-  // === Load full history when selecting from sidebar ===
+  // === AUTO-LOAD / CREATE LIVE NEXUS CHAT ON LOGIN ===
+  useEffect(() => {
+    if (!user || currentConversationId) return;
+
+    const ensureLiveChat = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const liveChat = data.find((c: any) => c.title === "Live Nexus Chat");
+
+        if (liveChat) {
+          setCurrentConversationId(liveChat.id);
+          handleSelectConversation(liveChat.id);
+        } else {
+          // Create new Live Nexus Chat
+          const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: "Live Nexus Chat" })
+          });
+          if (createRes.ok) {
+            const newConv = await createRes.json();
+            setCurrentConversationId(newConv.conversation.id);
+            setConversation([]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to ensure Live Nexus Chat:", err);
+      }
+    };
+
+    ensureLiveChat();
+  }, [user, currentConversationId]);
+
+  // === LOAD FULL HISTORY WHEN SELECTING FROM SIDEBAR ===
   const handleSelectConversation = async (convId: string) => {
     setCurrentConversationId(convId);
-    setConversation([]); // Clear current view
+    setConversation([]);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/conversations/${convId}`);
@@ -165,7 +201,7 @@ export default function HomePage() {
           timestamp: p.created_at,
           tokens_remaining: undefined
         }));
-        setConversation(formattedPosts.reverse()); // Newest on top
+        setConversation(formattedPosts.reverse());
       }
     } catch (err) {
       console.error("Failed to load conversation history:", err);
