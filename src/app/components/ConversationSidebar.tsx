@@ -102,18 +102,58 @@ export default function ConversationSidebar({
     return date.toLocaleDateString();
   };
 
-  // Actions
-  const handleRename = (id: string, newTitle: string) => {
+  // === PERSISTENT ACTIONS ===
+  const handleRename = async (id: string, newTitle: string) => {
+    const original = conversations.find(c => c.id === id);
+    if (!original) return;
+
+    // Optimistic update
     setConversations(prev => prev.map(c => c.id === id ? {...c, title: newTitle} : c));
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle })
+      });
+
+      if (!res.ok) throw new Error("Failed to save title");
+    } catch (err) {
+      console.error("Rename failed:", err);
+      // Rollback on error
+      setConversations(prev => prev.map(c => c.id === id ? original : c));
+      alert("Failed to save title — reverted");
+    }
+
     setEditingId(null);
   };
 
-  const handleAddNote = (id: string, note: string) => {
+  const handleAddNote = async (id: string, note: string) => {
+    const original = conversations.find(c => c.id === id);
+    if (!original) return;
+
+    // Optimistic update
     setConversations(prev => prev.map(c => c.id === id ? {...c, note} : c));
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note })
+      });
+
+      if (!res.ok) throw new Error("Failed to save note");
+    } catch (err) {
+      console.error("Note save failed:", err);
+      // Rollback
+      setConversations(prev => prev.map(c => c.id === id ? original : c));
+      alert("Failed to save note — reverted");
+    }
+
     setNotingId(null);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
     setDeletingId(null);
     if (currentConversationId === id) {
@@ -122,55 +162,54 @@ export default function ConversationSidebar({
   };
 
   const handleExportPDF = async (conv: Conversation) => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/conversations/${conv.id}`);
-    if (!res.ok) throw new Error("Failed to load thread");
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/conversations/${conv.id}`);
+      if (!res.ok) throw new Error("Failed to load thread");
 
-    const data = await res.json();
-    const posts = data.conversation.posts;
+      const data = await res.json();
+      const posts = data.conversation.posts;
 
-    const doc = new jsPDF();
-    let y = 20;
-    doc.setFontSize(20);
-    doc.text(conv.title || "Janus Forge Nexus Synthesis", 20, y);
-    y += 10;
-    doc.setFontSize(12);
-    doc.text(`Date: ${new Date(conv.timestamp).toLocaleDateString()}`, 20, y);
-    y += 10;
-    doc.text("Janus Forge Nexus — Thesis. Antithesis. Humanity.", 20, y);
-    y += 15;
+      const doc = new jsPDF();
+      let y = 20;
+      doc.setFontSize(20);
+      doc.text(conv.title || "Janus Forge Nexus Synthesis", 20, y);
+      y += 10;
+      doc.setFontSize(12);
+      doc.text(`Date: ${new Date(conv.timestamp).toLocaleDateString()}`, 20, y);
+      y += 10;
+      doc.text("Janus Forge Nexus — Thesis. Antithesis. Humanity.", 20, y);
+      y += 15;
 
-    posts.forEach((p: any) => {
-      const name = p.is_human ? 'Architect' : p.ai_model || 'Council';
-      doc.setFontSize(14);
-      doc.text(`${name}:`, 20, y);
-      y += 8;
-      doc.setFontSize(11);
-      const lines = doc.splitTextToSize(p.content, 170);
-      doc.text(lines, 25, y);
-      y += lines.length * 7 + 10;
+      posts.forEach((p: any) => {
+        const name = p.is_human ? 'Architect' : p.ai_model || 'Council';
+        doc.setFontSize(14);
+        doc.text(`${name}:`, 20, y);
+        y += 8;
+        doc.setFontSize(11);
+        const lines = doc.splitTextToSize(p.content, 170);
+        doc.text(lines, 25, y);
+        y += lines.length * 7 + 10;
 
-      if (y > 280) {
-        doc.addPage();
-        y = 20;
-      }
-    });
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+      });
 
-    doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
-  } catch (err) {
-    alert("Failed to generate full PDF — using preview version");
-    // Fallback to preview
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text(conv.title, 20, 20);
-    doc.setFontSize(12);
-    doc.text("Janus Forge Nexus Synthesis", 20, 30);
-    doc.text(new Date().toLocaleDateString(), 20, 40);
-    doc.text(conv.preview, 20, 60, { maxWidth: 170 });
-    doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
-  }
-};  
-
+      doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
+    } catch (err) {
+      alert("Failed to generate full PDF — using preview");
+      // Fallback
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.text(conv.title, 20, 20);
+      doc.setFontSize(12);
+      doc.text("Janus Forge Nexus Synthesis", 20, 30);
+      doc.text(new Date().toLocaleDateString(), 20, 40);
+      doc.text(conv.preview, 20, 60, { maxWidth: 170 });
+      doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
+    }
+  };
 
   const handleCopyLink = (convId: string) => {
     const publicLink = `${window.location.origin}/share/${convId}`;
@@ -240,7 +279,7 @@ export default function ConversationSidebar({
                     <button
                       onClick={() => {
                         onSelectConversation(conv.id);
-                        onToggle(); // Close on mobile
+                        onToggle();
                       }}
                       className={`w-full p-4 text-left transition-all hover:bg-gray-800/50 cursor-pointer focus:outline-none ${
                         currentConversationId === conv.id ? 'bg-blue-900/20 border-l-4 border-blue-500' : ''
