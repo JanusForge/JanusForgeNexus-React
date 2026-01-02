@@ -90,20 +90,34 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const targetDate = forgeStatus?.nextReset ? new Date(forgeStatus.nextReset) : new Date();
-      if (!forgeStatus?.nextReset) targetDate.setUTCHours(24, 0, 0, 0);
-      const diff = targetDate.getTime() - now;
-      if (diff <= 0) { window.location.reload(); return; }
-      setTimeLeft({
-        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((diff / 1000 / 60) % 60),
-        seconds: Math.floor((diff / 1000) % 60),
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [forgeStatus]);
+  const timer = setInterval(() => {
+    const now = new Date().getTime();
+    const targetDate = forgeStatus?.nextReset ? new Date(forgeStatus.nextReset) : new Date();
+    
+    // If no reset time, default to next UTC midnight
+    if (!forgeStatus?.nextReset) targetDate.setUTCHours(24, 0, 0, 0);
+    
+    const diff = targetDate.getTime() - now;
+
+    // FIX: Remove window.location.reload()
+    if (diff <= 0) { 
+      // Option 1: Just set timer to 0 to stop the flicker
+      setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+      // Option 2: If you have a refresh function, call it here:
+      // fetchForgeStatus(); 
+      return; 
+    }
+
+    setTimeLeft({
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / 1000 / 60) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    });
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [forgeStatus]);
+  
 
   // --- 🔌 SOCKET.IO CONNECTION ---
   useEffect(() => {
