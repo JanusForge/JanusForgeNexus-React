@@ -121,7 +121,45 @@ export default function ConversationSidebar({
     }
   };
 
-  const handleExportPDF = (conv: Conversation) => {
+  const handleExportPDF = async (conv: Conversation) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/conversations/${conv.id}`);
+    if (!res.ok) throw new Error("Failed to load thread");
+
+    const data = await res.json();
+    const posts = data.conversation.posts;
+
+    const doc = new jsPDF();
+    let y = 20;
+    doc.setFontSize(20);
+    doc.text(conv.title || "Janus Forge Nexus Synthesis", 20, y);
+    y += 10;
+    doc.setFontSize(12);
+    doc.text(`Date: ${new Date(conv.timestamp).toLocaleDateString()}`, 20, y);
+    y += 10;
+    doc.text("Janus Forge Nexus — Thesis. Antithesis. Humanity.", 20, y);
+    y += 15;
+
+    posts.forEach((p: any) => {
+      const name = p.is_human ? 'Architect' : p.ai_model || 'Council';
+      doc.setFontSize(14);
+      doc.text(`${name}:`, 20, y);
+      y += 8;
+      doc.setFontSize(11);
+      const lines = doc.splitTextToSize(p.content, 170);
+      doc.text(lines, 25, y);
+      y += lines.length * 7 + 10;
+
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
+  } catch (err) {
+    alert("Failed to generate full PDF — using preview version");
+    // Fallback to preview
     const doc = new jsPDF();
     doc.setFontSize(20);
     doc.text(conv.title, 20, 20);
@@ -130,7 +168,9 @@ export default function ConversationSidebar({
     doc.text(new Date().toLocaleDateString(), 20, 40);
     doc.text(conv.preview, 20, 60, { maxWidth: 170 });
     doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
-  };
+  }
+};  
+
 
   const handleCopyLink = (convId: string) => {
     const publicLink = `${window.location.origin}/share/${convId}`;
