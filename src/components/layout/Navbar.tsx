@@ -28,9 +28,6 @@ export default function Navbar() {
             <Link href="/" className="text-gray-300 hover:text-white transition">
               Home
             </Link>
-            <Link href="/debates" className="text-gray-300 hover:text-white transition">
-              Debates
-            </Link>
             <Link href="/pricing" className="text-gray-300 hover:text-white transition">
               Pricing
             </Link>

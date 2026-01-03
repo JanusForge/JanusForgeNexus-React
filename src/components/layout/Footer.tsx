@@ -5,7 +5,6 @@ export default function Footer() {
     {
       title: 'The Nexus',
       links: [
-        { label: 'Daily Forge', href: '/daily-forge', desc: 'Today\'s neural discourse' },
         { label: 'Topic Archive', href: '/archive', desc: 'Historical Council debates' },
         { label: 'AI Ethics', href: '/legal/ai-ethics', desc: 'Our foundational framework' },
       ],
