@@ -1,7 +1,7 @@
 "use client";
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
-import { Zap, Loader2, Globe, ShieldCheck, Clock, ChevronRight, Share2, Radio, Info, Coins, Menu } from 'lucide-react';
+import { Zap, Loader2, Globe, ShieldCheck, ChevronRight, Share2, Radio, Info, Coins, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import ShareDropdown from '@/components/ShareDropdown';
@@ -20,13 +20,6 @@ interface ConversationMessage {
   tokens_remaining?: number;
 }
 
-interface ForgeStatus {
-  topic: string;
-  scoutQuote: string;
-  councilQuote: string;
-  nextReset: string;
-}
-
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const socketRef = useRef<Socket | null>(null);
@@ -35,33 +28,12 @@ export default function HomePage() {
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
-  const [forgeStatus, setForgeStatus] = useState<ForgeStatus | null>(null);
-  const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [showBriefing, setShowBriefing] = useState(false);
 
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-
-  // --- 🛰️ HELPER: TEASER GENERATOR ---
-  const getTeaser = (rawData: string | undefined, fallback: string) => {
-    if (!rawData) return fallback;
-    try {
-      const parsed = JSON.parse(rawData);
-      if (Array.isArray(parsed)) {
-        const text = parsed[0]?.content || "";
-        return text.length > 150 ? text.substring(0, 150) + "..." : text;
-      }
-      if (typeof parsed === 'object') {
-        const firstVal = Object.values(parsed)[0] as string;
-        return firstVal.length > 120 ? firstVal.substring(0, 120) + "..." : firstVal;
-      }
-      return rawData;
-    } catch {
-      return rawData.length > 150 ? rawData.substring(0, 150) + "..." : rawData;
-    }
-  };
 
   // --- 🚀 FIRST TIME VISITOR STATE ---
   useEffect(() => {
@@ -75,57 +47,6 @@ export default function HomePage() {
     localStorage.setItem('janus_briefing_seen', 'true');
     setShowBriefing(false);
   };
-
-  // --- ⏲️ SYNC DAILY FORGE DATA & TIMER ---
-  useEffect(() => {
-    const fetchForgeStatus = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/daily-forge/status`);
-        const data = await res.json();
-        setForgeStatus(data);
-      } catch (err) {
-        console.error("Failed to sync Daily Forge:", err);
-      }
-    };
-    fetchForgeStatus();
-    const syncInterval = setInterval(fetchForgeStatus, 300000);
-    return () => clearInterval(syncInterval);
-  }, []);
-
-  useEffect(() => {
-  const timer = setInterval(() => {
-    const now = new Date();
-    let targetDate = new Date();
-
-    if (forgeStatus?.nextReset && !isNaN(new Date(forgeStatus.nextReset).getTime())) {
-      targetDate = new Date(forgeStatus.nextReset);
-    } else {
-      // Force next UTC midnight if backend value is invalid
-      targetDate = new Date(Date.UTC(
-        now.getUTCFullYear(),
-        now.getUTCMonth(),
-        now.getUTCDate() + 1,
-        0, 0, 0
-      ));
-    }
-
-    const diff = targetDate.getTime() - now.getTime();
-
-    if (diff <= 0) {
-      setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-      return;
-    }
-
-    setTimeLeft({
-      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((diff / 1000 / 60) % 60),
-      seconds: Math.floor((diff / 1000) % 60),
-    });
-  }, 1000);
-
-  return () => clearInterval(timer);
-}, [forgeStatus]);
-
 
   // --- 🔌 SOCKET.IO CONNECTION ---
   useEffect(() => {
@@ -167,20 +88,16 @@ export default function HomePage() {
   // === AUTO-LOAD / CREATE LIVE NEXUS CHAT ON LOGIN ===
   useEffect(() => {
     if (!user || currentConversationId) return;
-
     const ensureLiveChat = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`);
         if (!res.ok) return;
-
         const data = await res.json();
         const liveChat = data.find((c: any) => c.title === "Live Nexus Chat");
-
         if (liveChat) {
           setCurrentConversationId(liveChat.id);
           handleSelectConversation(liveChat.id);
         } else {
-          // Create new Live Nexus Chat
           const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -196,7 +113,6 @@ export default function HomePage() {
         console.error("Failed to ensure Live Nexus Chat:", err);
       }
     };
-
     ensureLiveChat();
   }, [user, currentConversationId]);
 
@@ -204,7 +120,6 @@ export default function HomePage() {
   const handleSelectConversation = async (convId: string) => {
     setCurrentConversationId(convId);
     setConversation([]);
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/conversations/${convId}`);
       if (res.ok) {
@@ -279,6 +194,7 @@ export default function HomePage() {
             </div>
           </div>
         )}
+
         <div className="relative pt-12 pb-12 text-center border-b border-white/5">
           <div className="flex justify-center mb-6">
             <video autoPlay muted loop playsInline className="w-80 h-80 md:w-96 md:h-96 object-contain">
@@ -294,76 +210,90 @@ export default function HomePage() {
             </h1>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 py-16">
-          <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
-            <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
-              <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
-                <div className="flex flex-col relative group">
-                  <h2 className="font-black flex items-center gap-2 text-base tracking-widest text-white uppercase cursor-pointer">
-                    <Radio className="text-red-500 animate-pulse" size={16} />
-                    Live Multi-AI Realtime Chat Showdown
-                    <div className="p-1 bg-white/5 rounded-full">
-                      <Info size={12} className="text-blue-400" />
-                    </div>
-                  </h2>
-                  <span className="text-[10px] text-gray-500 font-bold uppercase ml-6 tracking-tighter">Real-time Multiversal Debate</span>
+
+        {/* Centered Live Chat Showdown - Full Width Focus */}
+        <div className="max-w-5xl mx-auto px-4 py-16">
+          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
+            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
+              <div className="flex flex-col relative group">
+                <h2 className="font-black flex items-center gap-2 text-base tracking-widest text-white uppercase cursor-pointer">
+                  <Radio className="text-red-500 animate-pulse" size={16} />
+                  Live Multi-AI Realtime Chat Showdown
+                  <div className="p-1 bg-white/5 rounded-full">
+                    <Info size={12} className="text-blue-400" />
+                  </div>
+                </h2>
+                <span className="text-[10px] text-gray-500 font-bold uppercase ml-6 tracking-tighter">Real-time Multiversal Debate</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => setIsShareOpen(!isShareOpen)} className={`btn btn-ghost btn-circle border border-blue-500/20 ${isShareOpen ? 'text-blue-400' : 'text-gray-400'}`}>
+                  <Share2 className="w-5 h-5" />
+                </button>
+                <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
+                  <Zap size={14} className="text-purple-400 fill-purple-400" />
+                  <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
+                    {isAdmin ? 'GOD MODE' : `${tokensRemaining} TOKENS`}
+                  </span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setIsShareOpen(!isShareOpen)} className={`btn btn-ghost btn-circle border border-blue-500/20 ${isShareOpen ? 'text-blue-400' : 'text-gray-400'}`}>
-                    <Share2 className="w-5 h-5" />
-                  </button>
-                  <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
-                    <Zap size={14} className="text-purple-400 fill-purple-400" />
-                    <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
-                      {isAdmin ? 'GOD MODE' : `${tokensRemaining} TOKENS`}
-                    </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row border-b border-gray-800">
+              <div className={`p-6 space-y-4 ${isShareOpen ? 'md:w-2/3 w-full' : 'w-full'}`}>
+                <textarea
+                  value={userMessage}
+                  onChange={(e) => setUserMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
+                  placeholder="Enter your query to challenge the Council..."
+                  className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white min-h-[150px] outline-none focus:border-blue-500 transition-all resize-none font-medium placeholder:italic"
+                />
+                <button 
+                  onClick={handleSendMessage} 
+                  disabled={!userMessage.trim() || isSending} 
+                  className="w-full py-4 bg-blue-600 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Execute Synthesis'}
+                </button>
+              </div>
+              {isShareOpen && (
+                <div className="md:w-1/3 w-full p-4 border-l border-gray-800 bg-black/20">
+                  <ShareDropdown 
+                    conversationText={conversation.map(m => `[${m.name}]: ${m.content}`).join('\n\n')} 
+                    username={(user as any)?.username || 'User'} 
+                    setIsOpen={setIsShareOpen} 
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="divide-y divide-gray-800 max-h-[700px] overflow-y-auto">
+              {conversation.map((msg) => (
+                <div key={msg.id} className={`p-6 transition-all ${msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500' : ''}`}>
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 font-bold text-xs uppercase shadow-inner">
+                      {msg.name[0]}
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{msg.name}</span>
+                        {['GEMINI', 'DEEPSEEK', 'GROK', 'CLAUDE', 'GPT_4'].includes(msg.name) && (
+                          <span className="text-[8px] bg-red-500 px-2 py-0.5 rounded font-black text-white uppercase">Council Response</span>
+                        )}
+                        {msg.name === 'Architect' && (
+                          <span className="text-[8px] bg-blue-500 px-2 py-0.5 rounded font-black text-white uppercase">Primary Intel</span>
+                        )}
+                      </div>
+                      <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex flex-col md:flex-row border-b border-gray-800">
-                 <div className={`p-6 space-y-4 ${isShareOpen ? 'md:w-2/3 w-full' : 'w-full'}`}>
-                   <textarea
-                     value={userMessage}
-                     onChange={(e) => setUserMessage(e.target.value)}
-                     onKeyDown={(e) => {
-                       if (e.key === 'Enter' && !e.shiftKey) {
-                         e.preventDefault();
-                         handleSendMessage();
-                       }
-                     }}
-                     disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
-                     placeholder="Enter your query to challenge the Council..."
-                     className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white min-h-[150px] outline-none focus:border-blue-500 transition-all resize-none font-medium placeholder:italic"
-                   />
-                   <button onClick={handleSendMessage} disabled={!userMessage.trim() || isSending} className="w-full py-4 bg-blue-600 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all shadow-lg active:scale-95 disabled:opacity-50">
-                     {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Execute Synthesis'}
-                   </button>
-                 </div>
-                 {isShareOpen && (
-                   <div className="md:w-1/3 w-full p-4 border-l border-gray-800 bg-black/20">
-                     <ShareDropdown conversationText={conversation.map(m => `[${m.name}]: ${m.content}`).join('\n\n')} username={(user as any)?.username || 'User'} setIsOpen={setIsShareOpen} />
-                   </div>
-                 )}
-              </div>
-              <div className="divide-y divide-gray-800 max-h-[600px] overflow-y-auto">
-                {conversation.map((msg) => (
-                  <div key={msg.id} className={`p-6 transition-all ${msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500' : ''}`}>
-                    <div className="flex gap-4">
-                      <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 font-bold text-xs uppercase shadow-inner">
-                        {msg.name[0]}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{msg.name}</span>
-                          {['GEMINI', 'DEEPSEEK', 'GROK', 'CLAUDE', 'GPT_4'].includes(msg.name) && <span className="text-[8px] bg-red-500 px-2 py-0.5 rounded font-black text-white uppercase">Council Response</span>}
-                          {msg.name === 'Architect' && <span className="text-[8px] bg-blue-500 px-2 py-0.5 rounded font-black text-white uppercase">Primary Intel</span>}
-                        </div>
-                        <p className="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>
