@@ -100,8 +100,13 @@ export default function HomePage() {
     if (forgeStatus?.nextReset) {
       targetDate = new Date(forgeStatus.nextReset);
     } else {
-      // Default to next UTC midnight
-      targetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+      // Correct way: next UTC midnight
+      targetDate = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + 1, // tomorrow
+        0, 0, 0
+      ));
     }
 
     const diff = targetDate.getTime() - now.getTime();
