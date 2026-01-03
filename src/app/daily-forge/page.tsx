@@ -66,9 +66,9 @@ export default function DailyForgePage() {
     const thoughts = Array.isArray(data.openingThoughts) ? data.openingThoughts : JSON.parse(data.openingThoughts || "[]");
     let y = 60;
     thoughts.forEach((t: any) => {
-      doc.text(`${t.model}:`, 20, y);
+      doc.text(`${t.model || 'Council'}:`, 20, y);
       y += 10;
-      const lines = doc.splitTextToSize(t.content, 170);
+      const lines = doc.splitTextToSize(t.content || "", 170);
       doc.text(lines, 25, y);
       y += lines.length * 7 + 10;
       if (y > 280) {
@@ -138,7 +138,19 @@ export default function DailyForgePage() {
     </div>
   );
 
-  const thoughts = data ? (Array.isArray(data.openingThoughts) ? data.openingThoughts : JSON.parse(data.openingThoughts || "[]")) : [];
+  // Robust parsing of openingThoughts to prevent "undefined" spam
+  const thoughts = (() => {
+    if (!data?.openingThoughts) return [];
+    try {
+      const parsed = typeof data.openingThoughts === 'string' 
+        ? JSON.parse(data.openingThoughts) 
+        : data.openingThoughts;
+      return Array.isArray(parsed) ? parsed.filter(t => t && t.model && t.content) : [];
+    } catch (e) {
+      console.error("Failed to parse openingThoughts", e);
+      return [];
+    }
+  })();
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30 pb-24">
@@ -235,10 +247,12 @@ export default function DailyForgePage() {
                           )}
                         </>
                       ) : (
-                        `${thought.model} Internal Logic`
+                        `${thought.model || 'Council Member'} Response`
                       )}
                     </span>
-                    <div className={`${thought.isUser ? 'text-white font-bold italic' : 'text-gray-300 font-medium'} text-base leading-relaxed whitespace-pre-wrap`}>{thought.content}</div>
+                    <div className={`${thought.isUser ? 'text-white font-bold italic' : 'text-gray-300 font-medium'} text-base leading-relaxed whitespace-pre-wrap`}>
+                      {thought.content || '[No response]'}
+                    </div>
                   </div>
                 ))}
               </div>
