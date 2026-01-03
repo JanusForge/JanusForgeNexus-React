@@ -115,22 +115,19 @@ export default function DailyForgePage() {
         body: JSON.stringify({ userId: user?.id, content: interjection })
       });
       const result = await response.json();
-      
       if (response.ok) {
-  const result = await response.json();
-  const userDirective = { model: "ARCHITECT", content: interjection, isUser: true };
-  const councilPosts = result.councilResponses.map((r: any) => ({
-    model: r.model,
-    content: r.content,
-    isUser: false
-  }));
-  setData((prev: any) => ({
-    ...prev,
-    openingThoughts: [userDirective, ...councilPosts, ...prev.openingThoughts]
-  }));
-  setInterjection("");
-}
-
+        const userDirective = { model: "ARCHITECT", content: interjection, isUser: true };
+        const councilPosts = result.councilResponses.map((r: any) => ({
+          model: r.model,
+          content: r.content,
+          isUser: false
+        }));
+        setData((prev: any) => ({
+          ...prev,
+          openingThoughts: [userDirective, ...councilPosts, ...prev.openingThoughts]
+        }));
+        setInterjection("");
+      }
     } catch (err) { console.error(err); } finally { setSendingInterjection(false); }
   };
 
@@ -247,7 +244,7 @@ export default function DailyForgePage() {
               </div>
               <div className="pt-12 border-t border-white/5">
                 {/* Low Token Warning */}
-                {(user as any)?.tokens_remaining <= 4 && (user as any)?.tokens_remaining > 0 && (
+                {(user as any)?.tokens_remaining <= 4 && (user as any)?.tokens_remaining >= 0 && (
                   <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-600 rounded-lg text-yellow-300 text-sm">
                     <strong>Warning:</strong> You have {(user as any).tokens_remaining} token{(user as any).tokens_remaining === 1 ? '' : 's'} remaining. 
                     When you run out, you can purchase more in the{' '}
@@ -259,13 +256,33 @@ export default function DailyForgePage() {
 
                 {isAuthenticated && (user as any).tokens_remaining > 0 ? (
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between"><span className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2"><Zap size={12}/> Architect Interjection</span><span className="text-[10px] font-bold text-gray-500">{(user as any).tokens_remaining} Tokens Avail.</span></div>
-                    <textarea value={interjection} onChange={(e) => setInterjection(e.target.value)} placeholder="Insert directive..." className="w-full bg-black/40 border border-white/10 p-6 rounded-[2rem] text-sm text-white focus:border-blue-500 h-32 resize-none font-bold" />
-                    <button onClick={handleInterjection} disabled={sendingInterjection || !interjection.trim()} className="w-full py-6 bg-white text-black rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                        <Zap size={12}/> Architect Interjection
+                      </span>
+                      <span className="text-[10px] font-bold text-gray-500">
+                        {(user as any).tokens_remaining} Tokens Available
+                      </span>
+                    </div>
+                    <textarea
+                      value={interjection}
+                      onChange={(e) => setInterjection(e.target.value)}
+                      placeholder="Insert directive..."
+                      className="w-full bg-black/40 border border-white/10 p-6 rounded-[2rem] text-sm text-white focus:border-blue-500 h-32 resize-none font-bold"
+                    />
+                    <button
+                      onClick={handleInterjection}
+                      disabled={sendingInterjection || !interjection.trim()}
+                      className="w-full py-6 bg-white text-black rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] hover:bg-blue-500 hover:text-white transition-all flex items-center justify-center gap-3"
+                    >
                       {sendingInterjection ? <Loader2 className="animate-spin" size={16}/> : <><MessageSquare size={16}/> Transmit Directive</>}
                     </button>
                   </div>
-                ) : <div className="text-center p-12 border border-dashed border-white/5 rounded-[2.5rem] text-gray-600 font-bold italic">Insufficient tokens for Council Interjection.</div>}
+                ) : (
+                  <div className="text-center p-12 border border-dashed border-white/5 rounded-[2.5rem] text-gray-600 font-bold italic">
+                    Insufficient tokens for Council Interjection.
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap justify-center gap-8 mt-12 text-gray-500 border-t border-white/5 pt-10">
                 <button onClick={handleReadAloud} className={`flex items-center gap-2 text-[10px] font-black uppercase transition-all ${isReading ? 'text-red-500' : 'hover:text-white'}`}>
@@ -278,8 +295,14 @@ export default function DailyForgePage() {
           <section className="grid gap-6">
             {history.length > 0 ? history.map((entry: any) => (
               <div key={entry.id} className="p-8 bg-gray-900/30 border border-white/5 rounded-[2.5rem] hover:border-purple-500/30 group">
-                <div className="flex justify-between items-start mb-4"><span className="text-[10px] font-black text-gray-600 uppercase">{new Date(entry.date).toLocaleDateString()}</span></div>
-                <h3 className="text-xl font-black uppercase italic text-white group-hover:text-purple-400 transition-colors">{entry.winningTopic}</h3>
+                <div className="flex justify-between items-start mb-4">
+                  <span className="text-[10px] font-black text-gray-600 uppercase">
+                    {new Date(entry.date).toLocaleDateString()}
+                  </span>
+                </div>
+                <h3 className="text-xl font-black uppercase italic text-white group-hover:text-purple-400 transition-colors">
+                  {entry.winningTopic}
+                </h3>
               </div>
             )) : <p className="text-center text-gray-600 italic py-24">The Archives are currently empty.</p>}
           </section>
