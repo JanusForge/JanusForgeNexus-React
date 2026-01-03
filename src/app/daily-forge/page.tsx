@@ -314,17 +314,19 @@ export default function DailyForgePage() {
         ) : (
           <section className="grid gap-6">
             {history.length > 0 ? history.map((entry: any) => (
-              <div key={entry.id} className="p-8 bg-gray-900/30 border border-white/5 rounded-[2.5rem] hover:border-purple-500/30 group">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] font-black text-gray-600 uppercase">
-                    {new Date(entry.date).toLocaleDateString()}
-                  </span>
-                </div>
-                <h3 className="text-xl font-black uppercase italic text-white group-hover:text-purple-400 transition-colors">
-                  {entry.winningTopic}
-                </h3>
-              </div>
-            )) : <p className="text-center text-gray-600 italic py-24">The Archives are currently empty.</p>}
+  <Link href={`/daily-forge/archive/${entry.id}`} key={entry.id}>
+    <div className="p-8 bg-gray-900/30 border border-white/5 rounded-[2.5rem] hover:border-purple-500/30 group cursor-pointer transition-all">
+      <div className="flex justify-between items-start mb-4">
+        <span className="text-[10px] font-black text-gray-600 uppercase">
+          {new Date(entry.date).toLocaleDateString()}
+        </span>
+      </div>
+      <h3 className="text-xl font-black uppercase italic text-white group-hover:text-purple-400 transition-colors">
+        {entry.winningTopic}
+      </h3>
+    </div>
+  </Link>
+)) : <p className="text-center text-gray-600 italic py-24">The Archives are currently empty.</p>}              
           </section>
         )}
       </div>
