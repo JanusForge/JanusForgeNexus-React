@@ -58,19 +58,21 @@ export default function ConversationSidebar({
     if (!user) return;
 
     const fetchConversations = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`);
-        if (res.ok) {
-          const data = await res.json();
-          setConversations(data);
-          setFilteredConversations(data);
-        }
-      } catch (err) {
-        console.error("Failed to load conversations:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`);
+    if (res.ok) {
+      const data = await res.json();
+      setConversations(data);
+      setFilteredConversations(data);
+    } else {
+      console.error("Fetch failed:", res.status);
+    }
+  } catch (err) {
+    console.error("Failed to load conversations:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
     fetchConversations();
   }, [user]);
