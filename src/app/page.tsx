@@ -92,15 +92,15 @@ export default function HomePage() {
     return () => clearInterval(syncInterval);
   }, []);
 
-useEffect(() => {
+  useEffect(() => {
   const timer = setInterval(() => {
     const now = new Date();
     let targetDate = new Date();
 
-    if (forgeStatus?.nextReset) {
+    if (forgeStatus?.nextReset && !isNaN(new Date(forgeStatus.nextReset).getTime())) {
       targetDate = new Date(forgeStatus.nextReset);
     } else {
-      // Next UTC midnight
+      // Force next UTC midnight if backend value is invalid
       targetDate = new Date(Date.UTC(
         now.getUTCFullYear(),
         now.getUTCMonth(),
