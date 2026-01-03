@@ -368,7 +368,7 @@ export default function HomePage() {
               </div>
             </div>
 
-//   //--- THE DAILY FORGE --- 
+     //--- THE DAILY FORGE --- 
 //            <div className="sticky top-12 space-y-6">
 //              <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
 //                <div className="flex justify-between items-center mb-6">
