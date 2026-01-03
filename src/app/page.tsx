@@ -92,7 +92,7 @@ export default function HomePage() {
     return () => clearInterval(syncInterval);
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
   const timer = setInterval(() => {
     const now = new Date();
     let targetDate = new Date();
@@ -100,11 +100,11 @@ export default function HomePage() {
     if (forgeStatus?.nextReset) {
       targetDate = new Date(forgeStatus.nextReset);
     } else {
-      // Correct next UTC midnight
+      // Next UTC midnight
       targetDate = new Date(Date.UTC(
         now.getUTCFullYear(),
         now.getUTCMonth(),
-        now.getUTCDate() + 1,  // tomorrow
+        now.getUTCDate() + 1,
         0, 0, 0
       ));
     }
@@ -124,8 +124,7 @@ export default function HomePage() {
   }, 1000);
 
   return () => clearInterval(timer);
-}, [forgeStatus]);  
-
+}, [forgeStatus]);
 
 
   // --- 🔌 SOCKET.IO CONNECTION ---
