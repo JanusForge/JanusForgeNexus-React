@@ -279,11 +279,17 @@ export default function DailyForgePage() {
                       </span>
                     </div>
                     <textarea
-                      value={interjection}
-                      onChange={(e) => setInterjection(e.target.value)}
-                      placeholder="Insert directive..."
-                      className="w-full bg-black/40 border border-white/10 p-6 rounded-[2rem] text-sm text-white focus:border-blue-500 h-32 resize-none font-bold"
-                    />
+  value={interjection}
+  onChange={(e) => setInterjection(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleInterjection();
+    }
+  }}
+  placeholder="Insert directive..."
+  className="w-full bg-black/40 border border-white/10 p-6 rounded-[2rem] text-sm text-white focus:border-blue-500 h-32 resize-none font-bold"
+/>
                     <button
                       onClick={handleInterjection}
                       disabled={sendingInterjection || !interjection.trim()}
