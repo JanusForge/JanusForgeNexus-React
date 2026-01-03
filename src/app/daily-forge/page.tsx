@@ -1,8 +1,7 @@
 "use client";
-
 import {
   Search, Globe, ChevronRight, Loader2,
-  Rss, Printer, Save, Share2, MessageSquare, Volume2, Square, Mail, CheckCircle2, History, Zap, X, Star
+  Rss, Printer, Save, Share2, MessageSquare, Volume2, Square, Mail, CheckCircle2, History, Zap, X, Star, Download, Link as LinkIcon
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -28,7 +27,6 @@ export default function DailyForgePage() {
     fetchDailyForge();
     fetchHistory();
     if (user) setIsSubscribed((user as any).digest_subscribed ?? true);
-
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.getVoices();
     }
@@ -60,11 +58,36 @@ export default function DailyForgePage() {
   const handleSavePDF = () => {
     if (!data) return;
     const doc = new jsPDF();
-    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
     doc.text("JANUS FORGE: DAILY SYNTHESIS", 20, 20);
-    doc.setFontSize(10);
-    doc.text(`Topic: ${data.winningTopic}`, 20, 30);
-    doc.save(`JanusForge_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.setFontSize(16);
+    doc.text(data.winningTopic, 20, 40);
+    doc.setFontSize(12);
+    const thoughts = Array.isArray(data.openingThoughts) ? data.openingThoughts : JSON.parse(data.openingThoughts || "[]");
+    let y = 60;
+    thoughts.forEach((t: any) => {
+      doc.text(`${t.model}:`, 20, y);
+      y += 10;
+      const lines = doc.splitTextToSize(t.content, 170);
+      doc.text(lines, 25, y);
+      y += lines.length * 7 + 10;
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+    doc.save(`DailyForge_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const shareToX = () => {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(`Check out today's Daily Forge debate: ${data.winningTopic}`);
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+  };
+
+  const shareToLinkedIn = () => {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
   };
 
   async function fetchDailyForge() {
@@ -93,11 +116,11 @@ export default function DailyForgePage() {
       });
       const result = await response.json();
       if (response.ok) {
-        const userDirective = { 
-          model: "ARCHITECT", 
-          content: interjection, 
+        const userDirective = {
+          model: "ARCHITECT",
+          content: interjection,
           isUser: true,
-          role: (user as any)?.role // ✨ Passing role to maintain badge in local state
+          role: (user as any)?.role
         };
         const aiReaction = { model: "CLAUDE (OPUS 4.5)", content: result.aiResponse };
         setData((prev: any) => ({
@@ -120,22 +143,32 @@ export default function DailyForgePage() {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/30 pb-24">
+      {/* Share Modal */}
       {showShareModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-6">
           <div className="bg-gray-900 border border-white/10 p-8 rounded-[2.5rem] max-w-sm w-full space-y-6 relative">
             <button onClick={() => setShowShareModal(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white transition-colors"><X size={20}/></button>
             <h4 className="text-xs font-black uppercase tracking-widest text-blue-400">Distribute Synthesis</h4>
             <div className="grid grid-cols-2 gap-4">
-              {[
-                { name: 'X / Twitter', url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(data.winningTopic)}&url=https://janusforge.ai` },
-                { name: 'LinkedIn', url: `https://www.linkedin.com/sharing/share-offsite/?url=https://janusforge.ai` },
-                { name: 'Reddit', url: `https://www.reddit.com/submit?title=${encodeURIComponent(data.winningTopic)}&url=https://janusforge.ai` },
-                { name: 'Email', url: `mailto:?subject=Janus Forge Synthesis&body=Check out today's debate: https://janusforge.ai` }
-              ].map(site => (
-                <a key={site.name} href={site.url} target="_blank" className="p-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black uppercase text-center hover:bg-blue-500 hover:text-black transition-all">
-                  {site.name}
-                </a>
-              ))}
+              <button onClick={shareToX} className="p-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black uppercase text-center hover:bg-blue-500 hover:text-black transition-all flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                X / Twitter
+              </button>
+              <button onClick={shareToLinkedIn} className="p-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black uppercase text-center hover:bg-blue-500 hover:text-black transition-all flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.633 7.997c.013.175.013.349.013.523 0 5.325-4.053 11.461-11.46 11.461-2.282 0-4.402-.661-6.186-1.809.324.037.636.05.973.05a8.07 8.07 0 0 0 5.001-1.721 4.036 4.036 0 0 1-3.767-2.793c.249.053.501.082.749.082.361 0 .717-.035 1.061-.103a4.035 4.035 0 0 1-3.235-3.955v-.05c.537.299 1.162.463 1.77.48a4.07 4.07 0 0 1-1.807-3.381 11.484 11.484 0 0 0 8.342 4.237 4.074 4.074 0 0 1 6.903-3.715 8.134 8.134 0 0 0 2.573-.988 4.038 4.038 0 0 1-1.777 2.225 8.094 8.094 0 0 0 2.327-.635 8.168 8.168 0 0 1-2.012 2.091z"/>
+                </svg>
+                LinkedIn
+              </button>
+              <button onClick={() => {
+                navigator.clipboard.writeText(window.location.href);
+                alert("Link copied!");
+              }} className="col-span-2 p-4 bg-white/5 border border-white/5 rounded-2xl text-[10px] font-black uppercase text-center hover:bg-blue-500 hover:text-black transition-all flex items-center justify-center gap-2">
+                <LinkIcon size={16} />
+                Copy Link
+              </button>
             </div>
           </div>
         </div>
@@ -152,18 +185,45 @@ export default function DailyForgePage() {
       <div className="max-w-4xl mx-auto px-6">
         {activeTab === 'active' ? (
           <div className="space-y-24">
+            {/* Header with Print/Save/Share */}
+            <div className="flex items-center justify-between mb-8">
+              <h1 className="text-4xl font-black uppercase tracking-tighter text-white">
+                The Daily Forge
+              </h1>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handlePrint}
+                  className="px-4 py-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition flex items-center gap-2"
+                >
+                  <Printer size={18} />
+                  Print
+                </button>
+                <button
+                  onClick={handleSavePDF}
+                  className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 transition flex items-center gap-2"
+                >
+                  <Download size={18} />
+                  Save PDF
+                </button>
+                <button
+                  onClick={() => setShowShareModal(true)}
+                  className="px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-500 transition flex items-center gap-2"
+                >
+                  <Share2 size={18} />
+                  Share
+                </button>
+              </div>
+            </div>
+
             <section className="bg-gradient-to-b from-blue-600/10 to-transparent border border-blue-500/20 p-8 md:p-12 rounded-[3.5rem] shadow-[0_0_80px_rgba(37,99,235,0.1)]">
               <div className="text-center mb-16">
                 <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] block mb-4">Winning Thesis</span>
                 <h2 className="text-3xl md:text-5xl font-black uppercase italic tracking-tighter leading-tight">{data.winningTopic}</h2>
               </div>
-
               <div className="space-y-16 mb-16">
                 {thoughts.map((thought: any, i: number) => (
                   <div key={i} className={`relative pl-12 border-l ${thought.isUser ? 'border-white bg-white/5 p-6 rounded-r-3xl' : 'border-blue-500/20'} animate-in fade-in slide-in-from-left-4 duration-700`}>
                     <div className={`absolute -left-1.5 top-0 w-3 h-3 rounded-full ${thought.isUser ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]' : 'bg-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.6)]'}`}></div>
-                    
-                    {/* ✨ UPDATED BADGE LOGIC: Displays BETA ARCHITECT role for specific users */}
                     <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${thought.isUser ? 'text-white' : 'text-blue-400'}`}>
                       {thought.model === "ARCHITECT" ? (
                         <>
@@ -183,8 +243,18 @@ export default function DailyForgePage() {
                   </div>
                 ))}
               </div>
-
               <div className="pt-12 border-t border-white/5">
+                {/* Low Token Warning */}
+                {(user as any)?.tokens_remaining <= 4 && (user as any)?.tokens_remaining > 0 && (
+                  <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-600 rounded-lg text-yellow-300 text-sm">
+                    <strong>Warning:</strong> You have {(user as any).tokens_remaining} token{(user as any).tokens_remaining === 1 ? '' : 's'} remaining. 
+                    When you run out, you can purchase more in the{' '}
+                    <Link href="/pricing" className="underline hover:text-yellow-100">
+                      One-Time Fuel Top-up panel
+                    </Link>.
+                  </div>
+                )}
+
                 {isAuthenticated && (user as any).tokens_remaining > 0 ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between"><span className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-2"><Zap size={12}/> Architect Interjection</span><span className="text-[10px] font-bold text-gray-500">{(user as any).tokens_remaining} Tokens Avail.</span></div>
@@ -195,14 +265,10 @@ export default function DailyForgePage() {
                   </div>
                 ) : <div className="text-center p-12 border border-dashed border-white/5 rounded-[2.5rem] text-gray-600 font-bold italic">Insufficient tokens for Council Interjection.</div>}
               </div>
-
               <div className="flex flex-wrap justify-center gap-8 mt-12 text-gray-500 border-t border-white/5 pt-10">
                 <button onClick={handleReadAloud} className={`flex items-center gap-2 text-[10px] font-black uppercase transition-all ${isReading ? 'text-red-500' : 'hover:text-white'}`}>
                   {isReading ? <Square size={14} fill="currentColor"/> : <Volume2 size={14}/>} Read Aloud
                 </button>
-                <button onClick={handlePrint} className="flex items-center gap-2 text-[10px] font-black uppercase hover:text-white transition-colors"><Printer size={14}/> Print</button>
-                <button onClick={handleSavePDF} className="flex items-center gap-2 text-[10px] font-black uppercase hover:text-white transition-colors"><Save size={14}/> Save PDF</button>
-                <button onClick={() => setShowShareModal(true)} className="flex items-center gap-2 text-[10px] font-black uppercase hover:text-white transition-colors"><Share2 size={14}/> Share</button>
               </div>
             </section>
           </div>
