@@ -7,30 +7,6 @@ import { io, Socket } from 'socket.io-client';
 import ShareDropdown from '@/components/ShareDropdown';
 import ConversationSidebar from '@/app/components/ConversationSidebar';
 
-// Add to page.tsx or create a hook
-const [aiHealth, setAiHealth] = useState<Record<string, string>>({});
-
-useEffect(() => {
-  const checkAIHealth = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/ai-health`);
-      const data = await res.json();
-      setAiHealth(data.services);
-      
-      // If services are down, show friendly message
-      if (data.services.GEMINI === '❌') {
-        console.warn("Gemini API unavailable - check API key");
-      }
-    } catch (err) {
-      console.error("AI health check failed:", err);
-    }
-  };
-  
-  checkAIHealth();
-  const interval = setInterval(checkAIHealth, 300000); // Check every 5 minutes
-  return () => clearInterval(interval);
-}, []);
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 interface ConversationMessage {
