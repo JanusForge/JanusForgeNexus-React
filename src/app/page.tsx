@@ -100,11 +100,11 @@ export default function HomePage() {
     if (forgeStatus?.nextReset) {
       targetDate = new Date(forgeStatus.nextReset);
     } else {
-      // Correct way: next UTC midnight
+      // Correct next UTC midnight
       targetDate = new Date(Date.UTC(
         now.getUTCFullYear(),
         now.getUTCMonth(),
-        now.getUTCDate() + 1, // tomorrow
+        now.getUTCDate() + 1,  // tomorrow
         0, 0, 0
       ));
     }
@@ -125,6 +125,7 @@ export default function HomePage() {
 
   return () => clearInterval(timer);
 }, [forgeStatus]);  
+
 
 
   // --- 🔌 SOCKET.IO CONNECTION ---
