@@ -93,23 +93,34 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const targetDate = forgeStatus?.nextReset ? new Date(forgeStatus.nextReset) : new Date();
-      if (!forgeStatus?.nextReset) targetDate.setUTCHours(24, 0, 0, 0);
-      const diff = targetDate.getTime() - now;
-      if (diff <= 0) {
-        setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-        return;
-      }
-      setTimeLeft({
-        hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((diff / 1000 / 60) % 60),
-        seconds: Math.floor((diff / 1000) % 60),
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [forgeStatus]);
+  const timer = setInterval(() => {
+    const now = new Date();
+    let targetDate = new Date();
+
+    if (forgeStatus?.nextReset) {
+      targetDate = new Date(forgeStatus.nextReset);
+    } else {
+      // Default to next UTC midnight
+      targetDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+    }
+
+    const diff = targetDate.getTime() - now.getTime();
+
+    if (diff <= 0) {
+      setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
+      return;
+    }
+
+    setTimeLeft({
+      hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+      minutes: Math.floor((diff / 1000 / 60) % 60),
+      seconds: Math.floor((diff / 1000) % 60),
+    });
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [forgeStatus]);  
+
 
   // --- 🔌 SOCKET.IO CONNECTION ---
   useEffect(() => {
