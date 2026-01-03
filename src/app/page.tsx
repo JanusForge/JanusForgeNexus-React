@@ -294,8 +294,6 @@ export default function HomePage() {
             </h1>
           </div>
         </div>
-        
-   //---Live Multi-AI Realtime Chat Showdown SECTION---
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-12 items-start">
             <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
@@ -368,7 +366,7 @@ export default function HomePage() {
               </div>
             </div>
 
-     //--- THE DAILY FORGE --- 
+
 //            <div className="sticky top-12 space-y-6">
 //              <div className="bg-gradient-to-br from-[#0F0F0F] to-black p-8 rounded-[2.5rem] border border-white/10 shadow-3xl">
 //                <div className="flex justify-between items-center mb-6">
