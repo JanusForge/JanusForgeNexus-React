@@ -115,20 +115,22 @@ export default function DailyForgePage() {
         body: JSON.stringify({ userId: user?.id, content: interjection })
       });
       const result = await response.json();
+      
       if (response.ok) {
-        const userDirective = {
-          model: "ARCHITECT",
-          content: interjection,
-          isUser: true,
-          role: (user as any)?.role
-        };
-        const aiReaction = { model: "CLAUDE (OPUS 4.5)", content: result.aiResponse };
-        setData((prev: any) => ({
-          ...prev,
-          openingThoughts: [userDirective, aiReaction, ...prev.openingThoughts]
-        }));
-        setInterjection("");
-      }
+  const result = await response.json();
+  const userDirective = { model: "ARCHITECT", content: interjection, isUser: true };
+  const councilPosts = result.councilResponses.map((r: any) => ({
+    model: r.model,
+    content: r.content,
+    isUser: false
+  }));
+  setData((prev: any) => ({
+    ...prev,
+    openingThoughts: [userDirective, ...councilPosts, ...prev.openingThoughts]
+  }));
+  setInterjection("");
+}
+
     } catch (err) { console.error(err); } finally { setSendingInterjection(false); }
   };
 
