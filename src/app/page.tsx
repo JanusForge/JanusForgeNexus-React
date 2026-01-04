@@ -221,14 +221,14 @@ export default function HomePage() {
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden backdrop-blur-md shadow-2xl flex flex-col">
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800/20">
               <div className="flex flex-col relative group">
-                <h2 className="font-black flex items-center gap-2 text-base tracking-widest text-white uppercase cursor-pointer">
-                  <Radio className="text-red-500 animate-pulse" size={16} />
+                <h2 className="font-black flex items-center gap-3 text-2xl md:text-3xl tracking-widest text-white uppercase cursor-pointer">
+                  <Radio className="text-red-500 animate-pulse" size={24} />
                   Live Multi-AI Realtime Chat Showdown
-                  <div className="p-1 bg-white/5 rounded-full">
-                    <Info size={12} className="text-blue-400" />
+                  <div className="p-2 bg-white/5 rounded-full">
+                    <Info size={18} className="text-blue-400" />
                   </div>
                 </h2>
-                <span className="text-[10px] text-gray-500 font-bold uppercase ml-6 tracking-tighter">Real-time Multiversal Debate</span>
+                <span className="text-sm md:text-base text-gray-400 font-bold uppercase ml-8 tracking-widest mt-1">Real-time Multiversal Debate</span>
               </div>
               <div className="flex items-center gap-3">
                 <button onClick={() => setIsShareOpen(!isShareOpen)} className={`btn btn-ghost btn-circle border border-blue-500/20 ${isShareOpen ? 'text-blue-400' : 'text-gray-400'}`}>
