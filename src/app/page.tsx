@@ -9,6 +9,16 @@ import ConversationSidebar from '@/app/components/ConversationSidebar';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
+const router = useRouter();
+const searchParams = useSearchParams();
+
+useEffect(() => {
+  const ref = searchParams.get('ref');
+  if (ref === 'BETA_2026') {
+    router.push('/register'); // or '/beta-signup' if you have a dedicated page
+  }
+}, [searchParams, router]);
+
 interface ConversationMessage {
   id: string;
   sender: 'ai' | 'user';
