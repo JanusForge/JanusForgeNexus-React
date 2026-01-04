@@ -15,7 +15,7 @@ interface ArchiveEntry {
 }
 
 export default function TopicArchivePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const isGodMode = (user as any)?.role === 'GOD_MODE';
 
   const [archives, setArchives] = useState<ArchiveEntry[]>([]);
@@ -28,7 +28,7 @@ export default function TopicArchivePage() {
 
   useEffect(() => {
     const loadArchives = () => {
-      fetch(`${API_BASE_URL}/api/daily-forge/history`)
+      fetch(`${API_BASE_URL}/api/archives/history`)
         .then(res => res.json())
         .then(data => {
           setArchives(data);
@@ -108,7 +108,7 @@ export default function TopicArchivePage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/daily-forge/manual`, {
+      const response = await fetch(`${API_BASE_URL}/api/archives/manual`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -124,7 +124,7 @@ export default function TopicArchivePage() {
         setNewContent("");
         setShowUpload(false);
         // Refresh archives
-        fetch(`${API_BASE_URL}/api/daily-forge/history`)
+        fetch(`${API_BASE_URL}/api/archives/history`)
           .then(res => res.json())
           .then(data => {
             setArchives(data);
@@ -188,13 +188,13 @@ export default function TopicArchivePage() {
                   type="text"
                   value={newTopic}
                   onChange={(e) => setNewTopic(e.target.value)}
-                  placeholder="Topic Title (e.g., Golden Rule for AI to AI Conversations)"
+                  placeholder="Topic Title"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-6 py-4 mb-6 text-white text-lg"
                 />
                 <textarea
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="Paste full conversation transcript as JSON array: [{model: 'DEEPSEEK', content: '...'}, ...]"
+                  placeholder="Paste conversation as JSON array: [{model: 'DEEPSEEK', content: '...'}, ...]"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-6 py-4 h-96 text-white font-mono text-sm"
                 />
                 <button
@@ -250,7 +250,7 @@ export default function TopicArchivePage() {
                     </button>
                   </div>
                 </div>
-                <Link href={`/daily-forge/archive/${entry.id}`}>
+                <Link href={`/archive/${entry.id}`}>
                   <h3 className="text-2xl font-bold text-white group-hover:text-purple-400 transition-colors cursor-pointer">
                     {entry.winningTopic}
                   </h3>
