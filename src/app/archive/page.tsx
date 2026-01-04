@@ -24,16 +24,8 @@ export default function TopicArchivePage() {
             </p>
             <div className="space-y-6">
               <div className="p-4 bg-gray-800/30 rounded-xl">
-                <h3 className="font-semibold text-purple-400 mb-2">Archive Features:</h3>
-                <ul className="space-y-1 text-gray-400">
-                  <li>• Searchable debate transcripts</li>
-                  <li>• Topic categorization and tagging</li>
-                  <li>• Downloadable resources</li>
-                </ul>
+                Searchbar goes here
               </div>
-              
-// holding space
-
             </div>
           </div>
           <div className="text-center">
