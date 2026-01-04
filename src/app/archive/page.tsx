@@ -1,174 +1,54 @@
-"use client";
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import jsPDF from 'jspdf';
-import { Download, Printer, Share2, Search, Calendar } from 'lucide-react';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
-
-interface ArchiveEntry {
-  id: string;
-  date: string;
-  winningTopic: string;
-  openingThoughts: string; // JSON string of responses
-}
-
 export default function TopicArchivePage() {
-  const [archives, setArchives] = useState<ArchiveEntry[]>([]);
-  const [filtered, setFiltered] = useState<ArchiveEntry[]>([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/api/daily-forge/history`)
-      .then(res => res.json())
-      .then(data => {
-        setArchives(data);
-        setFiltered(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to load archives", err);
-        setLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    const lower = search.toLowerCase();
-    setFiltered(
-      archives.filter((a: ArchiveEntry) =>
-        a.winningTopic.toLowerCase().includes(lower)
-      )
-    );
-  }, [search, archives]);
-
-  const handleSavePDF = (entry: ArchiveEntry) => {
-    const doc = new jsPDF();
-    doc.setFontSize(20);
-    doc.text("Janus Forge Archive", 20, 20);
-    doc.setFontSize(16);
-    doc.text(new Date(entry.date).toLocaleDateString(), 20, 35);
-    doc.text(entry.winningTopic, 20, 50);
-
-    let y = 70;
-    try {
-      const thoughts = JSON.parse(entry.openingThoughts);
-      thoughts.forEach((t: any) => {
-        doc.setFontSize(14);
-        doc.text(`${t.model || 'Council'}:`, 20, y);
-        y += 10;
-        doc.setFontSize(12);
-        const lines = doc.splitTextToSize(t.content || "", 170);
-        doc.text(lines, 25, y);
-        y += lines.length * 7 + 10;
-        if (y > 280) {
-          doc.addPage();
-          y = 20;
-        }
-      });
-    } catch (e) {
-      doc.text("Full transcript available on site.", 20, y);
-    }
-
-    doc.save(`Forge_Archive_${new Date(entry.date).toISOString().split('T')[0]}.pdf`);
-  };
-
-  const shareEntry = (entry: ArchiveEntry) => {
-    const url = `https://janusforge.ai/archive/${entry.id}`;
-    const text = `Janus Forge Archive: ${entry.winningTopic}`;
-    if (navigator.share) {
-      navigator.share({ title: text, url });
-    } else {
-      navigator.clipboard.writeText(url);
-      alert("Link copied!");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p>Loading archives...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-950/50 via-gray-900 to-gray-950 py-12">
-      <div className="container mx-auto px-4 max-w-5xl">
-        {/* Hero */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-300 mb-6">
-            <span className="text-3xl">📚</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-pink-300 bg-clip-text text-transparent">
-            Topic Archive
-          </h1>
-          <p className="text-xl text-gray-300">Historical AI Council debates</p>
-        </div>
-
-        {/* Search */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search past debates..."
-              className="w-full bg-gray-900/50 border border-gray-700 rounded-xl pl-12 pr-6 py-4 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Archive List */}
-        {filtered.length === 0 ? (
-          <div className="text-center py-24">
-            <p className="text-gray-500 text-lg">No archives match your search.</p>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {filtered.map((entry) => (
-              <div key={entry.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-purple-500/50 transition-all group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3 text-gray-500 text-sm">
-                    <Calendar size={16} />
-                    {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
-                  <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => window.print()} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700">
-                      <Printer size={16} />
-                    </button>
-                    <button onClick={() => handleSavePDF(entry)} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700">
-                      <Download size={16} />
-                    </button>
-                    <button onClick={() => shareEntry(entry)} className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700">
-                      <Share2 size={16} />
-                    </button>
-                  </div>
-                </div>
-                <Link href={`/daily-forge/archive/${entry.id}`}>
-                  <h3 className="text-2xl font-bold text-white group-hover:text-purple-400 transition-colors cursor-pointer">
-                    {entry.winningTopic}
-                  </h3>
-                </Link>
-                <p className="text-gray-400 mt-3 line-clamp-2">
-                  {(() => {
-                    try {
-                      const thoughts = JSON.parse(entry.openingThoughts);
-                      return thoughts[0]?.content || "Council debate transcript";
-                    } catch {
-                      return "Council debate transcript";
-                    }
-                  })()}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-purple-950/50 via-gray-900 to-gray-950">
+      <div className="container mx-auto px-4 py-12 md:py-16">
+        {/* Hero Section */}
+        <div className="max-w-4xl mx-auto text-center mb-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-400 to-pink-300 mb-6">
+            <span className="text-3xl">📚</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-300 bg-clip-text text-transparent">
+            Topic Archive
+          </h1>
+          <p className="text-xl text-gray-300 mb-8">
+            Historical AI Council debates
+          </p>
+        </div>
+        {/* Content Placeholder */}
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-gray-900/50 p-8 rounded-2xl border border-gray-800/50 mb-8">
+            <h2 className="text-2xl font-bold mb-4 text-purple-300">Archive of AI Debates</h2>
+            <p className="text-gray-400 mb-6">
+              Browse through past AI debates and conversations. Our archive includes transcripts, summaries, and analysis of previous AI-to-AI discussions across a wide range of topics.
+            </p>
+            <div className="space-y-6">
+              <div className="p-4 bg-gray-800/30 rounded-xl">
+                <h3 className="font-semibold text-purple-400 mb-2">Archive Features:</h3>
+                <ul className="space-y-2 text-gray-400">
+                  <li>• Searchable debate transcripts</li>
+                  <li>• Topic categorization and tagging</li>
+                  <li>• Downloadable resources</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-gray-800/30 rounded-xl">
+                <h3 className="font-semibold text-purple-400 mb-2">Archive in Development</h3>
+                <p className="text-gray-400">
+                  We're currently organizing and categorizing our debate archives. The full archive with search and filtering capabilities will be available soon.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="text-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 rounded-xl border border-purple-500/20 text-purple-400 font-medium transition-all"
+            >
+              Return to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
