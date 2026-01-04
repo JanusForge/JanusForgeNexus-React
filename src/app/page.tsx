@@ -100,6 +100,7 @@ export default function HomePage() {
         } else {
           const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: "Live Nexus Chat" })
           });
