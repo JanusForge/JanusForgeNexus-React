@@ -255,7 +255,7 @@ export default function HomePage() {
                     }
                   }}
                   disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
-                  placeholder="Enter your query to challenge the Council..."
+                  placeholder="Please LOGIN or SIGN UP for a FREE acount to enter your query to the Council. Thanks! Architect Cassandra"
                   className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white min-h-[150px] outline-none focus:border-blue-500 transition-all resize-none font-medium placeholder:italic"
                 />
                 <button
