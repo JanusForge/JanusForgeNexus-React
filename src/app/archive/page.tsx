@@ -27,26 +27,35 @@ export default function TopicArchivePage() {
   const [newContent, setNewContent] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/daily-forge/history`)
-      .then(res => res.json())
-      .then(data => {
-        setArchives(data);
-        setFiltered(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Failed to load archives", err);
-        setLoading(false);
-      });
+    const loadArchives = () => {
+      fetch(`${API_BASE_URL}/api/daily-forge/history`)
+        .then(res => res.json())
+        .then(data => {
+          setArchives(data);
+          setFiltered(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to load archives", err);
+          setLoading(false);
+        });
+    };
+
+    loadArchives();
   }, []);
 
   useEffect(() => {
     const lower = search.toLowerCase();
     setFiltered(
-      archives.filter((a: ArchiveEntry) =>
-        a.winningTopic.toLowerCase().includes(lower) ||
-        (a.openingThoughts && a.openingThoughts.toLowerCase().includes(lower))
-      )
+      archives.filter((a: ArchiveEntry) => {
+        const titleMatch = a.winningTopic.toLowerCase().includes(lower);
+        let contentMatch = false;
+        try {
+          const thoughts = JSON.parse(a.openingThoughts);
+          contentMatch = JSON.stringify(thoughts).toLowerCase().includes(lower);
+        } catch {}
+        return titleMatch || contentMatch;
+      })
     );
   }, [search, archives]);
 
@@ -216,7 +225,9 @@ export default function TopicArchivePage() {
         {/* Archive List */}
         {filtered.length === 0 ? (
           <div className="text-center py-24">
-            <p className="text-gray-500 text-lg">No archives match your search.</p>
+            <p className="text-gray-500 text-lg">
+              {search ? "No archives match your search." : "No archives yet — the council's history is just beginning."}
+            </p>
           </div>
         ) : (
           <div className="grid gap-8">
