@@ -1,4 +1,5 @@
 "use client";
+
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -10,31 +11,22 @@ import ConversationSidebar from '@/app/components/ConversationSidebar';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
-const router = useRouter();
-const searchParams = useSearchParams();
-
-useEffect(() => {
-  const ref = searchParams.get('ref');
-  if (ref === 'BETA_2026') {
-    router.push('/register'); // or '/beta-signup' if you have a dedicated page
-  }
-}, [searchParams, router]);
-
 interface ConversationMessage {
   id: string;
   sender: 'ai' | 'user';
-  avatar?: string;
   name: string;
   content: string;
   timestamp: string;
-  isVerdict?: boolean;
   tokens_remaining?: number;
 }
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const socketRef = useRef<Socket | null>(null);
-  const isAdmin = (user as any)?.username === 'admin-access' || (user as any)?.role === 'GOD_MODE' || (user as any)?.role === 'ENTERPRISE';
+  const isAdmin = (user as any)?.role === 'GOD_MODE' || (user as any)?.role === 'ENTERPRISE';
   const [tokensRemaining, setTokensRemaining] = useState<number>(0);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -45,6 +37,14 @@ export default function HomePage() {
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+
+  // BETA Architect redirect
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref === 'BETA_2026') {
+      router.push('/register');
+    }
+  }, [searchParams, router]);
 
   // --- 🚀 FIRST TIME VISITOR STATE ---
   useEffect(() => {
@@ -102,7 +102,7 @@ export default function HomePage() {
     const ensureLiveChat = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`, {
-          credentials: 'include'  // ← ADDED
+          credentials: 'include'
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -113,7 +113,7 @@ export default function HomePage() {
         } else {
           const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
             method: 'POST',
-            credentials: 'include',  // ← ADDED
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: "Live Nexus Chat" })
           });
@@ -136,7 +136,7 @@ export default function HomePage() {
     setConversation([]);
     try {
       const res = await fetch(`${API_BASE_URL}/api/conversations/${convId}`, {
-        credentials: 'include'  // ← ADDED
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
