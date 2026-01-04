@@ -5,7 +5,6 @@ export default function Footer() {
     {
       title: 'The Nexus',
       links: [
-        { label: 'Topic Archive', href: '/archive', desc: 'Historical Council debates' },
         { label: 'AI Ethics', href: '/legal/ai-ethics', desc: 'Our foundational framework' },
       ],
     },
