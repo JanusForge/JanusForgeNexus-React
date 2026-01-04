@@ -90,7 +90,9 @@ export default function HomePage() {
     if (!user || currentConversationId) return;
     const ensureLiveChat = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`);
+        const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`, {
+          credentials: 'include'  // ← ADDED
+        });
         if (!res.ok) return;
         const data = await res.json();
         const liveChat = data.find((c: any) => c.title === "Live Nexus Chat");
@@ -100,7 +102,7 @@ export default function HomePage() {
         } else {
           const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
             method: 'POST',
-            credentials: 'include',
+            credentials: 'include',  // ← ADDED
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title: "Live Nexus Chat" })
           });
@@ -122,7 +124,9 @@ export default function HomePage() {
     setCurrentConversationId(convId);
     setConversation([]);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/conversations/${convId}`);
+      const res = await fetch(`${API_BASE_URL}/api/conversations/${convId}`, {
+        credentials: 'include'  // ← ADDED
+      });
       if (res.ok) {
         const data = await res.json();
         const formattedPosts = data.conversation.posts.map((p: any) => ({
@@ -254,9 +258,9 @@ export default function HomePage() {
                   placeholder="Enter your query to challenge the Council..."
                   className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white min-h-[150px] outline-none focus:border-blue-500 transition-all resize-none font-medium placeholder:italic"
                 />
-                <button 
-                  onClick={handleSendMessage} 
-                  disabled={!userMessage.trim() || isSending} 
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!userMessage.trim() || isSending}
                   className="w-full py-4 bg-blue-600 rounded-xl font-black text-xs uppercase tracking-[0.2em] hover:bg-blue-500 transition-all shadow-lg active:scale-95 disabled:opacity-50"
                 >
                   {isSending ? <Loader2 className="animate-spin mx-auto" /> : 'Execute Synthesis'}
@@ -264,10 +268,10 @@ export default function HomePage() {
               </div>
               {isShareOpen && (
                 <div className="md:w-1/3 w-full p-4 border-l border-gray-800 bg-black/20">
-                  <ShareDropdown 
-                    conversationText={conversation.map(m => `[${m.name}]: ${m.content}`).join('\n\n')} 
-                    username={(user as any)?.username || 'User'} 
-                    setIsOpen={setIsShareOpen} 
+                  <ShareDropdown
+                    conversationText={conversation.map(m => `[${m.name}]: ${m.content}`).join('\n\n')}
+                    username={(user as any)?.username || 'User'}
+                    setIsOpen={setIsShareOpen}
                   />
                 </div>
               )}
