@@ -1,11 +1,10 @@
 'use client';
-
 import { useState, useEffect } from 'react';
-import { 
-  MessageSquare, 
-  Clock, 
-  ChevronLeft, 
-  ChevronRight, 
+import {
+  MessageSquare,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
   Search,
   MoreVertical,
   Edit3,
@@ -28,11 +27,11 @@ interface Conversation {
   note?: string;
 }
 
-export default function ConversationSidebar({ 
-  onSelectConversation, 
+export default function ConversationSidebar({
+  onSelectConversation,
   currentConversationId,
   isOpen,
-  onToggle 
+  onToggle
 }: {
   onSelectConversation: (id: string) => void;
   currentConversationId: string | null;
@@ -44,7 +43,6 @@ export default function ConversationSidebar({
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-
   // Menu & modal state
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,24 +54,22 @@ export default function ConversationSidebar({
 
   useEffect(() => {
     if (!user) return;
-
     const fetchConversations = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`);
-    if (res.ok) {
-      const data = await res.json();
-      setConversations(data);
-      setFilteredConversations(data);
-    } else {
-      console.error("Fetch failed:", res.status);
-    }
-  } catch (err) {
-    console.error("Failed to load conversations:", err);
-  } finally {
-    setLoading(false);
-  }
-};
-
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/conversations/user?userId=${user.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setConversations(data);
+          setFilteredConversations(data);
+        } else {
+          console.error("Fetch failed:", res.status);
+        }
+      } catch (err) {
+        console.error("Failed to load conversations:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchConversations();
   }, [user]);
 
@@ -83,9 +79,8 @@ export default function ConversationSidebar({
       setFilteredConversations(conversations);
       return;
     }
-
     const lowerQuery = searchQuery.toLowerCase();
-    const filtered = conversations.filter(conv => 
+    const filtered = conversations.filter(conv =>
       conv.title.toLowerCase().includes(lowerQuery) ||
       conv.preview.toLowerCase().includes(lowerQuery) ||
       (conv.note && conv.note.toLowerCase().includes(lowerQuery))
@@ -97,7 +92,6 @@ export default function ConversationSidebar({
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
     if (days === 0) return 'Today';
     if (days === 1) return 'Yesterday';
     if (days < 7) return `${days}d ago`;
@@ -108,17 +102,14 @@ export default function ConversationSidebar({
   const handleRename = async (id: string, newTitle: string) => {
     const original = conversations.find(c => c.id === id);
     if (!original) return;
-
     // Optimistic update
     setConversations(prev => prev.map(c => c.id === id ? {...c, title: newTitle} : c));
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newTitle })
       });
-
       if (!res.ok) throw new Error("Failed to save title");
     } catch (err) {
       console.error("Rename failed:", err);
@@ -126,24 +117,20 @@ export default function ConversationSidebar({
       setConversations(prev => prev.map(c => c.id === id ? original : c));
       alert("Failed to save title — reverted");
     }
-
     setEditingId(null);
   };
 
   const handleAddNote = async (id: string, note: string) => {
     const original = conversations.find(c => c.id === id);
     if (!original) return;
-
     // Optimistic update
     setConversations(prev => prev.map(c => c.id === id ? {...c, note} : c));
-
     try {
       const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ note })
       });
-
       if (!res.ok) throw new Error("Failed to save note");
     } catch (err) {
       console.error("Note save failed:", err);
@@ -151,7 +138,6 @@ export default function ConversationSidebar({
       setConversations(prev => prev.map(c => c.id === id ? original : c));
       alert("Failed to save note — reverted");
     }
-
     setNotingId(null);
   };
 
@@ -167,10 +153,8 @@ export default function ConversationSidebar({
     try {
       const res = await fetch(`${API_BASE_URL}/api/conversations/${conv.id}`);
       if (!res.ok) throw new Error("Failed to load thread");
-
       const data = await res.json();
       const posts = data.conversation.posts;
-
       const doc = new jsPDF();
       let y = 20;
       doc.setFontSize(20);
@@ -181,7 +165,6 @@ export default function ConversationSidebar({
       y += 10;
       doc.text("Janus Forge Nexus — Thesis. Antithesis. Humanity.", 20, y);
       y += 15;
-
       posts.forEach((p: any) => {
         const name = p.is_human ? 'Architect' : p.ai_model || 'Council';
         doc.setFontSize(14);
@@ -191,13 +174,11 @@ export default function ConversationSidebar({
         const lines = doc.splitTextToSize(p.content, 170);
         doc.text(lines, 25, y);
         y += lines.length * 7 + 10;
-
         if (y > 280) {
           doc.addPage();
           y = 20;
         }
       });
-
       doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
     } catch (err) {
       alert("Failed to generate full PDF — using preview");
@@ -214,21 +195,21 @@ export default function ConversationSidebar({
   };
 
   const handleCopyLink = (convId: string) => {
-    const publicLink = `${window.location.origin}/share/${convId}`;
+    const publicLink = `https://janusforge.ai/conversation/${convId}/public`;
     navigator.clipboard.writeText(publicLink);
     alert("Public link copied to clipboard!");
+    window.open(publicLink, '_blank'); // ← Opens in new tab
   };
 
   return (
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/70 z-40 lg:hidden"
           onClick={onToggle}
         />
       )}
-
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-gray-900/95 backdrop-blur-lg border-r border-gray-800 transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -247,7 +228,6 @@ export default function ConversationSidebar({
                 <ChevronLeft size={20} className="text-gray-400" />
               </button>
             </div>
-
             {/* Search */}
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -260,7 +240,6 @@ export default function ConversationSidebar({
               />
             </div>
           </div>
-
           {/* List */}
           <div className="flex-1 overflow-y-auto">
             {loading ? (
@@ -318,7 +297,6 @@ export default function ConversationSidebar({
                         </p>
                       )}
                     </button>
-
                     {/* Context Menu */}
                     <div className="absolute right-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
                       <button
@@ -330,7 +308,6 @@ export default function ConversationSidebar({
                       >
                         <MoreVertical size={16} className="text-gray-400" />
                       </button>
-
                       {menuOpenFor === conv.id && (
                         <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-10">
                           <button
@@ -382,7 +359,6 @@ export default function ConversationSidebar({
                         </div>
                       )}
                     </div>
-
                     {/* Share Modal */}
                     {sharingId === conv.id && (
                       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setSharingId(null)}>
@@ -413,7 +389,6 @@ export default function ConversationSidebar({
                         </div>
                       </div>
                     )}
-
                     {/* Note Modal */}
                     {notingId === conv.id && (
                       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setNotingId(null)}>
@@ -442,7 +417,6 @@ export default function ConversationSidebar({
                         </div>
                       </div>
                     )}
-
                     {/* Delete Confirmation */}
                     {deletingId === conv.id && (
                       <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setDeletingId(null)}>
