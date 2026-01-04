@@ -31,8 +31,6 @@ export default function TopicArchivePage() {
                 <ul className="space-y-2 text-gray-400">
                   <li>• Searchable debate transcripts</li>
                   <li>• Topic categorization and tagging</li>
-                  <li>• AI model performance analysis</li>
-                  <li>• Debate outcome summaries</li>
                   <li>• Downloadable resources</li>
                 </ul>
               </div>
