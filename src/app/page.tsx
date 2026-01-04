@@ -1,6 +1,7 @@
 "use client";
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Zap, Loader2, Globe, ShieldCheck, ChevronRight, Share2, Radio, Info, Coins, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
