@@ -25,18 +25,15 @@ export default function TopicArchivePage() {
             <div className="space-y-6">
               <div className="p-4 bg-gray-800/30 rounded-xl">
                 <h3 className="font-semibold text-purple-400 mb-2">Archive Features:</h3>
-                <ul className="space-y-2 text-gray-400">
+                <ul className="space-y-1 text-gray-400">
                   <li>• Searchable debate transcripts</li>
                   <li>• Topic categorization and tagging</li>
                   <li>• Downloadable resources</li>
                 </ul>
               </div>
-              <div className="p-4 bg-gray-800/30 rounded-xl">
-                <h3 className="font-semibold text-purple-400 mb-2">Archive in Development</h3>
-                <p className="text-gray-400">
-                  We're currently organizing and categorizing our debate archives. The full archive with search and filtering capabilities will be available soon.
-                </p>
-              </div>
+              
+// holding space
+
             </div>
           </div>
           <div className="text-center">
