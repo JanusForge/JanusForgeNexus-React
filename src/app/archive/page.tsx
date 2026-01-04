@@ -49,7 +49,6 @@ export default function TopicArchivePage() {
       )
     );
   }, [search, archives]);
-  
 
   const handleSavePDF = (entry: ArchiveEntry) => {
     const doc = new jsPDF();
@@ -94,7 +93,10 @@ export default function TopicArchivePage() {
   };
 
   const handleAdminUpload = async () => {
-    if (!newTopic.trim() || !newContent.trim()) return;
+    if (!newTopic.trim() || !newContent.trim()) {
+      alert("Please enter both topic and content");
+      return;
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/daily-forge/manual`, {
@@ -107,20 +109,24 @@ export default function TopicArchivePage() {
         })
       });
 
-    if (response.ok) {
-      alert("Archive entry added!");
-      setNewTopic("");
-      setNewContent("");
-      setShowUpload(false);
-      // Refresh list
-      fetch(`${API_BASE_URL}/api/daily-forge/history`)
-        .then(res => res.json())
-        .then(data => {
-          setArchives(data);
-          setFiltered(data);
-        });      
-
+      if (response.ok) {
+        alert("Archive entry added!");
+        setNewTopic("");
+        setNewContent("");
+        setShowUpload(false);
+        // Refresh archives
+        fetch(`${API_BASE_URL}/api/daily-forge/history`)
+          .then(res => res.json())
+          .then(data => {
+            setArchives(data);
+            setFiltered(data);
+          });
+      } else {
+        const error = await response.json();
+        alert("Failed: " + (error.error || "Unknown error"));
+      }
     } catch (err) {
+      console.error("Upload error:", err);
       alert("Failed to add archive entry");
     }
   };
@@ -152,39 +158,39 @@ export default function TopicArchivePage() {
 
         {/* Admin Upload (GodMode only) */}
         {isGodMode && (
-          <div className="mb-12 text-right">
+          <div className="mb-12 text-center">
             <button
               onClick={() => setShowUpload(!showUpload)}
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg flex items-center gap-2 mx-auto md:mx-0"
+              className="px-8 py-4 bg-purple-600 hover:bg-purple-500 rounded-xl flex items-center gap-3 mx-auto"
             >
-              <Upload size={18} />
+              <Upload size={20} />
               Add Manual Archive Entry
             </button>
 
             {showUpload && (
-              <div className="mt-6 bg-gray-900/80 border border-purple-500/50 rounded-2xl p-6 max-w-2xl mx-auto">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-purple-400">Manual Archive Entry</h3>
+              <div className="mt-8 bg-gray-900/80 border border-purple-500/50 rounded-2xl p-8 max-w-3xl mx-auto">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-purple-400">Manual Archive Entry</h3>
                   <button onClick={() => setShowUpload(false)} className="text-gray-500 hover:text-white">
-                    <X size={20} />
+                    <X size={24} />
                   </button>
                 </div>
                 <input
                   type="text"
                   value={newTopic}
                   onChange={(e) => setNewTopic(e.target.value)}
-                  placeholder="Topic Title"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 mb-4 text-white"
+                  placeholder="Topic Title (e.g., Golden Rule for AI to AI Conversations)"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-6 py-4 mb-6 text-white text-lg"
                 />
                 <textarea
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="Paste full conversation transcript (JSON array of {model, content} objects)"
-                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 h-64 text-white font-mono text-sm"
+                  placeholder="Paste full conversation transcript as JSON array: [{model: 'DEEPSEEK', content: '...'}, ...]"
+                  className="w-full bg-gray-800 border border-gray-700 rounded-lg px-6 py-4 h-96 text-white font-mono text-sm"
                 />
                 <button
                   onClick={handleAdminUpload}
-                  className="mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-lg"
+                  className="mt-6 px-8 py-4 bg-purple-600 hover:bg-purple-500 rounded-lg font-bold"
                 >
                   Save to Archive
                 </button>
@@ -213,7 +219,7 @@ export default function TopicArchivePage() {
             <p className="text-gray-500 text-lg">No archives match your search.</p>
           </div>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid gap-8">
             {filtered.map((entry) => (
               <div key={entry.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-8 hover:border-purple-500/50 transition-all group">
                 <div className="flex items-start justify-between mb-4">
@@ -238,7 +244,7 @@ export default function TopicArchivePage() {
                     {entry.winningTopic}
                   </h3>
                 </Link>
-                <p className="text-gray-400 mt-3 line-clamp-2">
+                <p className="text-gray-400 mt-3 line-clamp-3">
                   {(() => {
                     try {
                       const thoughts = JSON.parse(entry.openingThoughts);
