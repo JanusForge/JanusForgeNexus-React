@@ -44,10 +44,12 @@ export default function TopicArchivePage() {
     const lower = search.toLowerCase();
     setFiltered(
       archives.filter((a: ArchiveEntry) =>
-        a.winningTopic.toLowerCase().includes(lower)
+        a.winningTopic.toLowerCase().includes(lower) ||
+        (a.openingThoughts && a.openingThoughts.toLowerCase().includes(lower))
       )
     );
   }, [search, archives]);
+  
 
   const handleSavePDF = (entry: ArchiveEntry) => {
     const doc = new jsPDF();
@@ -105,16 +107,19 @@ export default function TopicArchivePage() {
         })
       });
 
-      if (response.ok) {
-        alert("Archive entry added!");
-        setNewTopic("");
-        setNewContent("");
-        setShowUpload(false);
-        // Refresh archives
-        fetch(`${API_BASE_URL}/api/daily-forge/history`)
-          .then(res => res.json())
-          .then(data => setArchives(data));
-      }
+    if (response.ok) {
+      alert("Archive entry added!");
+      setNewTopic("");
+      setNewContent("");
+      setShowUpload(false);
+      // Refresh list
+      fetch(`${API_BASE_URL}/api/daily-forge/history`)
+        .then(res => res.json())
+        .then(data => {
+          setArchives(data);
+          setFiltered(data);
+        });      
+
     } catch (err) {
       alert("Failed to add archive entry");
     }
