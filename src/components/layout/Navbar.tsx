@@ -28,9 +28,9 @@ export default function Navbar() {
             <Link href="/" className="text-gray-300 hover:text-white transition">
               Home
             </Link>
-            <Link href="/archive" className="text-gray-300 hover:text-white transition">
+           {/* <Link href="/archive" className="text-gray-300 hover:text-white transition">
               Archives
-            </Link>
+            </Link> */}
             <Link href="/pricing" className="text-gray-300 hover:text-white transition">
               Pricing
             </Link>
