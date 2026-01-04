@@ -102,19 +102,52 @@ export default function TopicArchivePage() {
   };
 
   const handleAdminUpload = async () => {
-    if (!newTopic.trim() || !newContent.trim()) {
-      alert("Please enter both topic and content");
+    if (!newTopic.trim()) {
+      alert("Please enter a topic title");
+      return;
+    }
+
+    if (!newContent.trim()) {
+      alert("Please paste conversation content");
       return;
     }
 
     try {
+      // Smart plain-text to JSON conversion
+      const lines = newContent.split('\n').filter(line => line.trim());
+      const thoughts = [];
+      let currentModel = "ARCHITECT";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        const modelMatch = trimmed.match(/^([A-Z_]+):\s*(.*)/i);
+        if (modelMatch) {
+          currentModel = modelMatch[1].toUpperCase();
+          thoughts.push({
+            model: currentModel,
+            content: modelMatch[2].trim() || "..."
+          });
+        } else {
+          thoughts.push({
+            model: currentModel,
+            content: trimmed
+          });
+        }
+      }
+
+      if (thoughts.length === 0) {
+        thoughts.push({ model: "ARCHITECT", content: newContent.trim() });
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/archives/manual`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user?.id,
           winningTopic: newTopic,
-          openingThoughts: newContent
+          openingThoughts: JSON.stringify(thoughts)
         })
       });
 
@@ -123,7 +156,7 @@ export default function TopicArchivePage() {
         setNewTopic("");
         setNewContent("");
         setShowUpload(false);
-        // Refresh archives
+        // Refresh
         fetch(`${API_BASE_URL}/api/archives/history`)
           .then(res => res.json())
           .then(data => {
@@ -165,7 +198,7 @@ export default function TopicArchivePage() {
           <p className="text-xl text-gray-300">Historical AI Council debates</p>
         </div>
 
-        {/* Admin Upload (GodMode only) */}
+        {/* Admin Upload */}
         {isGodMode && (
           <div className="mb-12 text-center">
             <button
@@ -194,7 +227,7 @@ export default function TopicArchivePage() {
                 <textarea
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="Paste conversation as JSON array: [{model: 'DEEPSEEK', content: '...'}, ...]"
+                  placeholder="Paste conversation (plain text). Lines starting with MODEL: will use that model. Others continue previous speaker."
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-6 py-4 h-96 text-white font-mono text-sm"
                 />
                 <button
