@@ -1,7 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
-// Use the public backend URL to bypass Vercel /api proxy
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 export interface User {
@@ -10,7 +9,7 @@ export interface User {
   name: string;
   username: string;
   tokens_remaining: number;
-  role?: string;
+  role?: string; // For GOD_MODE only
 }
 
 interface AuthContextType {
@@ -68,11 +67,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       const data = await response.json();
       const userData: User = {
-        id: data.id || `user-${Date.now()}`,
-        email: data.email || email,
-        name: data.name || data.username || email.split('@')[0] || 'User',
+        id: data.id,
+        email: data.email,
+        name: data.name || data.username || email.split('@')[0],
         username: data.username || email.split('@')[0],
-        tokens_remaining: data.tokens_remaining || 0
+        tokens_remaining: data.tokens_remaining || 0,
+        role: data.role
       };
       setUser(userData);
       localStorage.setItem('janus_user', JSON.stringify(userData));
@@ -105,9 +105,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const userData: User = {
         id: data.id,
         email: data.email,
-        name: data.name || name || 'User',
+        name: data.name || name,
         username: data.username || name,
-        tokens_remaining: data.tokens_remaining || 50
+        tokens_remaining: data.tokens_remaining || 50,
+        role: data.role
       };
       setUser(userData);
       localStorage.setItem('janus_user', JSON.stringify(userData));
@@ -121,8 +122,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshUser = async () => {
     if (!user) return;
-    // Optional: Add a /api/auth/me endpoint later for true refresh
-    // For now, rely on localStorage
+    // Optional future enhancement
   };
 
   const value = {
