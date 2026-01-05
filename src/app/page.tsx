@@ -2,7 +2,7 @@
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Zap, Loader2, Globe, ShieldCheck, ChevronRight, Share2, Radio, Info, Coins, Menu, Plus } from 'lucide-react';
+import { Zap, Loader2, Globe, ShieldCheck, ChevronRight, Share2, Radio, Info, Coins, Menu, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import ShareDropdown from '@/components/ShareDropdown';
@@ -20,7 +20,7 @@ interface ConversationMessage {
 }
 
 export default function HomePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } from useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -93,6 +93,29 @@ export default function HomePage() {
       isLiveChat: true
     });
     setUserMessage('');
+  };
+
+  // === START NEW CONVERSATION ===
+  const handleNewConversation = async () => {
+    if (!user) return;
+
+    try {
+      const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: "New Live Conversation" })
+      });
+      if (createRes.ok) {
+        const newConv = await createRes.json();
+        setCurrentConversationId(newConv.conversation.id);
+        setConversation([]);
+        // Optional: refresh sidebar
+      }
+    } catch (err) {
+      console.error("Failed to create new conversation:", err);
+      alert("Could not start new conversation. Try again.");
+    }
   };
 
   // === AUTO-LOAD / CREATE LIVE NEXUS CHAT ON LOGIN ===
@@ -192,7 +215,7 @@ export default function HomePage() {
                     <span className="font-black uppercase text-xs tracking-widest">Initial Fuel</span>
                   </div>
                   <p className="text-gray-400 text-[11px] leading-relaxed">
-                    Your account is pre-loaded with <span className="text-white font-bold">50 Neural Tokens</span>. Every query consumes 1 token.
+                    Your account is pre-loaded with <span className="text-white font-bold">50 Neural Tokens</span>. Each query consumes 1 token.
                   </p>
                 </div>
                 <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
@@ -241,8 +264,18 @@ export default function HomePage() {
                 <span className="text-sm md:text-base text-gray-400 font-bold uppercase ml-8 tracking-widest mt-1">Real-time Multiversal Debate</span>
               </div>
               <div className="flex items-center gap-3">
-                <button onClick={() => setIsShareOpen(!isShareOpen)} className={`btn btn-ghost btn-circle border border-blue-500/20 ${isShareOpen ? 'text-blue-400' : 'text-gray-400'}`}>
-                  <Share2 className="w-5 h-5" />
+                {/* New Conversation Button */}
+                {isAuthenticated && (
+                  <button
+                    onClick={handleNewConversation}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg flex items-center gap-2 font-bold text-sm"
+                  >
+                    <PlusCircle size={18} />
+                    New Conversation
+                  </button>
+                )}
+                <button onClick={() => setIsShareOpen(!isShareOpen)} className={`p-2 rounded-lg hover:bg-gray-800 ${isShareOpen ? 'bg-gray-800' : ''}`}>
+                  <Share2 size={20} className="text-gray-400" />
                 </button>
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
                   <Zap size={14} className="text-purple-400 fill-purple-400" />
@@ -253,6 +286,7 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* Rest of the panel (input, messages) remains unchanged */}
             <div className="flex flex-col md:flex-row border-b border-gray-800">
               <div className={`p-6 space-y-4 ${isShareOpen ? 'md:w-2/3 w-full' : 'w-full'}`}>
                 <textarea
