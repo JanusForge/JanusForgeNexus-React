@@ -90,9 +90,10 @@ export default function HomePage() {
     setIsSending(true);
     socketRef.current?.emit('post:new', {
       content: userMessage,
-      userId: user?.id,
-      name: (user as any)?.username || 'User',
-      isLiveChat: true
+      userId: user.id,
+      name: user.username || 'User',
+      isLiveChat: false,
+      conversationId: currentConversationId
     });
     setUserMessage('');
   };
@@ -111,10 +112,7 @@ export default function HomePage() {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        title: "New Live Conversation",
-        userId: user.id  // ← THIS IS THE KEY FIX
-      })
+      body: JSON.stringify({ title: "New Live Conversation", userId: user.id })
     });
 
     if (createRes.ok) {
@@ -159,7 +157,7 @@ export default function HomePage() {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: "Live Nexus Chat" })
+            body: JSON.stringify({ title: "Live Nexus Chat", userId: user.id })
           });
           if (createRes.ok) {
             const newConv = await createRes.json();
