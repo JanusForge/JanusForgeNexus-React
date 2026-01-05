@@ -37,6 +37,9 @@ export default function HomePage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
+  // New Conversation loading state
+  const [creatingNew, setCreatingNew] = useState(false);
+
   // BETA Architect redirect
   useEffect(() => {
     const ref = searchParams.get('ref');
@@ -97,7 +100,12 @@ export default function HomePage() {
 
   // === START NEW CONVERSATION ===
   const handleNewConversation = async () => {
-    if (!user) return;
+    if (!user) {
+      alert("Please log in to start a conversation");
+      return;
+    }
+
+    setCreatingNew(true);
 
     try {
       const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
@@ -106,15 +114,25 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: "New Live Conversation" })
       });
+
       if (createRes.ok) {
         const newConv = await createRes.json();
-        setCurrentConversationId(newConv.conversation.id);
+        const newId = newConv.conversation.id;
+
+        // Instant clean slate
+        setCurrentConversationId(newId);
         setConversation([]);
-        // Optional: refresh sidebar
+        setUserMessage('');
+
+        alert("New conversation started! The council awaits your first move.");
+      } else {
+        alert("Failed to start new conversation — try again");
       }
     } catch (err) {
-      console.error("Failed to create new conversation:", err);
-      alert("Could not start new conversation. Try again.");
+      console.error("New conversation error:", err);
+      alert("Connection issue — please refresh and try again");
+    } finally {
+      setCreatingNew(false);
     }
   };
 
@@ -264,14 +282,24 @@ export default function HomePage() {
                 <span className="text-sm md:text-base text-gray-400 font-bold uppercase ml-8 tracking-widest mt-1">Real-time Multiversal Debate</span>
               </div>
               <div className="flex items-center gap-3">
-                {/* New Conversation Button */}
+                {/* New Conversation Button with Visual Feedback */}
                 {isAuthenticated && (
                   <button
                     onClick={handleNewConversation}
-                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg flex items-center gap-2 font-bold text-sm"
+                    disabled={creatingNew}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-70 rounded-lg flex items-center gap-2 font-bold text-sm"
                   >
-                    <PlusCircle size={18} />
-                    New Conversation
+                    {creatingNew ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Starting...
+                      </>
+                    ) : (
+                      <>
+                        <PlusCircle size={18} />
+                        New Conversation
+                      </>
+                    )}
                   </button>
                 )}
                 <button onClick={() => setIsShareOpen(!isShareOpen)} className={`p-2 rounded-lg hover:bg-gray-800 ${isShareOpen ? 'bg-gray-800' : ''}`}>
@@ -286,7 +314,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Rest of the panel (input, messages) remains unchanged */}
             <div className="flex flex-col md:flex-row border-b border-gray-800">
               <div className={`p-6 space-y-4 ${isShareOpen ? 'md:w-2/3 w-full' : 'w-full'}`}>
                 <textarea
