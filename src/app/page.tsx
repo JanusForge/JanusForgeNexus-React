@@ -1,9 +1,8 @@
 "use client";
-
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Zap, Loader2, Globe, ShieldCheck, ChevronRight, Share2, Radio, Info, Coins, Menu } from 'lucide-react';
+import { Zap, Loader2, Globe, ShieldCheck, ChevronRight, Share2, Radio, Info, Coins, Menu, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import ShareDropdown from '@/components/ShareDropdown';
@@ -193,7 +192,7 @@ export default function HomePage() {
                     <span className="font-black uppercase text-xs tracking-widest">Initial Fuel</span>
                   </div>
                   <p className="text-gray-400 text-[11px] leading-relaxed">
-                    Your account is pre-loaded with <span className="text-white font-bold">50 Neural Tokens</span>. Each query consumes 1 token.
+                    Your account is pre-loaded with <span className="text-white font-bold">50 Neural Tokens</span>. Every query consumes 1 token.
                   </p>
                 </div>
                 <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
