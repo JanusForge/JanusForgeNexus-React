@@ -1,6 +1,7 @@
 "use client";
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useState } from 'react';
+import Link from 'next/link'; // ← ADDED THIS
 import { Zap, User, Mail, Shield, Coins } from 'lucide-react';
 
 export default function ProfilePage() {
