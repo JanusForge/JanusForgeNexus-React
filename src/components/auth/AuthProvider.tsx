@@ -10,6 +10,7 @@ export interface User {
   name: string;
   username: string;
   tokens_remaining: number;
+  role?: string;
 }
 
 interface AuthContextType {
