@@ -9,13 +9,7 @@ export interface User {
   email: string;
   name: string;
   username: string;
-  tier: string;
-  token_balance: number;
-  tokens_used: number;
   tokens_remaining: number;
-  purchased_tokens?: number;
-  isAdmin?: boolean;
-  role?: string; // Added for GOD_MODE / ENTERPRISE support
 }
 
 interface AuthContextType {
@@ -47,14 +41,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
     const savedUser = localStorage.getItem('janus_user');
-    if (token && savedUser) {
+    if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));
       } catch (error) {
         console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('auth_token');
         localStorage.removeItem('janus_user');
       }
     }
@@ -69,34 +61,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
       });
-
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || 'Login failed');
       }
-
       const data = await response.json();
-
-      const balance = data.token_balance ?? data.tokens_remaining ?? 0;
-      const used = data.tokens_used ?? 0;
-
       const userData: User = {
         id: data.id || `user-${Date.now()}`,
         email: data.email || email,
         name: data.name || data.username || email.split('@')[0] || 'User',
         username: data.username || email.split('@')[0],
-        tier: data.tier || 'free',
-        token_balance: balance,
-        tokens_used: used,
-        tokens_remaining: balance - used,
-        purchased_tokens: data.purchased_tokens || 0,
-        isAdmin: data.isAdmin || data.username === 'admin-access',
-        role: data.role || 'USER'
+        tokens_remaining: data.tokens_remaining || 0
       };
-
       setUser(userData);
       localStorage.setItem('janus_user', JSON.stringify(userData));
-      // Note: Your backend currently doesn't return a JWT — remove token storage if not used
     } catch (error: any) {
       console.error('Login error:', error);
       throw error;
@@ -107,7 +85,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('auth_token');
     localStorage.removeItem('janus_user');
   };
 
@@ -119,28 +96,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.toLowerCase().trim(), username: name, password }),
       });
-
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || 'Registration failed');
       }
-
       const data = await response.json();
-
       const userData: User = {
         id: data.id,
         email: data.email,
         name: data.name || name || 'User',
         username: data.username || name,
-        tier: data.tier || 'free',
-        token_balance: data.token_balance ?? data.tokens_remaining ?? 50,
-        tokens_used: data.tokens_used ?? 0,
-        tokens_remaining: data.tokens_remaining ?? 50,
-        purchased_tokens: 0,
-        isAdmin: false,
-        role: data.role || 'USER'
+        tokens_remaining: data.tokens_remaining || 50
       };
-
       setUser(userData);
       localStorage.setItem('janus_user', JSON.stringify(userData));
     } catch (error) {
