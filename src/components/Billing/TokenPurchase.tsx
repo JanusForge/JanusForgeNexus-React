@@ -1,4 +1,5 @@
 "use client";
+import { useState } from 'react'; // ← ADDED THIS
 import { useAuth } from '@/components/auth/AuthProvider';
 import { TOKEN_PACKAGES } from '@/config/tiers';
 import { Loader2 } from 'lucide-react';
