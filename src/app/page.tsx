@@ -82,11 +82,11 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (user) setTokensRemaining((user as any).tokens_remaining || 0);
+    if (user) setTokensRemaining(user.tokens_remaining || 0);
   }, [user]);
 
   const handleSendMessage = () => {
-    if (!userMessage.trim() || isSending) return;
+    if (!userMessage.trim() || isSending || !user) return;
     setIsSending(true);
     socketRef.current?.emit('post:new', {
       content: userMessage,
@@ -100,43 +100,41 @@ export default function HomePage() {
 
   // === START NEW CONVERSATION ===
   const handleNewConversation = async () => {
-  if (!user) {
-    alert("Please log in to start a conversation");
-    return;
-  }
-
-  setCreatingNew(true);
-
-  try {
-    const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: "New Live Conversation", userId: user.id })
-    });
-
-    if (createRes.ok) {
-      const newConv = await createRes.json();
-      const newId = newConv.conversation.id;
-
-      setCurrentConversationId(newId);
-      setConversation([]);
-      setUserMessage('');
-
-      alert("New conversation started! The council awaits your first move.");
-    } else {
-      const errorData = await createRes.json().catch(() => ({}));
-      alert("Failed: " + (errorData.message || "Try again"));
+    if (!user) {
+      alert("Please log in to start a conversation");
+      return;
     }
-  } catch (err) {
-    console.error("New conversation error:", err);
-    alert("Connection issue — please refresh and try again");
-  } finally {
-    setCreatingNew(false);
-  }
-};  
 
+    setCreatingNew(true);
 
+    try {
+      const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: "New Live Conversation", userId: user.id })
+      });
+
+      if (createRes.ok) {
+        const newConv = await createRes.json();
+        const newId = newConv.conversation.id;
+
+        setCurrentConversationId(newId);
+        setConversation([]);
+        setUserMessage('');
+
+        alert("New conversation started! The council awaits your first move.");
+      } else {
+        const errorData = await createRes.json().catch(() => ({}));
+        alert("Failed: " + (errorData.message || "Try again"));
+      }
+    } catch (err) {
+      console.error("New conversation error:", err);
+      alert("Connection issue — please refresh and try again");
+    } finally {
+      setCreatingNew(false);
+    }
+  };
 
   // === AUTO-LOAD / CREATE LIVE NEXUS CHAT ON LOGIN ===
   useEffect(() => {
@@ -343,7 +341,7 @@ export default function HomePage() {
                 <div className="md:w-1/3 w-full p-4 border-l border-gray-800 bg-black/20">
                   <ShareDropdown
                     conversationText={conversation.map(m => `[${m.name}]: ${m.content}`).join('\n\n')}
-                    username={(user as any)?.username || 'User'}
+                    username={user?.username || 'User'}
                     setIsOpen={setIsShareOpen}
                   />
                 </div>
