@@ -25,7 +25,6 @@ export default function HomePage() {
   const searchParams = useSearchParams();
 
   const socketRef = useRef<Socket | null>(null);
-  const isAdmin = (user as any)?.role === 'GOD_MODE' || (user as any)?.role === 'ENTERPRISE';
   const [tokensRemaining, setTokensRemaining] = useState<number>(0);
   const [userMessage, setUserMessage] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -83,16 +82,16 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (user) setTokensRemaining(isAdmin ? 999999 : (user as any).tokens_remaining || 0);
-  }, [user, isAdmin]);
+    if (user) setTokensRemaining((user as any).tokens_remaining || 0);
+  }, [user]);
 
   const handleSendMessage = () => {
-    if (!userMessage.trim() || (isSending && !isAdmin)) return;
+    if (!userMessage.trim() || isSending) return;
     setIsSending(true);
     socketRef.current?.emit('post:new', {
       content: userMessage,
       userId: user?.id,
-      name: isAdmin ? 'Architect' : ((user as any)?.username || 'User'),
+      name: (user as any)?.username || 'User',
       isLiveChat: true
     });
     setUserMessage('');
@@ -100,41 +99,46 @@ export default function HomePage() {
 
   // === START NEW CONVERSATION ===
   const handleNewConversation = async () => {
-    if (!user) {
-      alert("Please log in to start a conversation");
-      return;
+  if (!user) {
+    alert("Please log in to start a conversation");
+    return;
+  }
+
+  setCreatingNew(true);
+
+  try {
+    const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        title: "New Live Conversation",
+        userId: user.id  // ← THIS IS THE KEY FIX
+      })
+    });
+
+    if (createRes.ok) {
+      const newConv = await createRes.json();
+      const newId = newConv.conversation.id;
+
+      setCurrentConversationId(newId);
+      setConversation([]);
+      setUserMessage('');
+
+      alert("New conversation started! The council awaits your first move.");
+    } else {
+      const errorData = await createRes.json().catch(() => ({}));
+      alert("Failed: " + (errorData.message || "Try again"));
     }
+  } catch (err) {
+    console.error("New conversation error:", err);
+    alert("Connection issue — please refresh and try again");
+  } finally {
+    setCreatingNew(false);
+  }
+};  
 
-    setCreatingNew(true);
 
-    try {
-      const createRes = await fetch(`${API_BASE_URL}/api/conversations`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: "New Live Conversation" })
-      });
-
-      if (createRes.ok) {
-        const newConv = await createRes.json();
-        const newId = newConv.conversation.id;
-
-        // Instant clean slate
-        setCurrentConversationId(newId);
-        setConversation([]);
-        setUserMessage('');
-
-        alert("New conversation started! The council awaits your first move.");
-      } else {
-        alert("Failed to start new conversation — try again");
-      }
-    } catch (err) {
-      console.error("New conversation error:", err);
-      alert("Connection issue — please refresh and try again");
-    } finally {
-      setCreatingNew(false);
-    }
-  };
 
   // === AUTO-LOAD / CREATE LIVE NEXUS CHAT ON LOGIN ===
   useEffect(() => {
@@ -308,7 +312,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
                   <Zap size={14} className="text-purple-400 fill-purple-400" />
                   <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
-                    {isAdmin ? 'GOD MODE' : `${tokensRemaining} TOKENS`}
+                    {tokensRemaining} TOKENS
                   </span>
                 </div>
               </div>
@@ -325,7 +329,7 @@ export default function HomePage() {
                       handleSendMessage();
                     }
                   }}
-                  disabled={!isAuthenticated || (!isAdmin && tokensRemaining <= 0)}
+                  disabled={!isAuthenticated || tokensRemaining <= 0}
                   placeholder="Welcome! Please log in or sign up to share your question with the Council."
                   className="w-full bg-gray-900/50 border border-gray-700 rounded-xl p-4 text-white min-h-[150px] outline-none focus:border-blue-500 transition-all resize-none font-medium placeholder:italic"
                 />
