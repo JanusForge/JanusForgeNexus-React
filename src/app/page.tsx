@@ -20,7 +20,7 @@ interface ConversationMessage {
 }
 
 export default function HomePage() {
-  const { user, isAuthenticated } from useAuth();
+  const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
