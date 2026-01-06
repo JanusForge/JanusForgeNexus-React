@@ -68,7 +68,7 @@ useEffect(() => {
 
   fetchData();
 
-  // Cleanup timer when component unmounts
+  // Cleanup at useEffect level
   return () => {
     if (timer) clearInterval(timer);
   };
