@@ -98,39 +98,42 @@ export default function DailyForgePage() {
           Daily Forge
         </h1>
 
-        {/* Current Debate */}
-        {current && (
-          <div className="mb-32">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
-                {current.winningTopic}
-              </h2>
-              <div className="flex items-center justify-center gap-6 text-gray-400">
-                <div className="flex items-center gap-2">
-                  <Calendar size={20} />
-                  {new Date(current.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={20} />
-                  <span className="text-purple-400 font-bold text-xl">{timeLeft}</span>
-                </div>
-              </div>
-            </div>
+            {/* Current Debate */}
+{current && (
+  <div className="mb-32">
+    <div className="text-center mb-12">
+      <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
+        {current.winningTopic}
+      </h2>
+      <div className="flex items-center justify-center gap-6 text-gray-400">
+        <div className="flex items-center gap-2">
+          <Calendar size={20} />
+          {new Date(current.date).toLocaleDateString()}
+        </div>
+        <div className="flex items-center gap-2">
+          <Clock size={20} />
+          <span className="text-purple-400 font-bold text-xl">{timeLeft}</span>
+        </div>
+      </div>
+    </div>
 
-            <div className="space-y-12 mb-16">
-              <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
-              {JSON.parse(current.openingThoughts).map((resp: { model: string; content: string }, i: number) => (
-                <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8 hover:border-purple-500/30 transition-all">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-lg">
-                      {resp.model[0]}
-                    </div>
-                    <h4 className="text-2xl font-black text-purple-400">{resp.model}</h4>
-                  </div>
-                  <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">{resp.content}</p>
-                </div>
-              ))}
+    <div className="space-y-12">
+      <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
+      {JSON.parse(current.openingThoughts).map((resp: any, i: number) => (
+        <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-lg">
+              {resp.model[0]}
             </div>
+            <h4 className="text-2xl font-black text-purple-400">{resp.model}</h4>
+          </div>
+          <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">{resp.content}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+)}        
+
 
             {/* Interjection */}
             {timeLeft !== "Debate Closed" && isAuthenticated && (
