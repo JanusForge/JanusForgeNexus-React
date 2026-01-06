@@ -10,7 +10,7 @@ interface DailyForge {
   id: string;
   date: string;
   winningTopic: string;
-  openingThoughts: string; // JSON string of [{model, content}]
+  openingThoughts: string;
   created_at: string;
 }
 
@@ -23,56 +23,55 @@ export default function DailyForgePage() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
 
-useEffect(() => {
-  let timer: NodeJS.Timeout | null = null;
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
 
-  const fetchData = async () => {
-    try {
-      const [currentRes, historyRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/daily-forge/current`),
-        fetch(`${API_BASE_URL}/api/daily-forge/history`)
-      ]);
+    const fetchData = async () => {
+      try {
+        const [currentRes, historyRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/daily-forge/current`),
+          fetch(`${API_BASE_URL}/api/daily-forge/history`)
+        ]);
 
-      if (currentRes.ok) {
-        const data = await currentRes.json();
-        setCurrent(data);
+        if (currentRes.ok) {
+          const data = await currentRes.json();
+          setCurrent(data);
 
-        const endTime = new Date(data.date).getTime() + 24 * 60 * 60 * 1000;
+          const endTime = new Date(data.date).getTime() + 24 * 60 * 60 * 1000;
 
-        const updateTimer = () => {
-          const now = Date.now();
-          const diff = endTime - now;
-          if (diff <= 0) {
-            setTimeLeft("Debate Closed");
-          } else {
-            const h = Math.floor(diff / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            setTimeLeft(`${h}h ${m}m ${s}s remaining`);
-          }
-        };
+          const updateTimer = () => {
+            const now = Date.now();
+            const diff = endTime - now;
+            if (diff <= 0) {
+              setTimeLeft("Debate Closed");
+            } else {
+              const h = Math.floor(diff / 3600000);
+              const m = Math.floor((diff % 3600000) / 60000);
+              const s = Math.floor((diff % 60000) / 1000);
+              setTimeLeft(`${h}h ${m}m ${s}s remaining`);
+            }
+          };
 
-        updateTimer();
-        timer = setInterval(updateTimer, 1000);
+          updateTimer();
+          timer = setInterval(updateTimer, 1000);
+        }
+
+        if (historyRes.ok) {
+          setHistory(await historyRes.json());
+        }
+      } catch (err) {
+        console.error("Daily Forge load error:", err);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      if (historyRes.ok) {
-        setHistory(await historyRes.json());
-      }
-    } catch (err) {
-      console.error("Daily Forge load error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchData();
 
-  fetchData();
-
-  // Cleanup at useEffect level
-  return () => {
-    if (timer) clearInterval(timer);
-  };
-}, []);
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, []);
 
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +79,6 @@ useEffect(() => {
 
     setSending(true);
     try {
-      // Placeholder — replace with actual socket emit when ready
       alert("Interjection sent! The council is preparing a response...");
       setMessage('');
     } catch (err) {
@@ -104,78 +102,74 @@ useEffect(() => {
         <h1 className="text-6xl md:text-8xl font-black text-center mb-16 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
           Daily Forge
         </h1>
-  )
-            {/* Current Debate */}
-{current && (
-  <div className="mb-32">
-    <div className="text-center mb-12">
-      <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
-        {current.winningTopic}
-      </h2>
-      <div className="flex items-center justify-center gap-6 text-gray-400">
-        <div className="flex items-center gap-2">
-          <Calendar size={20} />
-          {new Date(current.date).toLocaleDateString()}
-        </div>
-        <div className="flex items-center gap-2">
-          <Clock size={20} />
-          <span className="text-purple-400 font-bold text-xl">{timeLeft}</span>
-        </div>
-      </div>
-    </div>
 
-    <div className="space-y-12">
-      <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
-      {JSON.parse(current.openingThoughts).map((resp: any, i: number) => (
-        <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-lg">
-              {resp.model[0]}
-            </div>
-            <h4 className="text-2xl font-black text-purple-400">{resp.model}</h4>
-          </div>
-          <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">{resp.content}</p>
-        </div>
-      ))}
-    </div>
-  </div>
-)}        
-
-
-            {/* Interjection */}
-            {timeLeft !== "Debate Closed" && isAuthenticated && (
-              <div className="max-w-4xl mx-auto">
-                <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
-                  <h3 className="text-3xl font-black text-center mb-8">Interject into the Debate</h3>
-                  <form onSubmit={handleInterject} className="space-y-6">
-                    <textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Challenge the council. Add your insight. Shape the synthesis... (costs 1 token)"
-                      className="w-full bg-black/50 border border-gray-700 rounded-2xl p-6 text-white min-h-[200px] outline-none focus:border-purple-500 resize-none text-lg"
-                      required
-                    />
-                    <div className="text-center">
-                      <button
-                        type="submit"
-                        disabled={sending || !message.trim()}
-                        className="inline-flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-2xl shadow-purple-900/50"
-                      >
-                        <Zap size={24} />
-                        {sending ? "Sending..." : "Interject (1 Token)"}
-                      </button>
-                    </div>
-                  </form>
+        {current && (
+          <div className="mb-32">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
+                {current.winningTopic}
+              </h2>
+              <div className="flex items-center justify-center gap-6 text-gray-400">
+                <div className="flex items-center gap-2">
+                  <Calendar size={20} />
+                  {new Date(current.date).toLocaleDateString()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock size={20} />
+                  <span className="text-purple-400 font-bold text-xl">{timeLeft}</span>
                 </div>
               </div>
-            )}
+            </div>
 
-            {timeLeft === "Debate Closed" && (
-              <div className="text-center py-16">
-                <p className="text-3xl text-gray-500">This Daily Forge is now closed.</p>
-                <p className="text-xl text-gray-400 mt-4">A new debate begins tomorrow at midnight.</p>
-              </div>
-            )}
+            <div className="space-y-12">
+              <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
+              {JSON.parse(current.openingThoughts).map((resp: any, i: number) => (
+                <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-lg">
+                      {resp.model[0]}
+                    </div>
+                    <h4 className="text-2xl font-black text-purple-400">{resp.model}</h4>
+                  </div>
+                  <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">{resp.content}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Interjection */}
+        {timeLeft !== "Debate Closed" && isAuthenticated && (
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
+              <h3 className="text-3xl font-black text-center mb-8">Interject into the Debate</h3>
+              <form onSubmit={handleInterject} className="space-y-6">
+                <textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Challenge the council. Add your insight. Shape the synthesis... (costs 1 token)"
+                  className="w-full bg-black/50 border border-gray-700 rounded-2xl p-6 text-white min-h-[200px] outline-none focus:border-purple-500 resize-none text-lg"
+                  required
+                />
+                <div className="text-center">
+                  <button
+                    type="submit"
+                    disabled={sending || !message.trim()}
+                    className="inline-flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-2xl shadow-purple-900/50"
+                  >
+                    <Zap size={24} />
+                    {sending ? "Sending..." : "Interject (1 Token)"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {timeLeft === "Debate Closed" && (
+          <div className="text-center py-16">
+            <p className="text-3xl text-gray-500">This Daily Forge is now closed.</p>
+            <p className="text-xl text-gray-400 mt-4">A new debate begins tomorrow at midnight.</p>
           </div>
         )}
 
