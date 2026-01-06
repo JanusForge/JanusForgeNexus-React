@@ -1,6 +1,6 @@
 "use client";
-
 export const dynamic = 'force-dynamic';
+
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
@@ -8,7 +8,6 @@ import { Calendar, Clock, Zap } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
-const [allPosts, setAllPosts] = useState<Message[]>([]);
 
 interface DailyForge {
   id: string;
@@ -36,8 +35,10 @@ export default function DailyForgePage() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [interjections, setInterjections] = useState<Message[]>([]);
+  const [allPosts, setAllPosts] = useState<Message[]>([]);  // ← MOVED HERE
 
   const socketRef = useRef<Socket | null>(null);
+}
 
   // Socket setup
   useEffect(() => {
