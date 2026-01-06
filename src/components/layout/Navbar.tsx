@@ -28,6 +28,9 @@ export default function Navbar() {
             <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors font-medium">
               Pricing
             </Link>
+            <Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors font-medium">
+              Daily Forge
+            </Link>
             {isAuthenticated && user?.role === 'GOD_MODE' && (
               <Link href="/admin" className="text-gray-300 hover:text-white transition-colors font-medium">
                 Admin
@@ -96,6 +99,9 @@ export default function Navbar() {
               </Link>
               <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors font-medium px-4">
                 Pricing
+              </Link>
+              <Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors font-medium px-4">
+                Daily Forge
               </Link>
               {isAuthenticated && user?.role === 'GOD_MODE' && (
                 <Link href="/admin" className="text-gray-300 hover:text-white transition-colors font-medium px-4">
