@@ -6,6 +6,7 @@ import { Calendar, Clock, Zap } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
+const [allPosts, setAllPosts] = useState<Message[]>([]);
 
 interface DailyForge {
   id: string;
@@ -73,8 +74,23 @@ export default function DailyForgePage() {
         if (currentRes.ok) {
           const data = await currentRes.json();
           setCurrent(data);
-
-          if (data.conversationId && socketRef.current) {
+          
+        // In fetchData, after setCurrent(data)
+if (data.conversationId) {
+  const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${data.conversationId}`);
+  if (postsRes.ok) {
+    const conv = await postsRes.json();
+    const formatted = conv.conversation.posts.map((p: any) => ({
+      id: p.id,
+      name: p.is_human ? p.user?.username || 'User' : p.ai_model,
+      content: p.content,
+      sender: p.is_human ? 'user' : 'ai'
+    })).reverse();
+    setAllPosts(formatted);
+  }
+}
+          
+        if (data.conversationId && socketRef.current) {
             socketRef.current.emit('join', data.conversationId);
           }
 
@@ -182,26 +198,26 @@ export default function DailyForgePage() {
               ))}
             </div>
 
-            {/* Community Interjections */}
-            <div className="space-y-8 mb-16">
-              <h3 className="text-2xl font-black text-center mb-8">Community Interjections</h3>
-              {interjections.length === 0 ? (
-                <p className="text-center text-gray-500 text-lg">No interjections yet. Be the first to challenge the council!</p>
-              ) : (
-                interjections.map((msg) => (
-                  <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
-                        {msg.name[0]}
-                      </div>
-                      <h4 className="font-black text-purple-400">{msg.name}</h4>
-                      {msg.sender === 'ai' && <span className="text-xs bg-red-500/50 px-3 py-1 rounded">Council Response</span>}
-                    </div>
-                    <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
-                  </div>
-                ))
-              )}
-            </div>
+            {/* Full Public Debate Thread */}
+<div className="space-y-12 mb-16">
+  <h3 className="text-2xl font-black text-center mb-8">Full Debate Thread</h3>
+  {allPosts.length === 0 ? (
+    <p className="text-center text-gray-500 text-lg">No interjections yet — be the first!</p>
+  ) : (
+    allPosts.map((msg) => (
+      <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
+            {msg.name[0]}
+          </div>
+          <h4 className="font-black text-purple-400">{msg.name}</h4>
+          {msg.sender === 'ai' && <span className="text-xs bg-red-500/50 px-3 py-1 rounded">Council Response</span>}
+        </div>
+        <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
+      </div>
+    ))
+  )}
+</div>
 
             {/* Token Notice & Interjection Form */}
             {timeLeft !== "Debate Closed" && (
