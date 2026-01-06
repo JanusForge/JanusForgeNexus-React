@@ -206,25 +206,26 @@ export default function DailyForgePage() {
             </div>
 
             {/* Full Public Debate Thread */}
-            <div className="space-y-12 mb-16">
-              <h3 className="text-2xl font-black text-center mb-8">Full Debate Thread</h3>
-              {allPosts.length === 0 ? (
-                <p className="text-center text-gray-500 text-lg">No interjections yet — be the first!</p>
-              ) : (
-                allPosts.map((msg) => (
-                  <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
-                        {msg.name[0]}
-                      </div>
-                      <h4 className="font-black text-purple-400">{msg.name}</h4>
-                      {msg.sender === 'ai' && <span className="text-xs bg-red-500/50 px-3 py-1 rounded">Council Response</span>}
-                    </div>
-                    <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
-                  </div>
-                ))
-              )}
-            </div>
+<div className="space-y-12 mb-16">
+  <h3 className="text-2xl font-black text-center mb-8">Full Debate Thread</h3>
+  {allPosts.length === 0 ? (
+    <p className="text-center text-gray-500 text-lg">No interjections yet — be the first!</p>
+  ) : (
+    allPosts.map((msg) => (
+      <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
+            {msg.name[0]}
+          </div>
+          <h4 className="font-black text-purple-400">{msg.name}</h4>
+          {msg.sender === 'ai' && <span className="text-xs bg-red-500/50 px-3 py-1 rounded">Council Response</span>}
+        </div>
+        <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
+      </div>
+    ))
+  )}
+</div>            
+
 
             {/* Token Notice & Interjection Form */}
             {timeLeft !== "Debate Closed" && (
