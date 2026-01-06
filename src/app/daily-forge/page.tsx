@@ -35,10 +35,11 @@ export default function DailyForgePage() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [interjections, setInterjections] = useState<Message[]>([]);
+  const [allPosts, setAllPosts] = useState<Message[]>([]);
 
   const socketRef = useRef<Socket | null>(null);
 
-  // Socket setup
+  // Socket setup (live updates for logged-in users)
   useEffect(() => {
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
@@ -54,6 +55,7 @@ export default function DailyForgePage() {
 
     socketRef.current.on('post:incoming', (msg: Message) => {
       setInterjections(prev => [msg, ...prev]);
+      setAllPosts(prev => [msg, ...prev]);
     });
 
     return () => {
@@ -78,6 +80,25 @@ export default function DailyForgePage() {
 
           if (data.conversationId && socketRef.current) {
             socketRef.current.emit('join', data.conversationId);
+          }
+
+          // Fetch full public conversation posts
+          if (data.conversationId) {
+            try {
+              const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${data.conversationId}`);
+              if (postsRes.ok) {
+                const conv = await postsRes.json();
+                const formatted = conv.conversation.posts.map((p: any) => ({
+                  id: p.id,
+                  name: p.is_human ? p.user?.username || 'User' : p.ai_model,
+                  content: p.content,
+                  sender: p.is_human ? 'user' : 'ai'
+                })).reverse();
+                setAllPosts(formatted);
+              }
+            } catch (err) {
+              console.error("Failed to load public posts:", err);
+            }
           }
 
           const endTime = new Date(data.date).getTime() + 24 * 60 * 60 * 1000;
@@ -184,13 +205,13 @@ export default function DailyForgePage() {
               ))}
             </div>
 
-            {/* Community Interjections */}
-            <div className="space-y-8 mb-16">
-              <h3 className="text-2xl font-black text-center mb-8">Community Interjections</h3>
-              {interjections.length === 0 ? (
-                <p className="text-center text-gray-500 text-lg">No interjections yet. Be the first to challenge the council!</p>
+            {/* Full Public Debate Thread */}
+            <div className="space-y-12 mb-16">
+              <h3 className="text-2xl font-black text-center mb-8">Full Debate Thread</h3>
+              {allPosts.length === 0 ? (
+                <p className="text-center text-gray-500 text-lg">No interjections yet — be the first!</p>
               ) : (
-                interjections.map((msg) => (
+                allPosts.map((msg) => (
                   <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
