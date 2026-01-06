@@ -202,6 +202,12 @@ export default function DailyForgePage() {
           </div>
         )}
 
+        // After interjection form
+<div className="mt-16">
+  <h3 className="text-2xl font-black text-center mb-8">Community Interjections</h3>
+  <p className="text-center text-gray-400">Coming soon — your voice will appear here, with council responses.</p>
+</div>
+
         {/* History */}
         <div className="mt-32">
           <h2 className="text-5xl font-black text-center mb-16">Daily Forge History</h2>
