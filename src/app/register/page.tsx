@@ -1,7 +1,6 @@
 'use client';
-
-import { useState, Suspense } from 'react'; // ✨ Added Suspense for searchParams
-import { useRouter, useSearchParams } from 'next/navigation'; // ✨ Added useSearchParams
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, ShieldCheck, UserPlus, AlertCircle, Zap } from 'lucide-react';
 
@@ -9,34 +8,35 @@ export const dynamic = 'force-dynamic';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
-// ✨ Sub-component to handle Search Params safely in Next.js
 function RegisterForm() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success'>('idle');
-
   const router = useRouter();
   const searchParams = useSearchParams();
-  const referralCode = searchParams.get('ref') || ''; // ✨ Capture BETA_2026
+
+  const referralCode = searchParams.get('ref') || '';
+  // Capture redirect URL (where user came from)
+  const redirectTo = searchParams.get('redirect') || '/';
 
   console.log("DEBUG: Detected Ref Code from URL:", referralCode);
+  console.log("DEBUG: Redirect after register:", redirectTo);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setStatus('loading');
-
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          username, 
-          email, 
-          password, 
-          referralCode // ✨ Transmit the code to the backend
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          referralCode
         }),
       });
 
@@ -50,11 +50,17 @@ function RegisterForm() {
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
       }
-
+      
       setStatus('success');
+
+      // Get redirect from URL params
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get('redirect') || '/'; // default to home
+
       setTimeout(() => {
-        router.push('/login');
+        router.push(decodeURIComponent(redirect));
       }, 2000);
+      
 
     } catch (err: any) {
       setError(err.message || 'Initialization failed. Please try again.');
@@ -82,14 +88,12 @@ function RegisterForm() {
               </p>
             </div>
           )}
-
           {error && (
             <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
               <AlertCircle size={18} className="text-red-500 shrink-0" />
               <p className="text-red-400 text-xs font-black uppercase tracking-tight">{error}</p>
             </div>
           )}
-
           <div className="space-y-2">
             <label className="block text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] ml-2">
               Architect Username
@@ -103,7 +107,6 @@ function RegisterForm() {
               required
             />
           </div>
-
           <div className="space-y-2">
             <label className="block text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] ml-2">
               Email Address
@@ -117,7 +120,6 @@ function RegisterForm() {
               required
             />
           </div>
-
           <div className="space-y-2">
             <label className="block text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] ml-2">
               Secure Password
@@ -132,7 +134,6 @@ function RegisterForm() {
               minLength={8}
             />
           </div>
-
           <button
             type="submit"
             disabled={status === 'loading'}
@@ -162,12 +163,9 @@ export default function RegisterPage() {
             <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic">Initialize Profile</h1>
             <p className="text-gray-500 mt-2 text-xs font-bold uppercase tracking-widest">Join the Nexus and engage the Council</p>
           </div>
-
-          {/* ✨ Suspense Boundary is required for searchParams in Next.js App Router */}
           <Suspense fallback={<Loader2 className="animate-spin mx-auto text-blue-500" />}>
             <RegisterForm />
           </Suspense>
-
           <div className="mt-10 pt-8 border-t border-white/5 text-center">
             <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">
               Already an Architect?{' '}
