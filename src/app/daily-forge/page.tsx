@@ -68,11 +68,11 @@ useEffect(() => {
 
   fetchData();
 
+  // Cleanup timer when component unmounts
   return () => {
     if (timer) clearInterval(timer);
   };
 }, []);
-
 
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
