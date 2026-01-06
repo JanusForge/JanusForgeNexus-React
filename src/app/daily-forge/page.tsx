@@ -137,7 +137,36 @@ export default function DailyForgePage() {
             </div>
           </div>
         )}
-
+        
+        {/* Bold Note - Token Requirement & Public Visibility */}
+{timeLeft !== "Debate Closed" && (
+  <div className="max-w-4xl mx-auto mb-12">
+    <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-purple-500/70 rounded-3xl p-8 text-center">
+      <h3 className="text-2xl md:text-3xl font-black mb-4 uppercase tracking-wider">
+        Interject into the Debate
+      </h3>
+      <p className="text-lg md:text-xl text-gray-200 leading-relaxed max-w-3xl mx-auto">
+        <strong>Purchase tokens to participate.</strong> Your comments and questions will be{' '}
+        <strong>publicly displayed</strong> as part of this historic Daily Forge debate.
+        <br />
+        Each interjection costs <strong>1 token</strong>. You must be signed in to join the council.
+      </p>
+      {!isAuthenticated && (
+        <div className="mt-6">
+          <Link
+            href="/register"
+            className="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl font-black text-lg uppercase tracking-wider transition-all shadow-xl shadow-purple-900/50"
+          >
+            Sign Up Free → Get 10 Tokens
+          </Link>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+        
+        
+        
         {/* Interjection */}
         {timeLeft !== "Debate Closed" && isAuthenticated && (
           <div className="max-w-4xl mx-auto">
