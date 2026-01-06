@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
-import { Calendar, Clock, MessageSquare, Send, Zap } from 'lucide-react';
+import { Calendar, Clock, Zap } from 'lucide-react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
@@ -20,12 +20,8 @@ export default function DailyForgePage() {
   const [history, setHistory] = useState<DailyForge[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState<string>("");
-  const [message, setMessage] = useState('');
-  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-
     const fetchData = async () => {
       try {
         const [currentRes, historyRes] = await Promise.all([
@@ -53,7 +49,8 @@ export default function DailyForgePage() {
           };
 
           updateTimer();
-          timer = setInterval(updateTimer, 1000);
+          const timer = setInterval(updateTimer, 1000);
+          return () => clearInterval(timer);
         }
 
         if (historyRes.ok) {
@@ -67,26 +64,7 @@ export default function DailyForgePage() {
     };
 
     fetchData();
-
-    return () => {
-      if (timer) clearInterval(timer);
-    };
   }, []);
-
-  const handleInterject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || !current || !user) return;
-
-    setSending(true);
-    try {
-      alert("Interjection sent! The council is preparing a response...");
-      setMessage('');
-    } catch (err) {
-      console.error("Interjection failed:", err);
-    } finally {
-      setSending(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -103,6 +81,7 @@ export default function DailyForgePage() {
           Daily Forge
         </h1>
 
+        {/* Current Debate */}
         {current && (
           <div className="mb-32">
             <div className="text-center mb-12">
@@ -112,7 +91,7 @@ export default function DailyForgePage() {
               <div className="flex items-center justify-center gap-6 text-gray-400">
                 <div className="flex items-center gap-2">
                   <Calendar size={20} />
-                  {new Date(current.date).toLocaleDateString()}
+                  {new Date(current.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock size={20} />
@@ -121,7 +100,7 @@ export default function DailyForgePage() {
               </div>
             </div>
 
-            <div className="space-y-12">
+            <div className="space-y-12 mb-16">
               <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
               {JSON.parse(current.openingThoughts).map((resp: any, i: number) => (
                 <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8">
@@ -135,78 +114,63 @@ export default function DailyForgePage() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        
-        {/* Bold Note - Token Requirement & Public Visibility */}
-{timeLeft !== "Debate Closed" && (
-  <div className="max-w-4xl mx-auto mb-12">
-    <div className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-purple-500/70 rounded-3xl p-8 text-center">
-      <h3 className="text-2xl md:text-3xl font-black mb-4 uppercase tracking-wider">
-        Interject into the Debate
-      </h3>
-      <p className="text-lg md:text-xl text-gray-200 leading-relaxed max-w-3xl mx-auto">
-        <strong>Purchase tokens to participate.</strong> Your comments and questions will be{' '}
-        <strong>publicly displayed</strong> as part of this historic Daily Forge debate.
-        <br />
-        Each interjection costs <strong>1 token</strong>. You must be signed in to join the council.
-      </p>
-      {!isAuthenticated && (
-        <div className="mt-6">
-          <Link
-            href="/register"
-            className="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl font-black text-lg uppercase tracking-wider transition-all shadow-xl shadow-purple-900/50"
-          >
-            Sign Up Free → Get 10 Tokens
-          </Link>
-        </div>
-      )}
-    </div>
-  </div>
-)}
-        
-        
-        
-        {/* Interjection */}
-        {timeLeft !== "Debate Closed" && isAuthenticated && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
-              <h3 className="text-3xl font-black text-center mb-8">Interject into the Debate</h3>
-              <form onSubmit={handleInterject} className="space-y-6">
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Challenge the council. Add your insight. Shape the synthesis... (costs 1 token)"
-                  className="w-full bg-black/50 border border-gray-700 rounded-2xl p-6 text-white min-h-[200px] outline-none focus:border-purple-500 resize-none text-lg"
-                  required
-                />
-                <div className="text-center">
-                  <button
-                    type="submit"
-                    disabled={sending || !message.trim()}
-                    className="inline-flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-2xl shadow-purple-900/50"
-                  >
-                    <Zap size={24} />
-                    {sending ? "Sending..." : "Interject (1 Token)"}
-                  </button>
+
+            {/* Token Notice & Interjection */}
+            {timeLeft !== "Debate Closed" && (
+              <div className="max-w-4xl mx-auto">
+                <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12 mb-12">
+                  <h3 className="text-3xl font-black text-center mb-8 uppercase tracking-wider">
+                    Interject into the Debate
+                  </h3>
+                  <p className="text-xl text-gray-200 text-center leading-relaxed max-w-3xl mx-auto mb-8">
+                    Purchase tokens to participate. Your comments and questions will be <strong>publicly displayed</strong> as part of this historic Daily Forge debate.
+                    <br />
+                    Each interjection costs <strong>1 token</strong>. You must be signed in to join the council.
+                  </p>
+                  {!isAuthenticated && (
+                    <div className="text-center">
+                      <Link
+                        href="/register"
+                        className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-xl shadow-purple-900/50"
+                      >
+                        <Zap size={24} />
+                        Sign Up Free → Get 10 Tokens
+                      </Link>
+                    </div>
+                  )}
                 </div>
-              </form>
-            </div>
+
+                {isAuthenticated && (
+                  <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
+                    <form className="space-y-6">
+                      <textarea
+                        placeholder="Challenge the council. Add your insight. Shape the synthesis... (costs 1 token)"
+                        className="w-full bg-black/50 border border-gray-700 rounded-2xl p-6 text-white min-h-[200px] outline-none focus:border-purple-500 resize-none text-lg"
+                        required
+                      />
+                      <div className="text-center">
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-2xl shadow-purple-900/50"
+                        >
+                          <Zap size={24} />
+                          Interject (1 Token)
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {timeLeft === "Debate Closed" && (
+              <div className="text-center py-16">
+                <p className="text-3xl text-gray-500">This Daily Forge is now closed.</p>
+                <p className="text-xl text-gray-400 mt-4">A new debate begins tomorrow at midnight.</p>
+              </div>
+            )}
           </div>
         )}
-
-        {timeLeft === "Debate Closed" && (
-          <div className="text-center py-16">
-            <p className="text-3xl text-gray-500">This Daily Forge is now closed.</p>
-            <p className="text-xl text-gray-400 mt-4">A new debate begins tomorrow at midnight.</p>
-          </div>
-        )}
-
-        // After interjection form
-<div className="mt-16">
-  <h3 className="text-2xl font-black text-center mb-8">Community Interjections</h3>
-  <p className="text-center text-gray-400">Coming soon — your voice will appear here, with council responses.</p>
-</div>
 
         {/* History */}
         <div className="mt-32">
