@@ -23,49 +23,56 @@ export default function DailyForgePage() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [currentRes, historyRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/daily-forge/current`),
-          fetch(`${API_BASE_URL}/api/daily-forge/history`)
-        ]);
+useEffect(() => {
+  let timer: NodeJS.Timeout | null = null;
 
-        if (currentRes.ok) {
-          const data = await currentRes.json();
-          setCurrent(data);
+  const fetchData = async () => {
+    try {
+      const [currentRes, historyRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/daily-forge/current`),
+        fetch(`${API_BASE_URL}/api/daily-forge/history`)
+      ]);
 
-          // Calculate time left (24 hours from date)
-          const endTime = new Date(data.date).getTime() + 24 * 60 * 60 * 1000;
-          const updateTimer = () => {
-            const now = Date.now();
-            const diff = endTime - now;
-            if (diff <= 0) {
-              setTimeLeft("Debate Closed");
-            } else {
-              const h = Math.floor(diff / 3600000);
-              const m = Math.floor((diff % 3600000) / 60000);
-              const s = Math.floor((diff % 60000) / 1000);
-              setTimeLeft(`${h}h ${m}m ${s}s remaining`);
-            }
-          };
-          updateTimer();
-          const timer = setInterval(updateTimer, 1000);
-          return () => clearInterval(timer);
-        }
+      if (currentRes.ok) {
+        const data = await currentRes.json();
+        setCurrent(data);
 
-        if (historyRes.ok) {
-          setHistory(await historyRes.json());
-        }
-      } catch (err) {
-        console.error("Daily Forge load error:", err);
-      } finally {
-        setLoading(false);
+        const endTime = new Date(data.date).getTime() + 24 * 60 * 60 * 1000;
+
+        const updateTimer = () => {
+          const now = Date.now();
+          const diff = endTime - now;
+          if (diff <= 0) {
+            setTimeLeft("Debate Closed");
+          } else {
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            setTimeLeft(`${h}h ${m}m ${s}s remaining`);
+          }
+        };
+
+        updateTimer();
+        timer = setInterval(updateTimer, 1000);
       }
-    };
 
-    fetchData();
-  }, []);
+      if (historyRes.ok) {
+        setHistory(await historyRes.json());
+      }
+    } catch (err) {
+      console.error("Daily Forge load error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+
+  return () => {
+    if (timer) clearInterval(timer);
+  };
+}, []);
+
 
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +104,7 @@ export default function DailyForgePage() {
         <h1 className="text-6xl md:text-8xl font-black text-center mb-16 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
           Daily Forge
         </h1>
-
+  )
             {/* Current Debate */}
 {current && (
   <div className="mb-32">
