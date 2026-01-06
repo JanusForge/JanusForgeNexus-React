@@ -182,7 +182,7 @@ export default function HomePage() {
         const data = await res.json();
         const formattedPosts = data.conversation.posts.map((p: any) => ({
           id: p.id,
-          name: p.is_human ? (user?.username || 'Architect') : (p.ai_model || 'Council'),
+          name: p.is_human ? (user?.username || 'user') : (p.ai_model || 'Council'),
           content: p.content,
           sender: p.is_human ? 'user' : 'ai' as 'user' | 'ai',
           timestamp: p.created_at,
@@ -224,7 +224,7 @@ export default function HomePage() {
               <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-blue-500/20 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
                 <ShieldCheck className="text-blue-400" size={40} />
               </div>
-              <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4 text-white">Architect Briefing</h2>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4 text-white">Nexus Briefing</h2>
               <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8">Protocol: Synthesis Induction</p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10 text-left">
                 <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
@@ -350,7 +350,7 @@ export default function HomePage() {
 
             <div className="divide-y divide-gray-800 max-h-[700px] overflow-y-auto">
               {conversation.map((msg) => (
-                <div key={msg.id} className={`p-6 transition-all ${msg.name === 'Architect' ? 'bg-blue-900/10 border-l-4 border-blue-500' : ''}`}>
+                <div key={msg.id} className={`p-6 transition-all ${msg.name === 'User' ? 'bg-blue-900/10 border-l-4 border-blue-500' : ''}`}>
                   <div className="flex gap-4">
                     <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700 font-bold text-xs uppercase shadow-inner">
                       {msg.name[0]}
@@ -361,7 +361,7 @@ export default function HomePage() {
                         {['GEMINI', 'DEEPSEEK', 'GROK', 'CLAUDE', 'GPT_4'].includes(msg.name) && (
                           <span className="text-[8px] bg-red-500 px-2 py-0.5 rounded font-black text-white uppercase">Council Response</span>
                         )}
-                        {msg.name === 'Architect' && (
+                        {msg.name === 'User' && (
                           <span className="text-[8px] bg-blue-500 px-2 py-0.5 rounded font-black text-white uppercase">Primary Intel</span>
                         )}
                       </div>
