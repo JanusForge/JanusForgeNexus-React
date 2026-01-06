@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
-import { Calendar, Clock, Zap, Send } from 'lucide-react';
+import { Calendar, Clock, Zap } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -74,7 +74,6 @@ export default function DailyForgePage() {
           const data = await currentRes.json();
           setCurrent(data);
 
-          // Join conversation if exists
           if (data.conversationId && socketRef.current) {
             socketRef.current.emit('join', data.conversationId);
           }
@@ -99,8 +98,7 @@ export default function DailyForgePage() {
         }
 
         if (historyRes.ok) {
-          const hist = await historyRes.json();
-          setHistory(hist);
+          setHistory(await historyRes.json());
         }
       } catch (err) {
         console.error("Daily Forge load error:", err);
@@ -133,7 +131,6 @@ export default function DailyForgePage() {
     setMessage('');
     setSending(false);
 
-    // Show immediate feedback
     alert("Interjection sent! The council is preparing a response...");
   };
 
