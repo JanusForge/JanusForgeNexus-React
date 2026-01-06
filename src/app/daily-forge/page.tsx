@@ -214,7 +214,7 @@ export default function DailyForgePage() {
                   </p>
                   {!isAuthenticated && (
                     <Link
-                      href="/register"
+                      href={`/register?redirect=${encodeURIComponent('/daily-forge')}`}
                       className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-xl shadow-purple-900/50"
                     >
                       <Zap size={24} />
