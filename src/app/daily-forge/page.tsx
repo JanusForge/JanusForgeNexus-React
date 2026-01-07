@@ -1,11 +1,14 @@
 "use client";
 export const dynamic = 'force-dynamic';
+
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
 import { Calendar, Clock, Zap } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
+
 interface DailyForge {
   id: string;
   date: string;
@@ -14,6 +17,7 @@ interface DailyForge {
   conversationId?: string;
   created_at: string;
 }
+
 interface Message {
   id: string;
   name: string;
@@ -21,6 +25,7 @@ interface Message {
   sender: 'user' | 'ai';
   tokens_remaining?: number;
 }
+
 export default function DailyForgePage() {
   const { user, isAuthenticated } = useAuth();
   const [current, setCurrent] = useState<DailyForge | null>(null);
@@ -31,41 +36,52 @@ export default function DailyForgePage() {
   const [sending, setSending] = useState(false);
   const [interjections, setInterjections] = useState<Message[]>([]);
   const [allPosts, setAllPosts] = useState<Message[]>([]);
+
   const socketRef = useRef<Socket | null>(null);
+
   // Socket setup
   useEffect(() => {
     socketRef.current = io(API_BASE_URL, {
       withCredentials: true,
       transports: ['polling', 'websocket']
     });
+
     socketRef.current.on('connect', () => {
       console.log('Daily Forge socket connected');
       if (current?.conversationId) {
         socketRef.current?.emit('join', current.conversationId);
       }
     });
+
     socketRef.current.on('post:incoming', (msg: Message) => {
       setInterjections(prev => [msg, ...prev]);
+      setAllPosts(prev => [msg, ...prev]);
     });
+
     return () => {
       socketRef.current?.disconnect();
     };
   }, [current?.conversationId]);
+
   // Fetch data
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
+
     const fetchData = async () => {
       try {
         const [currentRes, historyRes] = await Promise.all([
           fetch(`${API_BASE_URL}/api/daily-forge/current`),
           fetch(`${API_BASE_URL}/api/daily-forge/history`)
         ]);
+
         if (currentRes.ok) {
           const data = await currentRes.json();
           setCurrent(data);
+
           if (data.conversationId && socketRef.current) {
             socketRef.current.emit('join', data.conversationId);
           }
+
           // Load full public conversation posts
           if (data.conversationId) {
             const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${data.conversationId}`);
@@ -80,7 +96,9 @@ export default function DailyForgePage() {
               setAllPosts(formatted);
             }
           }
+
           const endTime = new Date(data.date).getTime() + 24 * 60 * 60 * 1000;
+
           const updateTimer = () => {
             const now = Date.now();
             const diff = endTime - now;
@@ -93,9 +111,11 @@ export default function DailyForgePage() {
               setTimeLeft(`${h}h ${m}m ${s}s remaining`);
             }
           };
+
           updateTimer();
           timer = setInterval(updateTimer, 1000);
         }
+
         if (historyRes.ok) {
           setHistory(await historyRes.json());
         }
@@ -105,15 +125,20 @@ export default function DailyForgePage() {
         setLoading(false);
       }
     };
+
     fetchData();
+
     return () => {
       if (timer) clearInterval(timer);
     };
   }, []);
+
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() || !current || !user || !socketRef.current) return;
+
     setSending(true);
+
     socketRef.current.emit('post:new', {
       content: message,
       userId: user.id,
@@ -121,10 +146,13 @@ export default function DailyForgePage() {
       conversationId: current.conversationId,
       isLiveChat: false
     });
+
     setMessage('');
     setSending(false);
+
     alert("Interjection sent! The council is preparing a response...");
   };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -132,12 +160,14 @@ export default function DailyForgePage() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-black text-white py-24">
       <div className="container mx-auto px-4 max-w-6xl">
         <h1 className="text-6xl md:text-8xl font-black text-center mb-16 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
           Daily Forge
         </h1>
+
         {current && (
           <div className="mb-32">
             <div className="text-center mb-12">
@@ -155,6 +185,7 @@ export default function DailyForgePage() {
                 </div>
               </div>
             </div>
+
             <div className="space-y-12 mb-16">
               <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
               {JSON.parse(current.openingThoughts).map((resp: any, i: number) => (
@@ -169,13 +200,14 @@ export default function DailyForgePage() {
                 </div>
               ))}
             </div>
-            {/* Community Interjections */}
+
+            {/* Full Public Debate Thread */}
             <div className="space-y-8 mb-16">
               <h3 className="text-2xl font-black text-center mb-8">Community Interjections</h3>
-              {interjections.length === 0 ? (
+              {allPosts.length === 0 ? (
                 <p className="text-center text-gray-500 text-lg">No interjections yet. Be the first to challenge the council!</p>
               ) : (
-                interjections.map((msg) => (
+                allPosts.map((msg) => (
                   <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
                     <div className="flex items-center gap-4 mb-4">
                       <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
