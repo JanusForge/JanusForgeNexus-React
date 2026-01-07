@@ -25,6 +25,7 @@ interface Message {
   content: string;
   sender: 'user' | 'ai';
   tokens_remaining?: number;
+  created_at?: string;  // ADDED THIS LINE
 }
 
 export default function DailyForgePage() {
@@ -513,4 +514,3 @@ export default function DailyForgePage() {
     </div>
   );
 }
-
