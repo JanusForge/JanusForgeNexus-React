@@ -240,10 +240,30 @@ export default function DailyForgePage() {
     console.log('⏰ Time left:', timeLeft);
     console.log('📊 Current phase:', current?.phase);
 
-    // Phase check - only allow in CONVERSATION phase
-    if (current?.phase !== 'CONVERSATION') {
-      console.log('❌ Interjections not allowed in current phase:', current?.phase);
-      alert(`Interjections are only allowed during CONVERSATION phase. Current phase: ${current?.phase?.replace('_', ' ') || 'Unknown'}.`);
+    // NEW LOGIC: Check if council debate is complete (has opening thoughts and conversation)
+    const isCouncilDebateComplete = () => {
+      if (!current) return false;
+      
+      const hasOpeningThoughts = current.openingThoughts && 
+                                current.openingThoughts.length > 0;
+      const hasConversationId = !!current.conversationId;
+      
+      return hasOpeningThoughts && hasConversationId;
+    };
+
+    // Allow interjections if council debate is complete, regardless of phase label
+    if (!isCouncilDebateComplete()) {
+      console.log('❌ Council debate not complete');
+      console.log('  Has opening thoughts:', !!current?.openingThoughts);
+      console.log('  Has conversation ID:', !!current?.conversationId);
+      
+      if (!current?.openingThoughts) {
+        alert('Council debate has not started yet. Please wait for the opening statements.');
+      } else if (!current?.conversationId) {
+        alert('Conversation not initialized. Please refresh the page.');
+      } else {
+        alert('Interjections are only allowed when council debate is complete.');
+      }
       return;
     }
 
@@ -468,7 +488,7 @@ export default function DailyForgePage() {
                     {timeLeft}
                   </span>
                 </div>
-                {/* Add phase badge - MISSING IN YOUR CODE */}
+                {/* Add phase badge */}
                 <div className="flex items-center gap-2">
                   <div className={`px-3 py-1 rounded-full text-sm font-bold ${
                     current.phase === 'CONVERSATION' ? 'bg-green-500/20 text-green-300 border border-green-500/50' :
@@ -554,10 +574,16 @@ export default function DailyForgePage() {
                 <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12 mb-12 text-center">
                   <h3 className="text-3xl font-black mb-6">Daily Forge Status: {current?.phase?.replace('_', ' ') || 'Active'}</h3>
 
-                  {current?.phase === 'CONVERSATION' ? (
+                  {/* UPDATED LOGIC: Check if council debate is complete */}
+                  {current?.openingThoughts && current?.conversationId ? (
                     <>
                       <p className="text-xl text-gray-200 leading-relaxed mb-8">
                         <strong>Conversation Phase Active!</strong><br />
+                        {current?.phase === 'COUNCIL_DEBATE' && (
+                          <span className="text-yellow-300 text-lg block mb-2">
+                            (Phase display may be delayed - interjections are enabled!)
+                          </span>
+                        )}
                         Purchase tokens to participate. Your comments and questions will be <strong>publicly displayed</strong> as part of this historic Daily Forge debate.<br />
                         Each interjection costs <strong>1 token</strong>. You must be signed in to join the council.
                       </p>
@@ -589,12 +615,12 @@ export default function DailyForgePage() {
                       <p className="text-xl text-yellow-200 leading-relaxed mb-8">
                         <strong>Council Debate Phase</strong><br />
                         The AI Council is currently in the opening debate phase. The council members are presenting their initial arguments.<br />
-                        <span className="text-green-300 font-bold">Interjections will be enabled once the council moves to the Conversation Phase.</span>
+                        <span className="text-green-300 font-bold">Interjections will be enabled once the council debate is complete.</span>
                       </p>
                       <div className="bg-yellow-900/30 border border-yellow-700 rounded-2xl p-6">
                         <p className="text-lg text-yellow-100">
                           <strong>Expected timeline:</strong><br />
-                          1. Council Debate (Current Phase) → 2. Conversation Phase (Public Interjections) → 3. Synthesis
+                          1. Council Debate → 2. Conversation Phase (24 hours) → 3. Debate Closed
                         </p>
                       </div>
                     </>
@@ -610,8 +636,8 @@ export default function DailyForgePage() {
                   )}
                 </div>
 
-                {/* Only show interjection form during CONVERSATION phase */}
-                {current?.phase === 'CONVERSATION' && isAuthenticated && userTokens >= 1 && (
+                {/* UPDATED: Show interjection form when council debate is complete */}
+                {current?.openingThoughts && current?.conversationId && isAuthenticated && userTokens >= 1 && (
                   <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
                     <form onSubmit={handleInterject} className="space-y-6">
                       <textarea
