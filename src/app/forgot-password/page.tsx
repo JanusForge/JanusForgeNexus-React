@@ -16,15 +16,17 @@ export default function ForgotPasswordPage() {
     setError('');
 
     try {
-      // Point this to your Render backend endpoint
-      const response = await fetch('${process.env.NEXT_PUBLIC_API_URL}/api/auth/forgot-password`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
 
-      if (!response.ok) throw new Error('Failed to send reset email.');
-      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send reset email.');
+      }
+
       setIsSubmitted(true);
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
@@ -40,8 +42,8 @@ export default function ForgotPasswordPage() {
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white">Reset Password</h1>
             <p className="text-gray-400 mt-2">
-              {isSubmitted 
-                ? "Check your inbox for a reset link." 
+              {isSubmitted
+                ? "Check your inbox for a reset link."
                 : "Enter your email to recover your account."}
             </p>
           </div>
