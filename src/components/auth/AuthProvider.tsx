@@ -1,3 +1,4 @@
+"use client";
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
