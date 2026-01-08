@@ -109,6 +109,7 @@ export default function DailyForgePage() {
     console.log('   User tokens:', userTokens);
     console.log('   Authenticated:', isAuthenticated);
     console.log('   Current forge ID:', current?.conversationId);
+    console.log('   Current phase:', current?.phase);
   }, [message, sending, userTokens, isAuthenticated, current]);
 
   // URGENT FIX: Enhanced data fetching with error handling
@@ -230,50 +231,58 @@ export default function DailyForgePage() {
   // FIX #3: Proper token check and interjection handling WITH DEBUGGING
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     console.log('🚀 handleInterject called');
     console.log('📝 Message:', message);
     console.log('👤 User:', user);
     console.log('🎯 Current forge:', current);
     console.log('💰 User tokens:', userTokens);
     console.log('⏰ Time left:', timeLeft);
-    
+    console.log('📊 Current phase:', current?.phase);
+
+    // Phase check - only allow in CONVERSATION phase
+    if (current?.phase !== 'CONVERSATION') {
+      console.log('❌ Interjections not allowed in current phase:', current?.phase);
+      alert(`Interjections are only allowed during CONVERSATION phase. Current phase: ${current?.phase?.replace('_', ' ') || 'Unknown'}.`);
+      return;
+    }
+
     if (!message.trim()) {
       console.log('❌ Message is empty');
       alert('Please enter a message.');
       return;
     }
-    
+
     if (!current) {
       console.log('❌ No current forge');
       alert('No active forge found.');
       return;
     }
-    
+
     if (!user) {
       console.log('❌ User not authenticated');
       alert('Please sign in to interject.');
       return;
     }
-    
+
     if (userTokens < 1) {
       console.log('❌ Insufficient tokens:', userTokens);
       alert('You need at least 1 token to interject. Please purchase tokens first.');
       return;
     }
-    
+
     if (timeLeft === "Debate Closed") {
       console.log('❌ Debate is closed');
       alert('This debate is now closed. A new Daily Forge starts tomorrow.');
       return;
     }
-    
+
     if (!current.conversationId) {
       console.log('❌ No conversation ID');
       alert('This conversation is not ready for interjections yet. Please try again in a moment.');
       return;
     }
-    
+
     console.log('✅ All checks passed, making POST request...');
     console.log('📤 POST URL:', `${API_BASE_URL}/api/conversations/${current.conversationId}/posts`);
     console.log('📝 POST Body:', JSON.stringify({
@@ -292,12 +301,14 @@ export default function DailyForgePage() {
         },
         body: JSON.stringify({
           content: message,
-          userId: user.id
+          userId: user.id,
+          is_human: true,
+          conversation_id: current.conversationId
         })
       });
 
       console.log('📡 Response status:', response.status);
-      
+
       if (!response.ok) {
         let errorMessage = 'Failed to send interjection';
         try {
@@ -368,7 +379,7 @@ export default function DailyForgePage() {
 
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
-      
+
       // More user-friendly error messages
       let alertMessage = err.message || 'Please try again';
       if (err.message.includes('500') || err.message.includes('Internal server error')) {
@@ -378,7 +389,7 @@ export default function DailyForgePage() {
       } else if (err.message.includes('404')) {
         alertMessage = 'Conversation not found. Please refresh the page.';
       }
-      
+
       alert(`Failed to send interjection: ${alertMessage}`);
     } finally {
       setSending(false);
@@ -389,12 +400,12 @@ export default function DailyForgePage() {
   const testInterjection = async () => {
     console.log('🧪 Testing interjection function...');
     setMessage('Test message - please ignore');
-    
+
     // Simulate form submit
     const fakeEvent = {
       preventDefault: () => console.log('preventDefault called')
     } as React.FormEvent;
-    
+
     await handleInterject(fakeEvent);
   };
 
@@ -441,7 +452,7 @@ export default function DailyForgePage() {
               <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
                 {current.winningTopic}
               </h2>
-              <div className="flex items-center justify-center gap-6 text-gray-400">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-gray-400">
                 <div className="flex items-center gap-2">
                   <Calendar size={20} />
                   {new Date(current.date).toLocaleDateString('en-US', {
@@ -456,6 +467,17 @@ export default function DailyForgePage() {
                   <span className={`font-bold text-xl ${timeLeft === "Debate Closed" ? "text-red-400" : "text-purple-400"}`}>
                     {timeLeft}
                   </span>
+                </div>
+                {/* Add phase badge - MISSING IN YOUR CODE */}
+                <div className="flex items-center gap-2">
+                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    current.phase === 'CONVERSATION' ? 'bg-green-500/20 text-green-300 border border-green-500/50' :
+                    current.phase === 'COUNCIL_DEBATE' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50' :
+                    current.phase === 'TOPIC_SELECTION' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50' :
+                    'bg-gray-500/20 text-gray-300 border border-gray-500/50'
+                  }`}>
+                    {current.phase?.replace('_', ' ') || 'ACTIVE'}
+                  </div>
                 </div>
               </div>
             </div>
@@ -482,7 +504,7 @@ export default function DailyForgePage() {
 
             {/* Community Interjections */}
             <div className="space-y-8 mb-16">
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <h3 className="text-2xl font-black">Community Interjections</h3>
                 {isAuthenticated && (
                   <div className="flex items-center gap-2 bg-gray-900/70 px-4 py-2 rounded-full">
@@ -501,18 +523,20 @@ export default function DailyForgePage() {
                 <div className="space-y-6">
                   {allPosts.map((msg) => (
                     <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
-                          {msg.name?.[0] || 'U'}
-                        </div>
-                        <div>
-                          <h4 className="font-black text-purple-400">{msg.name}</h4>
-                          {msg.sender === 'ai' && (
-                            <span className="text-xs bg-red-500/50 px-3 py-1 rounded-full">Council Response</span>
-                          )}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
+                            {msg.name?.[0] || 'U'}
+                          </div>
+                          <div>
+                            <h4 className="font-black text-purple-400">{msg.name}</h4>
+                            {msg.sender === 'ai' && (
+                              <span className="text-xs bg-red-500/50 px-3 py-1 rounded-full">Council Response</span>
+                            )}
+                          </div>
                         </div>
                         {msg.created_at && (
-                          <span className="text-gray-500 text-sm ml-auto">
+                          <span className="text-gray-500 text-sm sm:ml-auto">
                             {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
@@ -524,40 +548,70 @@ export default function DailyForgePage() {
               )}
             </div>
 
-            {/* Interjection Form */}
+            {/* Interjection Form & Phase Information */}
             {timeLeft !== "Debate Closed" && (
               <div className="max-w-4xl mx-auto">
                 <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12 mb-12 text-center">
-                  <h3 className="text-3xl font-black mb-6">Interject into the Debate</h3>
-                  <p className="text-xl text-gray-200 leading-relaxed mb-8">
-                    Purchase tokens to participate. Your comments and questions will be <strong>publicly displayed</strong> as part of this historic Daily Forge debate.<br />
-                    Each interjection costs <strong>1 token</strong>. You must be signed in to join the council.
-                  </p>
+                  <h3 className="text-3xl font-black mb-6">Daily Forge Status: {current?.phase?.replace('_', ' ') || 'Active'}</h3>
 
-                  {!isAuthenticated ? (
-                    <Link
-                      href={`/register?redirect=${encodeURIComponent('/daily-forge')}`}
-                      className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-xl shadow-purple-900/50"
-                    >
-                      <Zap size={24} />
-                      Sign Up Free → Get 10 Tokens
-                    </Link>
-                  ) : userTokens < 1 ? (
-                    <Link
-                      href="/pricing"
-                      className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-xl shadow-red-900/50"
-                    >
-                      <Zap size={24} />
-                      Purchase Tokens to Interject
-                    </Link>
+                  {current?.phase === 'CONVERSATION' ? (
+                    <>
+                      <p className="text-xl text-gray-200 leading-relaxed mb-8">
+                        <strong>Conversation Phase Active!</strong><br />
+                        Purchase tokens to participate. Your comments and questions will be <strong>publicly displayed</strong> as part of this historic Daily Forge debate.<br />
+                        Each interjection costs <strong>1 token</strong>. You must be signed in to join the council.
+                      </p>
+
+                      {!isAuthenticated ? (
+                        <Link
+                          href={`/register?redirect=${encodeURIComponent('/daily-forge')}`}
+                          className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-xl shadow-purple-900/50"
+                        >
+                          <Zap size={24} />
+                          Sign Up Free → Get 10 Tokens
+                        </Link>
+                      ) : userTokens < 1 ? (
+                        <Link
+                          href="/pricing"
+                          className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-xl shadow-red-900/50"
+                        >
+                          <Zap size={24} />
+                          Purchase Tokens to Interject
+                        </Link>
+                      ) : (
+                        <p className="text-green-400 text-xl font-bold mb-8">
+                          ✅ You have {userTokens} tokens available for interjections
+                        </p>
+                      )}
+                    </>
+                  ) : current?.phase === 'COUNCIL_DEBATE' ? (
+                    <>
+                      <p className="text-xl text-yellow-200 leading-relaxed mb-8">
+                        <strong>Council Debate Phase</strong><br />
+                        The AI Council is currently in the opening debate phase. The council members are presenting their initial arguments.<br />
+                        <span className="text-green-300 font-bold">Interjections will be enabled once the council moves to the Conversation Phase.</span>
+                      </p>
+                      <div className="bg-yellow-900/30 border border-yellow-700 rounded-2xl p-6">
+                        <p className="text-lg text-yellow-100">
+                          <strong>Expected timeline:</strong><br />
+                          1. Council Debate (Current Phase) → 2. Conversation Phase (Public Interjections) → 3. Synthesis
+                        </p>
+                      </div>
+                    </>
+                  ) : current?.phase === 'TOPIC_SELECTION' ? (
+                    <p className="text-xl text-blue-200 leading-relaxed mb-8">
+                      <strong>Topic Selection Phase</strong><br />
+                      The council is selecting today's debate topic. Check back soon for the opening arguments!
+                    </p>
                   ) : (
-                    <p className="text-green-400 text-xl font-bold">
-                      ✅ You have {userTokens} tokens available for interjections
+                    <p className="text-xl text-gray-200 leading-relaxed mb-8">
+                      The Daily Forge is active. Status updates will appear here.
                     </p>
                   )}
                 </div>
 
-                {isAuthenticated && userTokens >= 1 && (
+                {/* Only show interjection form during CONVERSATION phase */}
+                {current?.phase === 'CONVERSATION' && isAuthenticated && userTokens >= 1 && (
                   <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
                     <form onSubmit={handleInterject} className="space-y-6">
                       <textarea
@@ -568,11 +622,11 @@ export default function DailyForgePage() {
                         required
                         disabled={sending}
                       />
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div className="text-gray-400">
                           {message.length > 0 && `Characters: ${message.length}`}
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                           <span className="text-gray-300">
                             This will use <strong>1 token</strong> from your balance
                           </span>
