@@ -48,6 +48,7 @@ export default function DailyForgePage() {
   // FIX 1: Sync initial tokens from user object like Home page does
   useEffect(() => {
     if (user && user.tokens_remaining !== undefined) {
+      console.log('💰 Initial user tokens:', user.tokens_remaining);
       setUserTokens(user.tokens_remaining);
     }
   }, [user]);
@@ -99,6 +100,16 @@ export default function DailyForgePage() {
       socketRef.current?.disconnect();
     };
   }, [current?.conversationId]);
+
+  // Debug form state
+  useEffect(() => {
+    console.log('🔍 Debug - Form state:');
+    console.log('   Message:', message);
+    console.log('   Sending:', sending);
+    console.log('   User tokens:', userTokens);
+    console.log('   Authenticated:', isAuthenticated);
+    console.log('   Current forge ID:', current?.conversationId);
+  }, [message, sending, userTokens, isAuthenticated, current]);
 
   // URGENT FIX: Enhanced data fetching with error handling
   useEffect(() => {
@@ -173,9 +184,6 @@ export default function DailyForgePage() {
           console.error('❌ Failed to fetch history:', historyErr);
         }
 
-        // FIX #4: REMOVED the separate token fetch - we already get tokens from useAuth hook
-        // The Home page doesn't fetch tokens separately, it uses the user object
-
         // Set up timer for debate countdown
         if (currentData.date) {
           const endTime = new Date(currentData.date).getTime() + 24 * 60 * 60 * 1000;
@@ -219,90 +227,175 @@ export default function DailyForgePage() {
     };
   }, [isAuthenticated, user?.id]);
 
-  // FIX #3: Proper token check and interjection handling
+  // FIX #3: Proper token check and interjection handling WITH DEBUGGING
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !current || !user) {
-      alert('Please enter a message and make sure you are signed in.');
+    
+    console.log('🚀 handleInterject called');
+    console.log('📝 Message:', message);
+    console.log('👤 User:', user);
+    console.log('🎯 Current forge:', current);
+    console.log('💰 User tokens:', userTokens);
+    console.log('⏰ Time left:', timeLeft);
+    
+    if (!message.trim()) {
+      console.log('❌ Message is empty');
+      alert('Please enter a message.');
       return;
     }
-
-    // Check tokens
+    
+    if (!current) {
+      console.log('❌ No current forge');
+      alert('No active forge found.');
+      return;
+    }
+    
+    if (!user) {
+      console.log('❌ User not authenticated');
+      alert('Please sign in to interject.');
+      return;
+    }
+    
     if (userTokens < 1) {
+      console.log('❌ Insufficient tokens:', userTokens);
       alert('You need at least 1 token to interject. Please purchase tokens first.');
       return;
     }
-
-    // Check if debate is closed
+    
     if (timeLeft === "Debate Closed") {
+      console.log('❌ Debate is closed');
       alert('This debate is now closed. A new Daily Forge starts tomorrow.');
       return;
     }
+    
+    if (!current.conversationId) {
+      console.log('❌ No conversation ID');
+      alert('This conversation is not ready for interjections yet. Please try again in a moment.');
+      return;
+    }
+    
+    console.log('✅ All checks passed, making POST request...');
+    console.log('📤 POST URL:', `${API_BASE_URL}/api/conversations/${current.conversationId}/posts`);
+    console.log('📝 POST Body:', JSON.stringify({
+      content: message,
+      userId: user.id
+    }));
 
     setSending(true);
 
     try {
-      // FIXED: Use the conversations API endpoint - tokens are auto-deducted in backend
       const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
         method: 'POST',
-        credentials: 'include',  // CRITICAL FIX: Added credentials
-        headers: { 
+        credentials: 'include',
+        headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           content: message,
           userId: user.id
-          // Backend will auto-deduct 1 token and create transaction
         })
       });
 
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log('✅ Interjection successful:', responseData);
-        
-        setMessage('');
-        
-        // If backend returns updated token count, use it
-        if (responseData.tokens_remaining !== undefined) {
-          setUserTokens(responseData.tokens_remaining);
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        let errorMessage = 'Failed to send interjection';
+        try {
+          const errorData = await response.json();
+          console.error('❌ Backend error details:', errorData);
+          errorMessage = errorData.message || errorData.error || `Server error: ${response.status}`;
+        } catch (parseError) {
+          const errorText = await response.text();
+          console.error('❌ Server error text:', errorText);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
-        
-        alert("✅ Interjection sent! The council will respond soon.");
-
-        // Refresh posts after successful interjection
-        if (current.conversationId) {
-          setTimeout(async () => {
-            try {
-              const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
-                credentials: 'include'  // Added credentials here too
-              });
-              if (postsRes.ok) {
-                const conv = await postsRes.json();
-                const posts = conv.conversation?.posts || [];
-                const formatted = posts.map((p: any) => ({
-                  id: p.id,
-                  name: p.is_human ? p.user?.username || 'User' : p.ai_model || 'AI Council',
-                  content: p.content,
-                  sender: p.is_human ? 'user' : 'ai',
-                  created_at: p.created_at
-                })).reverse();
-                setAllPosts(formatted);
-              }
-            } catch (refreshErr) {
-              console.error('Failed to refresh posts:', refreshErr);
-            }
-          }, 2000); // Wait 2 seconds for AI responses
-        }
-      } else {
-        const error = await response.json().catch(() => ({ message: 'Unknown error' }));
-        throw new Error(error.message || 'Failed to send interjection');
+        throw new Error(errorMessage);
       }
+
+      const responseData = await response.json();
+      console.log('✅ Interjection successful:', responseData);
+
+      setMessage('');
+
+      // Update tokens if returned
+      if (responseData.tokens_remaining !== undefined) {
+        console.log('💰 Updated tokens:', responseData.tokens_remaining);
+        setUserTokens(responseData.tokens_remaining);
+      }
+
+      // If backend returns the new post, add it to the list
+      if (responseData.post) {
+        const newPost: Message = {
+          id: responseData.post.id,
+          name: user.username || 'User',
+          content: responseData.post.content,
+          sender: 'user',
+          tokens_remaining: responseData.tokens_remaining,
+          created_at: responseData.post.created_at || new Date().toISOString()
+        };
+        setAllPosts(prev => [newPost, ...prev]);
+        console.log('📝 Added new post to list:', newPost);
+      }
+
+      alert("✅ Interjection sent! The council will respond soon.");
+
+      // Refresh posts after successful interjection
+      if (current.conversationId) {
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Refreshing posts...');
+            const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
+              credentials: 'include'
+            });
+            if (postsRes.ok) {
+              const conv = await postsRes.json();
+              const posts = conv.conversation?.posts || [];
+              const formatted = posts.map((p: any) => ({
+                id: p.id,
+                name: p.is_human ? p.user?.username || 'User' : p.ai_model || 'AI Council',
+                content: p.content,
+                sender: p.is_human ? 'user' : 'ai',
+                created_at: p.created_at
+              })).reverse();
+              setAllPosts(formatted);
+              console.log('✅ Posts refreshed, count:', formatted.length);
+            }
+          } catch (refreshErr) {
+            console.error('Failed to refresh posts:', refreshErr);
+          }
+        }, 2000);
+      }
+
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
-      alert(`Failed to send interjection: ${err.message || 'Please try again'}`);
+      
+      // More user-friendly error messages
+      let alertMessage = err.message || 'Please try again';
+      if (err.message.includes('500') || err.message.includes('Internal server error')) {
+        alertMessage = 'Server error. Please try again in a moment. If this continues, contact support.';
+      } else if (err.message.includes('401') || err.message.includes('403')) {
+        alertMessage = 'Session expired. Please refresh the page and sign in again.';
+      } else if (err.message.includes('404')) {
+        alertMessage = 'Conversation not found. Please refresh the page.';
+      }
+      
+      alert(`Failed to send interjection: ${alertMessage}`);
     } finally {
       setSending(false);
     }
+  };
+
+  // Test function for debugging
+  const testInterjection = async () => {
+    console.log('🧪 Testing interjection function...');
+    setMessage('Test message - please ignore');
+    
+    // Simulate form submit
+    const fakeEvent = {
+      preventDefault: () => console.log('preventDefault called')
+    } as React.FormEvent;
+    
+    await handleInterject(fakeEvent);
   };
 
   if (loading) {
@@ -320,6 +413,18 @@ export default function DailyForgePage() {
   return (
     <div className="min-h-screen bg-black text-white py-24">
       <div className="container mx-auto px-4 max-w-6xl">
+        {/* Debug button - remove in production */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="fixed top-4 right-4 z-50">
+            <button
+              onClick={testInterjection}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg font-bold"
+            >
+              🧪 Test Interjection
+            </button>
+          </div>
+        )}
+
         <h1 className="text-6xl md:text-8xl font-black text-center mb-16 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
           Daily Forge
         </h1>
