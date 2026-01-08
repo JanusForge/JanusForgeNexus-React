@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
-import { Calendar, Clock, Zap } from 'lucide-react';
+import { Calendar, Clock, Zap, Wifi, WifiOff } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 // URGENT FIX: Make sure this matches your production backend
@@ -28,7 +28,7 @@ interface Message {
   content: string;
   sender: 'user' | 'ai';
   tokens_remaining?: number;
-  created_at?: string;  // ADDED THIS LINE
+  created_at?: string;
 }
 
 export default function DailyForgePage() {
@@ -42,8 +42,35 @@ export default function DailyForgePage() {
   const [allPosts, setAllPosts] = useState<Message[]>([]);
   const [userTokens, setUserTokens] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(true);
 
   const socketRef = useRef<Socket | null>(null);
+
+  // Monitor network connectivity
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('🌐 Network: Online');
+      setIsOnline(true);
+      setError(null);
+    };
+
+    const handleOffline = () => {
+      console.log('🌐 Network: Offline');
+      setIsOnline(false);
+      setError('Network connection lost. Please check your internet connection.');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // Initial check
+    setIsOnline(navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // FIX 1: Sync initial tokens from user object like Home page does
   useEffect(() => {
@@ -228,6 +255,59 @@ export default function DailyForgePage() {
     };
   }, [isAuthenticated, user?.id]);
 
+  // Diagnostic function for debugging
+  const runDiagnostics = async () => {
+    console.group('🔧 Daily Forge Diagnostics');
+    console.log('📅 Current Date:', new Date().toISOString());
+    console.log('👤 User:', user);
+    console.log('💰 User Tokens:', userTokens);
+    console.log('🎯 Current Forge:', current);
+    console.log('🔌 Socket Connected:', socketRef.current?.connected);
+    console.log('🌐 API Base URL:', API_BASE_URL);
+    console.log('📶 Network Online:', isOnline);
+    
+    // Test API connectivity
+    try {
+      console.log('🏥 Testing API health...');
+      const healthCheck = await fetch(`${API_BASE_URL}/health`, { 
+        credentials: 'include',
+        timeout: 5000
+      });
+      console.log('🏥 Health Check Status:', healthCheck.status);
+      if (!healthCheck.ok) {
+        const text = await healthCheck.text();
+        console.log('🏥 Health Check Response:', text);
+      }
+    } catch (err: any) {
+      console.error('🏥 Health Check Failed:', err.message);
+    }
+    
+    // Test conversation endpoint
+    if (current?.conversationId) {
+      try {
+        console.log('💬 Testing conversation endpoint...');
+        const convTest = await fetch(
+          `${API_BASE_URL}/api/conversations/${current.conversationId}`,
+          { 
+            credentials: 'include',
+            timeout: 5000
+          }
+        );
+        console.log('💬 Conversation Test Status:', convTest.status);
+        if (!convTest.ok) {
+          const text = await convTest.text();
+          console.log('💬 Conversation Test Response:', text);
+        }
+      } catch (err: any) {
+        console.error('💬 Conversation Test Failed:', err.message);
+      }
+    }
+    
+    console.groupEnd();
+    
+    alert('Diagnostics complete. Check browser console for details.');
+  };
+
   // FIX #3: Proper token check and interjection handling WITH DEBUGGING
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,11 +323,11 @@ export default function DailyForgePage() {
     // NEW LOGIC: Check if council debate is complete (has opening thoughts and conversation)
     const isCouncilDebateComplete = () => {
       if (!current) return false;
-      
-      const hasOpeningThoughts = current.openingThoughts && 
+
+      const hasOpeningThoughts = current.openingThoughts &&
                                 current.openingThoughts.length > 0;
       const hasConversationId = !!current.conversationId;
-      
+
       return hasOpeningThoughts && hasConversationId;
     };
 
@@ -256,7 +336,7 @@ export default function DailyForgePage() {
       console.log('❌ Council debate not complete');
       console.log('  Has opening thoughts:', !!current?.openingThoughts);
       console.log('  Has conversation ID:', !!current?.conversationId);
-      
+
       if (!current?.openingThoughts) {
         alert('Council debate has not started yet. Please wait for the opening statements.');
       } else if (!current?.conversationId) {
@@ -300,6 +380,12 @@ export default function DailyForgePage() {
     if (!current.conversationId) {
       console.log('❌ No conversation ID');
       alert('This conversation is not ready for interjections yet. Please try again in a moment.');
+      return;
+    }
+
+    if (!isOnline) {
+      console.log('❌ Network is offline');
+      alert('You are offline. Please check your internet connection and try again.');
       return;
     }
 
@@ -400,17 +486,44 @@ export default function DailyForgePage() {
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
 
-      // More user-friendly error messages
+      // Enhanced error handling with retry suggestion
       let alertMessage = err.message || 'Please try again';
+      let showRetryButton = false;
+      
       if (err.message.includes('500') || err.message.includes('Internal server error')) {
         alertMessage = 'Server error. Please try again in a moment. If this continues, contact support.';
+        showRetryButton = true;
       } else if (err.message.includes('401') || err.message.includes('403')) {
         alertMessage = 'Session expired. Please refresh the page and sign in again.';
       } else if (err.message.includes('404')) {
         alertMessage = 'Conversation not found. Please refresh the page.';
+      } else if (err.message.includes('NetworkError') || err.message.includes('Failed to fetch')) {
+        alertMessage = 'Network error. Please check your connection and try again.';
+        showRetryButton = true;
       }
 
-      alert(`Failed to send interjection: ${alertMessage}`);
+      // Log detailed error for debugging
+      console.error('🔴 Full error details:', {
+        message: err.message,
+        stack: err.stack,
+        currentForge: current,
+        userTokens,
+        timeLeft
+      });
+
+      // Show retry option for certain errors
+      if (showRetryButton) {
+        const shouldRetry = window.confirm(`${alertMessage}\n\nWould you like to retry?`);
+        if (shouldRetry) {
+          // Small delay before retry
+          setTimeout(() => {
+            handleInterject(e);
+          }, 2000);
+          return;
+        }
+      } else {
+        alert(`Failed to send interjection: ${alertMessage}`);
+      }
     } finally {
       setSending(false);
     }
@@ -444,14 +557,30 @@ export default function DailyForgePage() {
   return (
     <div className="min-h-screen bg-black text-white py-24">
       <div className="container mx-auto px-4 max-w-6xl">
-        {/* Debug button - remove in production */}
+        {/* Network status indicator */}
+        {!isOnline && (
+          <div className="fixed top-4 left-4 z-50">
+            <div className="bg-red-500/90 text-white px-4 py-2 rounded-full flex items-center gap-2 animate-pulse">
+              <WifiOff size={16} />
+              <span className="font-bold">Offline</span>
+            </div>
+          </div>
+        )}
+
+        {/* Debug buttons - remove in production */}
         {process.env.NODE_ENV === 'development' && (
-          <div className="fixed top-4 right-4 z-50">
+          <div className="fixed top-4 right-4 z-50 flex flex-col gap-2">
             <button
               onClick={testInterjection}
               className="px-4 py-2 bg-red-500 text-white rounded-lg font-bold"
             >
               🧪 Test Interjection
+            </button>
+            <button
+              onClick={runDiagnostics}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg font-bold"
+            >
+              🔧 Run Diagnostics
             </button>
           </div>
         )}
@@ -463,6 +592,14 @@ export default function DailyForgePage() {
         {error && (
           <div className="bg-red-900/30 border border-red-700 rounded-2xl p-6 mb-8">
             <p className="text-red-300">⚠️ {error}</p>
+            {error.includes('Network') && (
+              <button 
+                onClick={() => window.location.reload()}
+                className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors"
+              >
+                Reload Page
+              </button>
+            )}
           </div>
         )}
 
@@ -487,6 +624,20 @@ export default function DailyForgePage() {
                   <span className={`font-bold text-xl ${timeLeft === "Debate Closed" ? "text-red-400" : "text-purple-400"}`}>
                     {timeLeft}
                   </span>
+                </div>
+                {/* Network status */}
+                <div className="flex items-center gap-2">
+                  {isOnline ? (
+                    <div className="flex items-center gap-1 text-green-400">
+                      <Wifi size={16} />
+                      <span className="text-sm">Online</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-red-400">
+                      <WifiOff size={16} />
+                      <span className="text-sm">Offline</span>
+                    </div>
+                  )}
                 </div>
                 {/* Add phase badge */}
                 <div className="flex items-center gap-2">
@@ -586,6 +737,11 @@ export default function DailyForgePage() {
                         )}
                         Purchase tokens to participate. Your comments and questions will be <strong>publicly displayed</strong> as part of this historic Daily Forge debate.<br />
                         Each interjection costs <strong>1 token</strong>. You must be signed in to join the council.
+                        {!isOnline && (
+                          <span className="text-red-300 block mt-2">
+                            ⚠️ You are currently offline. Please check your internet connection.
+                          </span>
+                        )}
                       </p>
 
                       {!isAuthenticated ? (
@@ -646,7 +802,7 @@ export default function DailyForgePage() {
                         placeholder="Challenge the council. Add your insight. Shape the synthesis... (costs 1 token)"
                         className="w-full bg-black/50 border border-gray-700 rounded-2xl p-6 text-white min-h-[200px] outline-none focus:border-purple-500 resize-none text-lg"
                         required
-                        disabled={sending}
+                        disabled={sending || !isOnline}
                       />
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div className="text-gray-400">
@@ -658,14 +814,22 @@ export default function DailyForgePage() {
                           </span>
                           <button
                             type="submit"
-                            disabled={sending || !message.trim() || userTokens < 1}
+                            disabled={sending || !message.trim() || userTokens < 1 || !isOnline}
                             className="inline-flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-2xl shadow-purple-900/50"
                           >
                             <Zap size={24} />
                             {sending ? "Sending..." : `Interject (1 Token)`}
+                            {!isOnline && " (Offline)"}
                           </button>
                         </div>
                       </div>
+                      {!isOnline && (
+                        <div className="text-center">
+                          <p className="text-red-400 text-sm">
+                            ⚠️ You are offline. Please check your internet connection to interject.
+                          </p>
+                        </div>
+                      )}
                     </form>
                   </div>
                 )}
