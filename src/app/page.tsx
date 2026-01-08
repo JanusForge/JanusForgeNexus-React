@@ -308,7 +308,7 @@ export default function HomePage() {
                 <div className="flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/20 rounded-full">
                   <Zap size={14} className="text-purple-400 fill-purple-400" />
                   <span className="text-xs font-bold text-purple-300 uppercase tracking-tighter">
-                    {tokensRemaining} TOKENS
+                    {tokensRemaining} Tokens Remaining
                   </span>
                 </div>
               </div>

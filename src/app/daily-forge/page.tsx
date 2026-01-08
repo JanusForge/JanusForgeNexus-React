@@ -17,6 +17,9 @@ interface DailyForge {
   openingThoughts: string;
   conversationId?: string;
   created_at: string;
+  scoutedTopics?: string;
+  phase?: string;
+  councilVotes?: string;
 }
 
 interface Message {
@@ -42,7 +45,14 @@ export default function DailyForgePage() {
 
   const socketRef = useRef<Socket | null>(null);
 
-  // URGENT FIX: Socket setup with better error handling
+  // FIX 1: Sync initial tokens from user object like Home page does
+  useEffect(() => {
+    if (user && user.tokens_remaining !== undefined) {
+      setUserTokens(user.tokens_remaining);
+    }
+  }, [user]);
+
+  // FIX 2: Update socket to handle token updates like Home page
   useEffect(() => {
     try {
       socketRef.current = io(API_BASE_URL, {
@@ -68,6 +78,11 @@ export default function DailyForgePage() {
       socketRef.current.on('post:incoming', (msg: Message) => {
         console.log('📨 New post received:', msg);
         setAllPosts(prev => [msg, ...prev]);
+
+        // FIX 3: Update tokens from socket message like Home page does
+        if (msg.tokens_remaining !== undefined) {
+          setUserTokens(msg.tokens_remaining);
+        }
       });
 
       socketRef.current.on('new-reply', (reply: any) => {
@@ -105,23 +120,34 @@ export default function DailyForgePage() {
         console.log('📊 Current forge:', currentData);
         setCurrent(currentData);
 
-        // URGENT FIX: Check if conversationId exists and is properly linked
-        if (!currentData.conversationId) {
-          console.warn('⚠️ No conversationId linked to DailyForge');
+        // FIXED: Only show error in CONVERSATION phase without conversationId
+        console.log(`🔍 Debug - Phase: ${currentData.phase}, Conversation ID: ${currentData.conversationId || 'none'}`);
+
+        if (currentData.phase === 'CONVERSATION' && !currentData.conversationId) {
+          console.error('❌ CONVERSATION phase but no conversationId');
           setError('Daily Forge conversation not properly initialized');
-        } else if (socketRef.current?.connected) {
-          socketRef.current.emit('join-conversation', currentData.conversationId);
-          console.log('✅ Joined conversation:', currentData.conversationId);
+        } else {
+          // For TOPIC_SELECTION or any other phase, NO ERROR
+          console.log(`✅ ${currentData.phase} phase - conversationId not required yet`);
+          setError(null);
+
+          // Join socket if we have conversationId (optional for CONVERSATION phase)
+          if (currentData.conversationId && socketRef.current?.connected) {
+            socketRef.current.emit('join-conversation', currentData.conversationId);
+            console.log('✅ Joined conversation:', currentData.conversationId);
+          }
         }
 
         // FIX #1: Fetch conversation posts - USE CORRECT ENDPOINT
         if (currentData.conversationId) {
           try {
-            const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${currentData.conversationId}`);
+            const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${currentData.conversationId}`, {
+              credentials: 'include'  // ADDED: Include credentials
+            });
             if (postsRes.ok) {
               const conv = await postsRes.json();
               console.log('💬 Conversation data:', conv);
-              
+
               const posts = conv.conversation?.posts || [];
               const formatted = posts.map((p: any) => ({
                 id: p.id,
@@ -147,21 +173,8 @@ export default function DailyForgePage() {
           console.error('❌ Failed to fetch history:', historyErr);
         }
 
-        // FIX #2: Fetch user tokens if authenticated - USE CORRECT ENDPOINT
-        if (isAuthenticated) {
-          try {
-            const userRes = await fetch(`${API_BASE_URL}/api/auth/me`, { 
-              credentials: 'include' 
-            });
-            if (userRes.ok) {
-              const userData = await userRes.json();
-              setUserTokens(userData.user?.token_balance || 0);
-              console.log('✅ User tokens fetched:', userData.user?.token_balance);
-            }
-          } catch (tokensErr) {
-            console.error('❌ Failed to fetch user tokens:', tokensErr);
-          }
-        }
+        // FIX #4: REMOVED the separate token fetch - we already get tokens from useAuth hook
+        // The Home page doesn't fetch tokens separately, it uses the user object
 
         // Set up timer for debate countdown
         if (currentData.date) {
@@ -229,10 +242,13 @@ export default function DailyForgePage() {
     setSending(true);
 
     try {
-      // FIX: Use the conversations API endpoint - tokens are auto-deducted in backend
+      // FIXED: Use the conversations API endpoint - tokens are auto-deducted in backend
       const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',  // CRITICAL FIX: Added credentials
+        headers: { 
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           content: message,
           userId: user.id
@@ -241,15 +257,25 @@ export default function DailyForgePage() {
       });
 
       if (response.ok) {
-        setMessage('');
-        setUserTokens(prev => prev - 1); // Update local state
-        alert("✅ Interjection sent! The council will respond soon.");
+        const responseData = await response.json();
+        console.log('✅ Interjection successful:', responseData);
         
+        setMessage('');
+        
+        // If backend returns updated token count, use it
+        if (responseData.tokens_remaining !== undefined) {
+          setUserTokens(responseData.tokens_remaining);
+        }
+        
+        alert("✅ Interjection sent! The council will respond soon.");
+
         // Refresh posts after successful interjection
         if (current.conversationId) {
           setTimeout(async () => {
             try {
-              const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`);
+              const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
+                credentials: 'include'  // Added credentials here too
+              });
               if (postsRes.ok) {
                 const conv = await postsRes.json();
                 const posts = conv.conversation?.posts || [];
@@ -268,12 +294,12 @@ export default function DailyForgePage() {
           }, 2000); // Wait 2 seconds for AI responses
         }
       } else {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ message: 'Unknown error' }));
         throw new Error(error.message || 'Failed to send interjection');
       }
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
-      alert(`Failed to send interjection: ${err.message}`);
+      alert(`Failed to send interjection: ${err.message || 'Please try again'}`);
     } finally {
       setSending(false);
     }
