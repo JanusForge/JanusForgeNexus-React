@@ -1,15 +1,14 @@
-'use client';
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export interface User {
+interface User {
   id: string;
   email: string;
   name: string;
   username: string;
   tokens_remaining: number;
-  role?: string; // For GOD_MODE only
+  role?: string;
 }
 
 interface AuthContextType {
@@ -61,19 +60,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
       });
+      
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || 'Login failed');
       }
+      
       const data = await response.json();
+      console.log('=== LOGIN DEBUG ===');
+      console.log('API response:', data);
+      
+      // API returns { message: "...", user: { ... }, accessToken: "..." }
+      // So we need to use data.user, not data directly
       const userData: User = {
-        id: data.id,
-        email: data.email,
-        name: data.name || data.username || email.split('@')[0],
-        username: data.username || email.split('@')[0],
-        tokens_remaining: data.tokens_remaining || 0,
-        role: data.role
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name || data.user.username || email.split('@')[0],
+        username: data.user.username || email.split('@')[0],
+        tokens_remaining: data.user.tokens_remaining,
+        role: data.user.role
       };
+      
+      console.log('UserData to store:', userData);
       setUser(userData);
       localStorage.setItem('janus_user', JSON.stringify(userData));
     } catch (error: any) {
@@ -84,11 +92,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('janus_user');
-  };
-
   const register = async (email: string, name: string, password: string) => {
     setIsLoading(true);
     try {
@@ -97,19 +100,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.toLowerCase().trim(), username: name, password }),
       });
+      
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText || 'Registration failed');
       }
+      
       const data = await response.json();
+      console.log('=== REGISTER DEBUG ===');
+      console.log('API response:', data);
+      
+      // API returns { message: "...", user: { ... }, accessToken: "..." }
       const userData: User = {
-        id: data.id,
-        email: data.email,
-        name: data.name || name,
-        username: data.username || name,
-        tokens_remaining: data.tokens_remaining || 50,
-        role: data.role
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name || data.user.username || name,
+        username: data.user.username || name,
+        tokens_remaining: data.user.tokens_remaining,
+        role: data.user.role
       };
+      
+      console.log('UserData to store:', userData);
       setUser(userData);
       localStorage.setItem('janus_user', JSON.stringify(userData));
     } catch (error) {
@@ -118,6 +129,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('janus_user');
   };
 
   const refreshUser = async () => {
