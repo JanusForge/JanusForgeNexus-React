@@ -181,7 +181,7 @@ export default function DailyForgePage() {
         if (currentData.conversationId) {
           try {
             const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${currentData.conversationId}`, {
-              credentials: 'include'  // ADDED: Include credentials
+              credentials: 'include'
             });
             if (postsRes.ok) {
               const conv = await postsRes.json();
@@ -236,7 +236,7 @@ export default function DailyForgePage() {
 
         // Set up polling for updates if socket fails
         if (!socketRef.current?.connected) {
-          pollInterval = setInterval(fetchData, 30000); // Poll every 30 seconds
+          pollInterval = setInterval(fetchData, 30000);
         }
 
       } catch (err: any) {
@@ -270,8 +270,7 @@ export default function DailyForgePage() {
     try {
       console.log('🏥 Testing API health...');
       const healthCheck = await fetch(`${API_BASE_URL}/health`, { 
-        credentials: 'include',
-        timeout: 5000
+        credentials: 'include'
       });
       console.log('🏥 Health Check Status:', healthCheck.status);
       if (!healthCheck.ok) {
@@ -289,8 +288,7 @@ export default function DailyForgePage() {
         const convTest = await fetch(
           `${API_BASE_URL}/api/conversations/${current.conversationId}`,
           { 
-            credentials: 'include',
-            timeout: 5000
+            credentials: 'include'
           }
         );
         console.log('💬 Conversation Test Status:', convTest.status);
