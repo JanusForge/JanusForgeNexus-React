@@ -43,6 +43,7 @@ export default function DailyForgePage() {
   const [userTokens, setUserTokens] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(true);
+  const [lastErrorDetails, setLastErrorDetails] = useState<string>('');
 
   const socketRef = useRef<Socket | null>(null);
 
@@ -306,6 +307,60 @@ export default function DailyForgePage() {
     alert('Diagnostics complete. Check browser console for details.');
   };
 
+  // Test the POST endpoint directly
+  const testPostEndpoint = async () => {
+    if (!current?.conversationId || !user) {
+      alert('Need conversation ID and user to test');
+      return;
+    }
+
+    console.log('🔍 Testing POST endpoint directly...');
+    
+    const testPayload = {
+      content: 'Test message from diagnostic function',
+      userId: user.id,
+      is_human: true,
+      conversation_id: current.conversationId
+    };
+
+    console.log('📤 Test POST URL:', `${API_BASE_URL}/api/conversations/${current.conversationId}/posts`);
+    console.log('📝 Test Payload:', testPayload);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testPayload)
+      });
+
+      console.log('📡 Test Response Status:', response.status);
+      console.log('📡 Test Response Headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Test Failed - Response Text:', errorText);
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error('❌ Test Failed - JSON:', errorJson);
+          alert(`POST test failed: ${response.status}\n\n${JSON.stringify(errorJson, null, 2)}`);
+        } catch {
+          console.error('❌ Test Failed - Raw Text:', errorText);
+          alert(`POST test failed: ${response.status}\n\n${errorText}`);
+        }
+      } else {
+        const successData = await response.json();
+        console.log('✅ Test Success:', successData);
+        alert(`POST test successful!\n\n${JSON.stringify(successData, null, 2)}`);
+      }
+    } catch (err: any) {
+      console.error('❌ Test Exception:', err);
+      alert(`Test exception: ${err.message}`);
+    }
+  };
+
   // FIX #3: Proper token check and interjection handling WITH DEBUGGING
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -412,18 +467,30 @@ export default function DailyForgePage() {
       });
 
       console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         let errorMessage = 'Failed to send interjection';
+        let errorDetails = '';
+        
         try {
-          const errorData = await response.json();
-          console.error('❌ Backend error details:', errorData);
-          errorMessage = errorData.message || errorData.error || `Server error: ${response.status}`;
-        } catch (parseError) {
           const errorText = await response.text();
           console.error('❌ Server error text:', errorText);
+          errorDetails = errorText;
+          
+          try {
+            const errorData = JSON.parse(errorText);
+            console.error('❌ Backend error details:', errorData);
+            errorMessage = errorData.message || errorData.error || `Server error: ${response.status}`;
+            errorDetails = JSON.stringify(errorData, null, 2);
+          } catch (parseError) {
+            errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          }
+        } catch (textError) {
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
+        
+        setLastErrorDetails(errorDetails);
         throw new Error(errorMessage);
       }
 
@@ -431,6 +498,7 @@ export default function DailyForgePage() {
       console.log('✅ Interjection successful:', responseData);
 
       setMessage('');
+      setLastErrorDetails('');
 
       // Update tokens if returned
       if (responseData.tokens_remaining !== undefined) {
@@ -511,7 +579,7 @@ export default function DailyForgePage() {
 
       // Show retry option for certain errors
       if (showRetryButton) {
-        const shouldRetry = window.confirm(`${alertMessage}\n\nWould you like to retry?`);
+        const shouldRetry = window.confirm(`${alertMessage}\n\nLast error details:\n${lastErrorDetails}\n\nWould you like to retry?`);
         if (shouldRetry) {
           // Small delay before retry
           setTimeout(() => {
@@ -520,7 +588,7 @@ export default function DailyForgePage() {
           return;
         }
       } else {
-        alert(`Failed to send interjection: ${alertMessage}`);
+        alert(`Failed to send interjection: ${alertMessage}\n\nError details:\n${lastErrorDetails}`);
       }
     } finally {
       setSending(false);
@@ -580,6 +648,32 @@ export default function DailyForgePage() {
             >
               🔧 Run Diagnostics
             </button>
+            <button
+              onClick={testPostEndpoint}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg font-bold"
+            >
+              📤 Test POST Endpoint
+            </button>
+          </div>
+        )}
+
+        {/* Error details display */}
+        {lastErrorDetails && (
+          <div className="fixed top-20 right-4 z-50 max-w-md">
+            <div className="bg-red-900/90 text-white p-4 rounded-lg border border-red-700">
+              <div className="flex justify-between items-center mb-2">
+                <span className="font-bold">Last Error Details:</span>
+                <button 
+                  onClick={() => setLastErrorDetails('')}
+                  className="text-red-300 hover:text-white"
+                >
+                  ×
+                </button>
+              </div>
+              <pre className="text-xs overflow-auto max-h-40 whitespace-pre-wrap">
+                {lastErrorDetails}
+              </pre>
+            </div>
           </div>
         )}
 
@@ -826,6 +920,16 @@ export default function DailyForgePage() {
                           <p className="text-red-400 text-sm">
                             ⚠️ You are offline. Please check your internet connection to interject.
                           </p>
+                        </div>
+                      )}
+                      {lastErrorDetails && (
+                        <div className="text-center">
+                          <details className="text-red-400 text-sm">
+                            <summary className="cursor-pointer">Show last error details</summary>
+                            <pre className="text-xs bg-red-900/30 p-3 rounded-lg mt-2 overflow-auto max-h-32 whitespace-pre-wrap">
+                              {lastErrorDetails}
+                            </pre>
+                          </details>
                         </div>
                       )}
                     </form>
