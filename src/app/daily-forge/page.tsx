@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
-import { Calendar, Clock, Zap, Wifi, WifiOff } from 'lucide-react';
+import { Calendar, Clock, Zap, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 // URGENT FIX: Make sure this matches your production backend
@@ -138,6 +138,8 @@ export default function DailyForgePage() {
     console.log('   Authenticated:', isAuthenticated);
     console.log('   Current forge ID:', current?.conversationId);
     console.log('   Current phase:', current?.phase);
+    console.log('   Winning topic:', current?.winningTopic);
+    console.log('   Has opening thoughts:', !!current?.openingThoughts);
   }, [message, sending, userTokens, isAuthenticated, current]);
 
   // URGENT FIX: Enhanced data fetching with error handling
@@ -160,6 +162,12 @@ export default function DailyForgePage() {
         console.log('📊 Current forge:', currentData);
         setCurrent(currentData);
 
+        // Check if we're stuck in topic selection
+        if (currentData.phase === 'TOPIC_SELECTION' && !currentData.winningTopic) {
+          console.warn('⚠️ Daily Forge stuck in TOPIC_SELECTION phase with no winning topic');
+          setError('Council is currently selecting today\'s topic. Please check back in a few minutes.');
+        }
+
         // FIXED: Only show error in CONVERSATION phase without conversationId
         console.log(`🔍 Debug - Phase: ${currentData.phase}, Conversation ID: ${currentData.conversationId || 'none'}`);
 
@@ -169,7 +177,9 @@ export default function DailyForgePage() {
         } else {
           // For TOPIC_SELECTION or any other phase, NO ERROR
           console.log(`✅ ${currentData.phase} phase - conversationId not required yet`);
-          setError(null);
+          if (currentData.phase !== 'TOPIC_SELECTION' || currentData.winningTopic) {
+            setError(null);
+          }
 
           // Join socket if we have conversationId (optional for CONVERSATION phase)
           if (currentData.conversationId && socketRef.current?.connected) {
@@ -307,125 +317,41 @@ export default function DailyForgePage() {
     alert('Diagnostics complete. Check browser console for details.');
   };
 
-  // Test the POST endpoint with different payloads
-  const testPostEndpoint = async () => {
-    if (!current?.conversationId || !user) {
-      alert('Need conversation ID and user to test');
-      return;
-    }
-
-    console.log('🔍 Testing POST endpoint with different payloads...');
+  // Check backend workflow
+  const checkBackendWorkflow = async () => {
+    console.group('🔄 Backend Workflow Check');
     
-    const testPayloads = [
-      {
-        name: 'Minimal payload',
-        payload: {
-          content: 'Test message from diagnostic function',
-          userId: user.id,
-          is_human: true,
-          conversation_id: current.conversationId
-        }
-      },
-      {
-        name: 'Payload without conversation_id',
-        payload: {
-          content: 'Test without conversation_id',
-          userId: user.id,
-          is_human: true
-        }
-      },
-      {
-        name: 'Payload without is_human',
-        payload: {
-          content: 'Test without is_human',
-          userId: user.id,
-          conversation_id: current.conversationId
-        }
-      },
-      {
-        name: 'Simple content only',
-        payload: {
-          content: 'Simple test'
-        }
-      }
-    ];
-
-    for (const test of testPayloads) {
-      console.log(`\n📤 Testing: ${test.name}`);
-      console.log('📝 Payload:', test.payload);
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(test.payload)
-        });
-
-        console.log(`📡 ${test.name} Response Status:`, response.status);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ ${test.name} Failed - Status:`, response.status);
-          console.error(`❌ ${test.name} Response:`, errorText);
-          
-          try {
-            const errorJson = JSON.parse(errorText);
-            console.error(`❌ ${test.name} JSON Error:`, errorJson);
-          } catch {
-            // Not JSON
-          }
-        } else {
-          const successData = await response.json();
-          console.log(`✅ ${test.name} Success:`, successData);
-          alert(`${test.name} successful!\n\nCheck console for details.`);
-          break; // Stop if one works
-        }
-      } catch (err: any) {
-        console.error(`❌ ${test.name} Exception:`, err.message);
-      }
-      
-      // Wait a bit between tests
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    alert('All POST tests complete. Check console for results.');
-  };
-
-  // Test GET endpoints to see what's expected
-  const inspectEndpoints = async () => {
-    if (!current?.conversationId) {
-      alert('No conversation ID found');
-      return;
-    }
-
-    console.group('🔍 Inspecting Endpoints');
-    
-    // Check what the conversation looks like
+    // Check if there's a stuck Daily Forge
     try {
-      console.log('📋 Fetching conversation details...');
-      const convResponse = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
-        credentials: 'include'
-      });
-      
-      console.log('📋 Conversation Status:', convResponse.status);
-      if (convResponse.ok) {
-        const convData = await convResponse.json();
-        console.log('📋 Conversation Data:', convData);
+      const response = await fetch(`${API_BASE_URL}/api/daily-forge/current`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📊 Current forge status:', {
+          id: data.id,
+          date: data.date,
+          phase: data.phase,
+          winningTopic: data.winningTopic || '(empty)',
+          openingThoughts: data.openingThoughts ? 'exists' : 'missing',
+          conversationId: data.conversationId || 'missing',
+          scoutedTopics: data.scoutedTopics ? JSON.parse(data.scoutedTopics).length + ' topics' : 'none'
+        });
         
-        // Check what fields exist in posts
-        if (convData.conversation?.posts?.[0]) {
-          console.log('📋 Example Post Structure:', convData.conversation.posts[0]);
+        if (data.phase === 'TOPIC_SELECTION' && !data.winningTopic) {
+          console.warn('⚠️ BACKEND ISSUE: Daily Forge stuck in TOPIC_SELECTION without a winning topic');
+          alert('Backend issue detected: Daily Forge is stuck in topic selection phase.\n\nThis usually means the council AI services (Grok, Claude, DeepSeek) are not responding or the topic selection workflow failed.\n\nPlease check backend logs and restart the daily forge workflow.');
+        } else if (data.phase === 'COUNCIL_DEBATE' && !data.openingThoughts) {
+          console.warn('⚠️ BACKEND ISSUE: In COUNCIL_DEBATE phase but no opening thoughts');
+          alert('Backend issue detected: Council debate phase started but no opening arguments generated.\n\nThe AI council members may not be responding.');
+        } else if (data.phase === 'CONVERSATION' && !data.conversationId) {
+          console.warn('⚠️ BACKEND ISSUE: In CONVERSATION phase but no conversation ID');
+          alert('Backend issue detected: Conversation phase started but no conversation created.\n\nDatabase may have issues creating the conversation.');
         }
       }
     } catch (err) {
-      console.error('❌ Failed to fetch conversation:', err);
+      console.error('❌ Failed to check workflow:', err);
     }
     
     console.groupEnd();
-    alert('Endpoint inspection complete. Check console for details.');
   };
 
   // FIX #3: Proper token check and interjection handling WITH DEBUGGING
@@ -450,6 +376,13 @@ export default function DailyForgePage() {
 
       return hasOpeningThoughts && hasConversationId;
     };
+
+    // Prevent interjection if in TOPIC_SELECTION phase
+    if (current?.phase === 'TOPIC_SELECTION') {
+      console.log('❌ In TOPIC_SELECTION phase - cannot interject');
+      alert('The council is still selecting today\'s topic. Please wait for the topic to be chosen and the opening debate to begin.');
+      return;
+    }
 
     // Allow interjections if council debate is complete, regardless of phase label
     if (!isCouncilDebateComplete()) {
@@ -514,140 +447,116 @@ export default function DailyForgePage() {
     
     setSending(true);
 
-    // Try different payload formats to see what works
-    const payloads = [
-      {
-        name: 'Standard payload',
-        payload: {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           content: message,
           userId: user.id,
           is_human: true,
           conversation_id: current.conversationId
-        }
-      },
-      {
-        name: 'Alternative payload',
-        payload: {
-          content: message,
-          userId: user.id,
-          is_human: true
-          // No conversation_id - maybe it's inferred from URL
-        }
-      },
-      {
-        name: 'Simple payload',
-        payload: {
-          content: message,
-          userId: user.id
-        }
-      }
-    ];
+        })
+      });
 
-    for (const payloadTest of payloads) {
-      console.log(`\n🔍 Trying ${payloadTest.name}:`, payloadTest.payload);
-      
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payloadTest.payload)
-        });
+      console.log('📡 Response status:', response.status);
 
-        console.log(`📡 ${payloadTest.name} Response status:`, response.status);
-        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ ${payloadTest.name} Failed:`, errorText);
-          
-          if (payloadTest.name !== 'Simple payload') {
-            continue; // Try next payload
-          }
-          
-          setLastErrorDetails(`Status: ${response.status}\n\nResponse: ${errorText}`);
-          throw new Error(`Server error: ${response.status}`);
-        }
-
-        // SUCCESS!
-        const responseData = await response.json();
-        console.log('✅ Interjection successful:', responseData);
-
-        setMessage('');
-        setLastErrorDetails('');
-
-        // Update tokens if returned
-        if (responseData.tokens_remaining !== undefined) {
-          console.log('💰 Updated tokens:', responseData.tokens_remaining);
-          setUserTokens(responseData.tokens_remaining);
-        }
-
-        // If backend returns the new post, add it to the list
-        if (responseData.post) {
-          const newPost: Message = {
-            id: responseData.post.id,
-            name: user.username || 'User',
-            content: responseData.post.content,
-            sender: 'user',
-            tokens_remaining: responseData.tokens_remaining,
-            created_at: responseData.post.created_at || new Date().toISOString()
-          };
-          setAllPosts(prev => [newPost, ...prev]);
-          console.log('📝 Added new post to list:', newPost);
-        }
-
-        alert(`✅ Interjection sent using ${payloadTest.name}! The council will respond soon.`);
-
-        // Refresh posts after successful interjection
-        if (current.conversationId) {
-          setTimeout(async () => {
-            try {
-              console.log('🔄 Refreshing posts...');
-              const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
-                credentials: 'include'
-              });
-              if (postsRes.ok) {
-                const conv = await postsRes.json();
-                const posts = conv.conversation?.posts || [];
-                const formatted = posts.map((p: any) => ({
-                  id: p.id,
-                  name: p.is_human ? p.user?.username || 'User' : p.ai_model || 'AI Council',
-                  content: p.content,
-                  sender: p.is_human ? 'user' : 'ai',
-                  created_at: p.created_at
-                })).reverse();
-                setAllPosts(formatted);
-                console.log('✅ Posts refreshed, count:', formatted.length);
-              }
-            } catch (refreshErr) {
-              console.error('Failed to refresh posts:', refreshErr);
-            }
-          }, 2000);
-        }
-
-        setSending(false);
-        return; // Exit function on success
-
-      } catch (err: any) {
-        console.error(`❌ ${payloadTest.name} failed:`, err);
+      if (!response.ok) {
+        let errorMessage = 'Failed to send interjection';
+        let errorDetails = '';
         
-        if (payloadTest.name === 'Simple payload') {
-          // This was our last attempt
-          let alertMessage = err.message || 'Please try again';
+        try {
+          const errorText = await response.text();
+          console.error('❌ Server error text:', errorText);
+          errorDetails = errorText;
           
-          if (err.message.includes('500') || err.message.includes('Internal server error')) {
-            alertMessage = 'Server error. Please try again in a moment. If this continues, contact support.';
+          try {
+            const errorData = JSON.parse(errorText);
+            console.error('❌ Backend error details:', errorData);
+            errorMessage = errorData.message || errorData.error || `Server error: ${response.status}`;
+            errorDetails = JSON.stringify(errorData, null, 2);
+          } catch {
+            errorMessage = `Server error: ${response.status} ${response.statusText}`;
           }
-
-          console.error('🔴 All payload attempts failed');
-          alert(`Failed to send interjection: ${alertMessage}\n\nAll payload formats failed. Please check backend logs.`);
+        } catch {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
+        
+        setLastErrorDetails(errorDetails);
+        throw new Error(errorMessage);
       }
+
+      const responseData = await response.json();
+      console.log('✅ Interjection successful:', responseData);
+
+      setMessage('');
+      setLastErrorDetails('');
+
+      // Update tokens if returned
+      if (responseData.tokens_remaining !== undefined) {
+        console.log('💰 Updated tokens:', responseData.tokens_remaining);
+        setUserTokens(responseData.tokens_remaining);
+      }
+
+      // If backend returns the new post, add it to the list
+      if (responseData.post) {
+        const newPost: Message = {
+          id: responseData.post.id,
+          name: user.username || 'User',
+          content: responseData.post.content,
+          sender: 'user',
+          tokens_remaining: responseData.tokens_remaining,
+          created_at: responseData.post.created_at || new Date().toISOString()
+        };
+        setAllPosts(prev => [newPost, ...prev]);
+        console.log('📝 Added new post to list:', newPost);
+      }
+
+      alert("✅ Interjection sent! The council will respond soon.");
+
+      // Refresh posts after successful interjection
+      if (current.conversationId) {
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Refreshing posts...');
+            const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
+              credentials: 'include'
+            });
+            if (postsRes.ok) {
+              const conv = await postsRes.json();
+              const posts = conv.conversation?.posts || [];
+              const formatted = posts.map((p: any) => ({
+                id: p.id,
+                name: p.is_human ? p.user?.username || 'User' : p.ai_model || 'AI Council',
+                content: p.content,
+                sender: p.is_human ? 'user' : 'ai',
+                created_at: p.created_at
+              })).reverse();
+              setAllPosts(formatted);
+              console.log('✅ Posts refreshed, count:', formatted.length);
+            }
+          } catch (refreshErr) {
+            console.error('Failed to refresh posts:', refreshErr);
+          }
+        }, 2000);
+      }
+
+    } catch (err: any) {
+      console.error('❌ Interjection failed:', err);
+
+      let alertMessage = err.message || 'Please try again';
+      
+      if (err.message.includes('500') || err.message.includes('Internal server error')) {
+        alertMessage = 'Server error. Please try again in a moment. If this continues, contact support.';
+      }
+
+      alert(`Failed to send interjection: ${alertMessage}`);
+    } finally {
+      setSending(false);
     }
-    
-    setSending(false);
   };
 
   // Test function for debugging
@@ -704,16 +613,10 @@ export default function DailyForgePage() {
               🔧 Run Diagnostics
             </button>
             <button
-              onClick={testPostEndpoint}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg font-bold"
+              onClick={checkBackendWorkflow}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg font-bold"
             >
-              📤 Test POST Endpoint
-            </button>
-            <button
-              onClick={inspectEndpoints}
-              className="px-4 py-2 bg-yellow-500 text-white rounded-lg font-bold"
-            >
-              🔍 Inspect Endpoints
+              🔄 Check Backend Workflow
             </button>
           </div>
         )}
@@ -760,7 +663,7 @@ export default function DailyForgePage() {
           <div className="mb-32">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
-                {current.winningTopic}
+                {current.winningTopic || "Today's topic being selected..."}
               </h2>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-gray-400">
                 <div className="flex items-center gap-2">
@@ -806,25 +709,56 @@ export default function DailyForgePage() {
               </div>
             </div>
 
-            {/* Opening Council Debate */}
-            <div className="space-y-12 mb-16">
-              <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
-              {current.openingThoughts && JSON.parse(current.openingThoughts).map((resp: any, i: number) => (
-                <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-lg">
-                      {resp.model?.[0] || 'A'}
-                    </div>
-                    <h4 className="text-2xl font-black text-purple-400">
-                      {resp.model || 'AI Council Member'}
-                    </h4>
-                  </div>
-                  <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">
-                    {resp.content || 'No response available'}
-                  </p>
+            {/* Show warning if stuck in topic selection */}
+            {current.phase === 'TOPIC_SELECTION' && !current.winningTopic && (
+              <div className="bg-yellow-900/30 border border-yellow-700 rounded-2xl p-6 mb-8">
+                <div className="flex items-center gap-3 mb-3">
+                  <AlertCircle className="text-yellow-400" size={24} />
+                  <h3 className="text-xl font-bold text-yellow-300">Council Topic Selection in Progress</h3>
                 </div>
-              ))}
-            </div>
+                <p className="text-yellow-200 mb-3">
+                  The AI council (Grok, Claude, DeepSeek) is currently selecting today's debate topic. 
+                  This process usually takes a few minutes.
+                </p>
+                <div className="text-yellow-100 text-sm">
+                  <p><strong>What's happening:</strong></p>
+                  <ul className="list-disc pl-5 mt-2 space-y-1">
+                    <li>Council members are reviewing scouted topics</li>
+                    <li>They're voting on the most important topic</li>
+                    <li>Once selected, they'll begin the opening debate</li>
+                    <li>After the opening debate, community interjections will open</li>
+                  </ul>
+                </div>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="mt-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg font-bold transition-colors"
+                >
+                  Refresh Status
+                </button>
+              </div>
+            )}
+
+            {/* Opening Council Debate - Only show if we have opening thoughts */}
+            {current.openingThoughts && (
+              <div className="space-y-12 mb-16">
+                <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
+                {JSON.parse(current.openingThoughts).map((resp: any, i: number) => (
+                  <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-lg">
+                        {resp.model?.[0] || 'A'}
+                      </div>
+                      <h4 className="text-2xl font-black text-purple-400">
+                        {resp.model || 'AI Council Member'}
+                      </h4>
+                    </div>
+                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">
+                      {resp.content || 'No response available'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Community Interjections */}
             <div className="space-y-8 mb-16">
@@ -840,8 +774,22 @@ export default function DailyForgePage() {
 
               {allPosts.length === 0 ? (
                 <div className="text-center py-12 bg-gray-900/30 border border-gray-800 rounded-3xl">
-                  <p className="text-gray-500 text-lg mb-4">No interjections yet.</p>
-                  <p className="text-gray-400">Be the first to challenge the council!</p>
+                  {current.phase === 'TOPIC_SELECTION' ? (
+                    <>
+                      <p className="text-gray-500 text-lg mb-4">Waiting for council debate to begin...</p>
+                      <p className="text-gray-400">Interjections will open after the opening council debate.</p>
+                    </>
+                  ) : current.phase === 'COUNCIL_DEBATE' ? (
+                    <>
+                      <p className="text-gray-500 text-lg mb-4">Council debate in progress...</p>
+                      <p className="text-gray-400">Interjections will open once the council finishes opening statements.</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-500 text-lg mb-4">No interjections yet.</p>
+                      <p className="text-gray-400">Be the first to challenge the council!</p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
@@ -878,8 +826,21 @@ export default function DailyForgePage() {
                 <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12 mb-12 text-center">
                   <h3 className="text-3xl font-black mb-6">Daily Forge Status: {current?.phase?.replace('_', ' ') || 'Active'}</h3>
 
-                  {/* UPDATED LOGIC: Check if council debate is complete */}
-                  {current?.openingThoughts && current?.conversationId ? (
+                  {/* UPDATED LOGIC: Show appropriate message based on phase */}
+                  {current?.phase === 'TOPIC_SELECTION' ? (
+                    <>
+                      <p className="text-xl text-blue-200 leading-relaxed mb-8">
+                        <strong>Topic Selection Phase</strong><br />
+                        The AI Council is currently selecting today's debate topic. Check back soon for the opening arguments!
+                      </p>
+                      <div className="bg-blue-900/30 border border-blue-700 rounded-2xl p-6">
+                        <p className="text-lg text-blue-100">
+                          <strong>Workflow status:</strong><br />
+                          1. Topic Selection (Now) → 2. Council Debate → 3. Conversation Phase (24 hours) → 4. Debate Closed
+                        </p>
+                      </div>
+                    </>
+                  ) : current?.openingThoughts && current?.conversationId ? (
                     <>
                       <p className="text-xl text-gray-200 leading-relaxed mb-8">
                         <strong>Conversation Phase Active!</strong><br />
@@ -933,11 +894,6 @@ export default function DailyForgePage() {
                         </p>
                       </div>
                     </>
-                  ) : current?.phase === 'TOPIC_SELECTION' ? (
-                    <p className="text-xl text-blue-200 leading-relaxed mb-8">
-                      <strong>Topic Selection Phase</strong><br />
-                      The council is selecting today's debate topic. Check back soon for the opening arguments!
-                    </p>
                   ) : (
                     <p className="text-xl text-gray-200 leading-relaxed mb-8">
                       The Daily Forge is active. Status updates will appear here.
@@ -945,7 +901,7 @@ export default function DailyForgePage() {
                   )}
                 </div>
 
-                {/* UPDATED: Show interjection form when council debate is complete */}
+                {/* UPDATED: Show interjection form ONLY when council debate is complete AND we have conversation ID */}
                 {current?.openingThoughts && current?.conversationId && isAuthenticated && userTokens >= 1 && (
                   <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
                     <form onSubmit={handleInterject} className="space-y-6">
@@ -955,7 +911,7 @@ export default function DailyForgePage() {
                         placeholder="Challenge the council. Add your insight. Shape the synthesis... (costs 1 token)"
                         className="w-full bg-black/50 border border-gray-700 rounded-2xl p-6 text-white min-h-[200px] outline-none focus:border-purple-500 resize-none text-lg"
                         required
-                        disabled={sending || !isOnline}
+                        disabled={sending || !isOnline || current?.phase === 'TOPIC_SELECTION'}
                       />
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div className="text-gray-400">
@@ -967,7 +923,7 @@ export default function DailyForgePage() {
                           </span>
                           <button
                             type="submit"
-                            disabled={sending || !message.trim() || userTokens < 1 || !isOnline}
+                            disabled={sending || !message.trim() || userTokens < 1 || !isOnline || current?.phase === 'TOPIC_SELECTION'}
                             className="inline-flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black text-xl uppercase tracking-wider transition-all shadow-2xl shadow-purple-900/50"
                           >
                             <Zap size={24} />
@@ -980,6 +936,13 @@ export default function DailyForgePage() {
                         <div className="text-center">
                           <p className="text-red-400 text-sm">
                             ⚠️ You are offline. Please check your internet connection to interject.
+                          </p>
+                        </div>
+                      )}
+                      {current?.phase === 'TOPIC_SELECTION' && (
+                        <div className="text-center">
+                          <p className="text-blue-400 text-sm">
+                            ⏳ Waiting for council to select topic and begin debate...
                           </p>
                         </div>
                       )}
