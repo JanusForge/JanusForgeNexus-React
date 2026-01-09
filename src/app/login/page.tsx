@@ -1,26 +1,34 @@
 'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-
 export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState(''); // New: for verification success
   const [isLoading, setIsLoading] = useState(false);
-  
   const { login, isAuthenticated } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams(); // New: read URL params
+
+  // Check for verification success redirect
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      setSuccessMessage('Email verified successfully! You can now sign in.');
+      // Optional: auto-focus password field or clear URL params
+      window.history.replaceState({}, '', '/login');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage(''); // Clear success on new attempt
     setIsLoading(true);
-
     try {
       await login(email, password);
       router.push('/');
@@ -51,13 +59,19 @@ export default function LoginPage() {
             <p className="text-gray-400 mt-2">Sign in to your Janus Forge account</p>
           </div>
 
+          {/* Success message for verified redirect */}
+          {successMessage && (
+            <div className="p-4 mb-6 bg-green-900/30 border border-green-700 rounded-lg text-green-400 text-center">
+              {successMessage}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg">
                 <p className="text-red-400 text-sm">{error}</p>
               </div>
             )}
-
             <div>
               <label className="block text-gray-300 text-sm font-medium mb-2">
                 Email Address
@@ -72,7 +86,6 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
             </div>
-
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-gray-300 text-sm font-medium">
@@ -92,7 +105,6 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
             </div>
-
             <button
               type="submit"
               disabled={isLoading}
@@ -101,7 +113,6 @@ export default function LoginPage() {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
           <div className="mt-8 pt-8 border-t border-gray-800">
             <p className="text-gray-400 text-center">
               Don't have an account?{' '}
@@ -110,7 +121,6 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
-
           <div className="mt-6 p-4 bg-gray-800/30 rounded-lg">
             <p className="text-gray-400 text-sm text-center">
               This is a production platform. Use your real credentials.
