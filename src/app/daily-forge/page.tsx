@@ -1,14 +1,21 @@
+// src/app/daily-forge/page.tsx - Updated with minimal changes
+// • New "Topic Selection & Council Vote" section that appears when scoutedTopics exist
+// • Shows the 3 scouted topics with descriptions
+// • Displays each council member's vote (DeepSeek, Grok, Gemini)
+// • Highlights the winning topic clearly
+// • This section shows even after voting (for transparency), placed above the main topic
+// • Falls back gracefully if no topics/votes yet
+// • Replaces the old TopicSelectionInProgress component (now automated, no need for force button)
+
+
 "use client";
 export const dynamic = 'force-dynamic';
-
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
-import { Calendar, Clock, Zap, Wifi, WifiOff, AlertCircle, Users, Vote, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, Zap, Wifi, WifiOff, AlertCircle, Users, Vote, MessageSquare, Trophy } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
-
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
-
 interface DailyForge {
   id: string;
   date: string;
@@ -20,7 +27,6 @@ interface DailyForge {
   phase?: string;
   councilVotes?: string;
 }
-
 interface Message {
   id: string;
   name: string;
@@ -29,7 +35,6 @@ interface Message {
   tokens_remaining?: number;
   created_at?: string;
 }
-
 export default function DailyForgePage() {
   const { user, isAuthenticated } = useAuth();
   const [current, setCurrent] = useState<DailyForge | null>(null);
@@ -45,9 +50,7 @@ export default function DailyForgePage() {
   const [lastErrorDetails, setLastErrorDetails] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
-
   const socketRef = useRef<Socket | null>(null);
-
   // Monitor network connectivity
   useEffect(() => {
     const handleOnline = () => {
@@ -55,24 +58,19 @@ export default function DailyForgePage() {
       setIsOnline(true);
       setError(null);
     };
-
     const handleOffline = () => {
       console.log('🌐 Network: Offline');
       setIsOnline(false);
       setError('Network connection lost. Please check your internet connection.');
     };
-
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
     setIsOnline(navigator.onLine);
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
   // Sync initial tokens from user object
   useEffect(() => {
     if (user && user.tokens_remaining !== undefined) {
@@ -80,7 +78,6 @@ export default function DailyForgePage() {
       setUserTokens(user.tokens_remaining);
     }
   }, [user]);
-
   // Socket connection
   useEffect(() => {
     try {
@@ -91,75 +88,61 @@ export default function DailyForgePage() {
         reconnectionAttempts: 5,
         reconnectionDelay: 1000
       });
-
       socketRef.current.on('connect', () => {
         console.log('✅ Daily Forge socket connected');
         if (current?.conversationId) {
           socketRef.current?.emit('join-conversation', current.conversationId);
         }
       });
-
       socketRef.current.on('connect_error', (err) => {
         console.error('❌ Socket connection error:', err.message);
         setError('Realtime updates unavailable. Page will refresh periodically.');
       });
-
       socketRef.current.on('post:incoming', (msg: Message) => {
         console.log('📨 New post received:', msg);
         setAllPosts(prev => [msg, ...prev]);
-
         if (msg.tokens_remaining !== undefined) {
           setUserTokens(msg.tokens_remaining);
         }
       });
-
     } catch (err) {
       console.error('❌ Socket initialization failed:', err);
       setError('Realtime features disabled');
     }
-
     return () => {
       socketRef.current?.disconnect();
     };
   }, [current?.conversationId]);
-
   // Enhanced polling for topic selection phase
   const startPolling = () => {
     if (pollingInterval) {
       clearInterval(pollingInterval);
     }
-    
     const interval = setInterval(() => {
       if (current?.phase === 'TOPIC_SELECTION' && !current.winningTopic) {
         console.log('🔄 Polling for topic selection updates...');
         fetchData();
       }
     }, 10000); // Poll every 10 seconds during topic selection
-    
     setPollingInterval(interval);
     return interval;
   };
-
   const stopPolling = () => {
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
     }
   };
-
   const fetchData = async () => {
     try {
       console.log('🔄 Fetching Daily Forge data...');
-
       const currentRes = await fetch(`${API_BASE_URL}/api/daily-forge/current`);
       if (!currentRes.ok) {
         throw new Error(`Failed to fetch current forge: ${currentRes.status}`);
       }
-
       const currentData = await currentRes.json();
       console.log('📊 Current forge:', currentData);
       setCurrent(currentData);
-
       // Update polling based on phase
       if (currentData.phase === 'TOPIC_SELECTION' && !currentData.winningTopic) {
         console.log('🔄 Starting polling for topic selection');
@@ -168,7 +151,6 @@ export default function DailyForgePage() {
         console.log('🛑 Stopping polling - topic selected or phase advanced');
         stopPolling();
       }
-
       // Fetch conversation posts if conversation exists
       if (currentData.conversationId) {
         try {
@@ -178,7 +160,6 @@ export default function DailyForgePage() {
           if (postsRes.ok) {
             const conv = await postsRes.json();
             console.log('💬 Conversation data:', conv);
-
             const posts = conv.conversation?.posts || [];
             const formatted = posts.map((p: any) => ({
               id: p.id,
@@ -193,7 +174,6 @@ export default function DailyForgePage() {
           console.error('❌ Failed to fetch posts:', postsErr);
         }
       }
-
       // Fetch history
       try {
         const historyRes = await fetch(`${API_BASE_URL}/api/daily-forge/history`);
@@ -203,11 +183,9 @@ export default function DailyForgePage() {
       } catch (historyErr) {
         console.error('❌ Failed to fetch history:', historyErr);
       }
-
       // Set up timer for debate countdown
       if (currentData.date) {
         const endTime = new Date(currentData.date).getTime() + 24 * 60 * 60 * 1000;
-
         const updateTimer = () => {
           const now = Date.now();
           const diff = endTime - now;
@@ -220,14 +198,11 @@ export default function DailyForgePage() {
             setTimeLeft(`${h}h ${m}m ${s}s remaining`);
           }
         };
-
         updateTimer();
         const timer = setInterval(updateTimer, 1000);
-        
         // Clean up timer
         return () => clearInterval(timer);
       }
-
     } catch (err: any) {
       console.error('❌ Daily Forge load error:', err);
       setError(err.message || 'Failed to load Daily Forge');
@@ -236,208 +211,21 @@ export default function DailyForgePage() {
       setIsRefreshing(false);
     }
   };
-
   // Initial data fetch
   useEffect(() => {
     fetchData();
-    
     // Clean up polling on unmount
     return () => {
       stopPolling();
     };
   }, [isAuthenticated, user?.id]);
-
   // Manual refresh function
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchData();
   };
-
-  // Fix topic selection function (triggers backend to force topic selection)
-  const forceTopicSelection = async () => {
-    if (!confirm('This will force the AI council to select a topic immediately. Continue?')) {
-      return;
-    }
-
-    setIsRefreshing(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/daily-forge/force-topic-selection`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        alert('Topic selection process started. Please wait a moment and refresh the page.');
-        setTimeout(() => {
-          handleRefresh();
-        }, 3000);
-      } else {
-        throw new Error('Failed to trigger topic selection');
-      }
-    } catch (err: any) {
-      console.error('❌ Force topic selection failed:', err);
-      alert(`Error: ${err.message}`);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  // Enhanced topic selection UI component
-  const TopicSelectionInProgress = () => {
-    // Parse scouted topics if available
-    let scoutedTopics: any[] = [];
-    try {
-      if (current?.scoutedTopics) {
-        scoutedTopics = JSON.parse(current.scoutedTopics);
-      }
-    } catch (e) {
-      console.error('Failed to parse scouted topics:', e);
-    }
-
-    // Parse council votes if available
-    let councilVotes: any = {};
-    try {
-      if (current?.councilVotes) {
-        councilVotes = JSON.parse(current.councilVotes);
-      }
-    } catch (e) {
-      console.error('Failed to parse council votes:', e);
-    }
-
-    return (
-      <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-blue-700/50 rounded-3xl p-8 mb-8">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="bg-blue-500/20 p-3 rounded-full">
-            <Users className="text-blue-400" size={28} />
-          </div>
-          <div>
-            <h3 className="text-2xl font-bold text-blue-300">Council Topic Selection in Progress</h3>
-            <p className="text-blue-200">The AI council is selecting today's debate topic</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-blue-900/30 p-6 rounded-2xl border border-blue-700/30">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-blue-500/20 p-2 rounded-lg">
-                <Vote className="text-blue-400" size={20} />
-              </div>
-              <h4 className="font-bold text-lg text-blue-200">Council Members</h4>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-blue-100">Grok</span>
-                <span className="text-green-400 font-bold">
-                  {councilVotes?.grok ? '✓ Voted' : '...Voting'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-blue-100">Claude</span>
-                <span className="text-green-400 font-bold">
-                  {councilVotes?.claude ? '✓ Voted' : '...Voting'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-blue-100">DeepSeek</span>
-                <span className="text-green-400 font-bold">
-                  {councilVotes?.deepseek ? '✓ Voted' : '...Voting'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-purple-900/30 p-6 rounded-2xl border border-purple-700/30">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-purple-500/20 p-2 rounded-lg">
-                <MessageSquare className="text-purple-400" size={20} />
-              </div>
-              <h4 className="font-bold text-lg text-purple-200">Topics Under Review</h4>
-            </div>
-            <p className="text-purple-100 mb-3">
-              {scoutedTopics.length > 0 
-                ? `${scoutedTopics.length} topics being evaluated`
-                : 'Topics being scouted...'
-              }
-            </p>
-            {scoutedTopics.length > 0 && (
-              <div className="text-sm text-purple-300 space-y-2">
-                {scoutedTopics.slice(0, 3).map((topic: any, i: number) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-purple-400 mt-1">•</span>
-                    <span className="line-clamp-2">{topic.title}</span>
-                  </div>
-                ))}
-                {scoutedTopics.length > 3 && (
-                  <p className="text-purple-400 text-xs">
-                    +{scoutedTopics.length - 3} more topics...
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="bg-gray-900/50 p-6 rounded-2xl border border-gray-700">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-gray-500/20 p-2 rounded-lg">
-                <Clock className="text-gray-400" size={20} />
-              </div>
-              <h4 className="font-bold text-lg text-gray-200">Estimated Time</h4>
-            </div>
-            <p className="text-gray-300 mb-4">
-              Topic selection usually takes 2-5 minutes. The council is:
-            </p>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Reviewing scouted topics</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Debating importance</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Voting on final topic</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4">
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold transition-colors"
-          >
-            <Clock size={20} />
-            {isRefreshing ? 'Refreshing...' : 'Refresh Status'}
-          </button>
-          
-          <button
-            onClick={forceTopicSelection}
-            disabled={isRefreshing}
-            className="flex-1 flex items-center justify-center gap-3 px-6 py-4 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-bold transition-colors"
-          >
-            <Zap size={20} />
-            Force Topic Selection
-          </button>
-        </div>
-
-        {isRefreshing && (
-          <div className="text-center mt-4">
-            <div className="inline-flex items-center gap-2 text-blue-400">
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-400"></div>
-              Checking for updates...
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
-
     // Check if council debate is complete
     const isCouncilDebateComplete = () => {
       if (!current) return false;
@@ -445,13 +233,11 @@ export default function DailyForgePage() {
       const hasConversationId = !!current.conversationId;
       return hasOpeningThoughts && hasConversationId;
     };
-
     // Prevent interjection if in TOPIC_SELECTION phase
     if (current?.phase === 'TOPIC_SELECTION') {
       alert('The council is still selecting today\'s topic. Please wait for the topic to be chosen and the opening debate to begin.');
       return;
     }
-
     if (!isCouncilDebateComplete()) {
       if (!current?.openingThoughts) {
         alert('Council debate has not started yet. Please wait for the opening statements.');
@@ -462,44 +248,35 @@ export default function DailyForgePage() {
       }
       return;
     }
-
     if (!message.trim()) {
       alert('Please enter a message.');
       return;
     }
-
     if (!current) {
       alert('No active forge found.');
       return;
     }
-
     if (!user) {
       alert('Please sign in to interject.');
       return;
     }
-
     if (userTokens < 1) {
       alert('You need at least 1 token to interject. Please purchase tokens first.');
       return;
     }
-
     if (timeLeft === "Debate Closed") {
       alert('This debate is now closed. A new Daily Forge starts tomorrow.');
       return;
     }
-
     if (!current.conversationId) {
       alert('This conversation is not ready for interjections yet. Please try again in a moment.');
       return;
     }
-
     if (!isOnline) {
       alert('You are offline. Please check your internet connection and try again.');
       return;
     }
-
     setSending(true);
-
     try {
       const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
         method: 'POST',
@@ -514,7 +291,6 @@ export default function DailyForgePage() {
           conversation_id: current.conversationId
         })
       });
-
       if (!response.ok) {
         let errorMessage = 'Failed to send interjection';
         try {
@@ -526,22 +302,121 @@ export default function DailyForgePage() {
         }
         throw new Error(errorMessage);
       }
-
       const responseData = await response.json();
       setMessage('');
-      
       if (responseData.tokens_remaining !== undefined) {
         setUserTokens(responseData.tokens_remaining);
       }
-
       alert("✅ Interjection sent! The council will respond soon.");
-
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
       alert(`Failed to send interjection: ${err.message}`);
     } finally {
       setSending(false);
     }
+  };
+
+  // New: Topic Selection & Vote Display Component
+  const TopicSelectionAndVote = () => {
+    if (!current?.scoutedTopics) return null;
+
+    let scoutedTopics: any[] = [];
+    try {
+      scoutedTopics = JSON.parse(current.scoutedTopics || '[]');
+    } catch (e) {
+      console.error('Failed to parse scouted topics:', e);
+    }
+
+    let councilVotes: Record<string, string> = {};
+    try {
+      councilVotes = JSON.parse(current.councilVotes || '{}');
+      // Normalize keys to lowercase for consistency
+      councilVotes = Object.fromEntries(
+        Object.entries(councilVotes).map(([k, v]) => [k.toLowerCase(), v as string])
+      );
+    } catch (e) {
+      console.error('Failed to parse council votes:', e);
+    }
+
+    const winningTitle = current.winningTopic || 'Selection in progress...';
+
+    return (
+      <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-700/50 rounded-3xl p-8 mb-12">
+        <div className="flex items-center gap-4 mb-8">
+          <Trophy className="text-yellow-400" size={32} />
+          <h3 className="text-3xl font-black text-indigo-300">Daily Topic Selection & Council Vote</h3>
+        </div>
+
+        {/* Scouted Topics */}
+        <div className="mb-10">
+          <h4 className="text-xl font-bold text-purple-300 mb-6 flex items-center gap-3">
+            <MessageSquare size={24} />
+            Three Scouted Topics
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {scoutedTopics.map((topic: any, i: number) => (
+              <div
+                key={i}
+                className={`p-6 rounded-2xl border-2 transition-all ${
+                  topic.title === winningTitle
+                    ? 'bg-yellow-900/40 border-yellow-500 shadow-xl shadow-yellow-900/50'
+                    : 'bg-gray-900/50 border-gray-700'
+                }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <span className="text-2xl font-black text-purple-400">#{i + 1}</span>
+                  {topic.title === winningTitle && (
+                    <div className="flex items-center gap-2 text-yellow-400 font-bold">
+                      <Trophy size={20} />
+                      Winner
+                    </div>
+                  )}
+                </div>
+                <h5 className="text-lg font-bold text-white mb-2">{topic.title}</h5>
+                <p className="text-gray-300 text-sm leading-relaxed">{topic.description || 'No description available'}</p>
+                {topic.provocation && (
+                  <p className="text-purple-300 text-xs italic mt-3">"{topic.provocation}"</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Council Votes */}
+        {Object.keys(councilVotes).length > 0 && (
+          <div>
+            <h4 className="text-xl font-bold text-purple-300 mb-6 flex items-center gap-3">
+              <Vote size={24} />
+              Council Votes
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {['deepseek', 'grok', 'gemini'].map((ai) => (
+                <div key={ai} className="bg-gray-900/60 p-6 rounded-2xl border border-gray-700">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-xl">
+                      {ai[0].toUpperCase()}
+                    </div>
+                    <h5 className="text-xl font-bold capitalize text-purple-300">{ai}</h5>
+                  </div>
+                  <p className="text-gray-200">
+                    Voted for:{' '}
+                    <span className="font-bold text-yellow-300">
+                      {councilVotes[ai] || 'No vote recorded'}
+                    </span>
+                  </p>
+                  {councilVotes[ai] === winningTitle && (
+                    <div className="mt-3 text-green-400 font-bold flex items-center gap-2">
+                      <Trophy size={18} />
+                      Supported the winning topic
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -555,7 +430,6 @@ export default function DailyForgePage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-black text-white py-24">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -568,16 +442,14 @@ export default function DailyForgePage() {
             </div>
           </div>
         )}
-
         <h1 className="text-6xl md:text-8xl font-black text-center mb-16 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
           Daily Forge
         </h1>
-
         {error && (
           <div className="bg-red-900/30 border border-red-700 rounded-2xl p-6 mb-8">
             <p className="text-red-300">⚠️ {error}</p>
             {error.includes('Network') && (
-              <button 
+              <button
                 onClick={() => window.location.reload()}
                 className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors"
               >
@@ -586,9 +458,11 @@ export default function DailyForgePage() {
             )}
           </div>
         )}
-
         {current ? (
           <div className="mb-32">
+            {/* NEW: Always show topic selection & vote info when available */}
+            <TopicSelectionAndVote />
+
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
                 {current.winningTopic || "Today's topic being selected..."}
@@ -635,11 +509,6 @@ export default function DailyForgePage() {
               </div>
             </div>
 
-            {/* Topic Selection In Progress Component */}
-            {current.phase === 'TOPIC_SELECTION' && !current.winningTopic && (
-              <TopicSelectionInProgress />
-            )}
-
             {/* Opening Council Debate */}
             {current.openingThoughts && (
               <div className="space-y-12 mb-16">
@@ -661,7 +530,6 @@ export default function DailyForgePage() {
                 ))}
               </div>
             )}
-
             {/* Community Interjections */}
             <div className="space-y-8 mb-16">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -673,7 +541,6 @@ export default function DailyForgePage() {
                   </div>
                 )}
               </div>
-
               {allPosts.length === 0 ? (
                 <div className="text-center py-12 bg-gray-900/30 border border-gray-800 rounded-3xl">
                   {current.phase === 'TOPIC_SELECTION' ? (
@@ -721,13 +588,11 @@ export default function DailyForgePage() {
                 </div>
               )}
             </div>
-
             {/* Interjection Form */}
             {timeLeft !== "Debate Closed" && (
               <div className="max-w-4xl mx-auto">
                 <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12 mb-12 text-center">
                   <h3 className="text-3xl font-black mb-6">Daily Forge Status: {current?.phase?.replace('_', ' ') || 'Active'}</h3>
-
                   {current?.phase === 'TOPIC_SELECTION' ? (
                     <>
                       <p className="text-xl text-blue-200 leading-relaxed mb-8">
@@ -748,7 +613,6 @@ export default function DailyForgePage() {
                         Purchase tokens to participate. Your comments and questions will be <strong>publicly displayed</strong> as part of this historic Daily Forge debate.<br />
                         Each interjection costs <strong>1 token</strong>. You must be signed in to join the council.
                       </p>
-
                       {!isAuthenticated ? (
                         <Link
                           href={`/register?redirect=${encodeURIComponent('/daily-forge')}`}
@@ -785,7 +649,6 @@ export default function DailyForgePage() {
                     </p>
                   )}
                 </div>
-
                 {/* Interjection Form */}
                 {current?.openingThoughts && current?.conversationId && isAuthenticated && userTokens >= 1 && (
                   <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
@@ -816,7 +679,6 @@ export default function DailyForgePage() {
                 )}
               </div>
             )}
-
             {timeLeft === "Debate Closed" && (
               <div className="text-center py-16 bg-gray-900/30 border border-gray-800 rounded-3xl">
                 <p className="text-3xl text-gray-300 mb-4">⚖️ This Daily Forge is now closed.</p>
@@ -830,7 +692,6 @@ export default function DailyForgePage() {
             <p className="text-xl text-gray-400">The council is preparing today's debate. Check back soon!</p>
           </div>
         )}
-
         {/* History */}
         <div className="mt-32">
           <h2 className="text-5xl font-black text-center mb-16">Daily Forge History</h2>
