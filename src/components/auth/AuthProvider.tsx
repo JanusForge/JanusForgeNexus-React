@@ -54,83 +54,85 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Login failed');
-      }
-      
-      const data = await response.json();
-      console.log('=== LOGIN DEBUG ===');
-      console.log('API response:', data);
-      
-      // API returns { message: "...", user: { ... }, accessToken: "..." }
-      // So we need to use data.user, not data directly
-      const userData: User = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.name || data.user.username || email.split('@')[0],
-        username: data.user.username || email.split('@')[0],
-        tokens_remaining: data.user.tokens_remaining,
-        role: data.user.role
-      };
-      
-      console.log('UserData to store:', userData);
-      setUser(userData);
-      localStorage.setItem('janus_user', JSON.stringify(userData));
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.toLowerCase().trim(), password }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Login failed');
     }
-  };
+    const data = await response.json();
+    console.log('=== LOGIN DEBUG ===');
+    console.log('API response:', data);
 
-  const register = async (email: string, name: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.toLowerCase().trim(), username: name, password }),
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Registration failed');
-      }
-      
-      const data = await response.json();
-      console.log('=== REGISTER DEBUG ===');
-      console.log('API response:', data);
-      
-      // API returns { message: "...", user: { ... }, accessToken: "..." }
-      const userData: User = {
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.name || data.user.username || name,
-        username: data.user.username || name,
-        tokens_remaining: data.user.tokens_remaining,
-        role: data.user.role
-      };
-      
-      console.log('UserData to store:', userData);
-      setUser(userData);
-      localStorage.setItem('janus_user', JSON.stringify(userData));
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
+    // Use data directly (flat user object)
+    const userData: User = {
+      id: data.id,
+      email: data.email,
+      name: data.name || data.username || email.split('@')[0],
+      username: data.username || email.split('@')[0],
+      tokens_remaining: data.tokens_remaining,
+      role: data.role
+    };
+    console.log('UserData to store:', userData);
+
+    setUser(userData);
+    localStorage.setItem('janus_user', JSON.stringify(userData));
+  } catch (error: any) {
+    console.error('Login error:', error);
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};  
+
+const register = async (email: string, name: string, password: string) => {
+  setIsLoading(true);
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email: email.toLowerCase().trim(), 
+        username: name, 
+        password 
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || 'Registration failed');
     }
-  };
+
+    const data = await response.json();
+    console.log('=== REGISTER DEBUG ===');
+    console.log('API response (flat style):', data);
+
+    // Flat response: user data is directly in data (no nested .user)
+    const userData: User = {
+      id: data.id,
+      email: data.email,
+      name: data.name || data.username || name,
+      username: data.username || name,
+      tokens_remaining: data.tokens_remaining,
+      role: data.role
+    };
+
+    console.log('UserData to store (flat):', userData);
+    setUser(userData);
+    localStorage.setItem('janus_user', JSON.stringify(userData));
+  } catch (error) {
+    console.error('Registration error:', error);
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
+  
 
   const logout = () => {
     setUser(null);
