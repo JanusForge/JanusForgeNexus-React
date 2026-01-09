@@ -307,58 +307,125 @@ export default function DailyForgePage() {
     alert('Diagnostics complete. Check browser console for details.');
   };
 
-  // Test the POST endpoint directly
+  // Test the POST endpoint with different payloads
   const testPostEndpoint = async () => {
     if (!current?.conversationId || !user) {
       alert('Need conversation ID and user to test');
       return;
     }
 
-    console.log('🔍 Testing POST endpoint directly...');
+    console.log('🔍 Testing POST endpoint with different payloads...');
     
-    const testPayload = {
-      content: 'Test message from diagnostic function',
-      userId: user.id,
-      is_human: true,
-      conversation_id: current.conversationId
-    };
-
-    console.log('📤 Test POST URL:', `${API_BASE_URL}/api/conversations/${current.conversationId}/posts`);
-    console.log('📝 Test Payload:', testPayload);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testPayload)
-      });
-
-      console.log('📡 Test Response Status:', response.status);
-      console.log('📡 Test Response Headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Test Failed - Response Text:', errorText);
-        try {
-          const errorJson = JSON.parse(errorText);
-          console.error('❌ Test Failed - JSON:', errorJson);
-          alert(`POST test failed: ${response.status}\n\n${JSON.stringify(errorJson, null, 2)}`);
-        } catch {
-          console.error('❌ Test Failed - Raw Text:', errorText);
-          alert(`POST test failed: ${response.status}\n\n${errorText}`);
+    const testPayloads = [
+      {
+        name: 'Minimal payload',
+        payload: {
+          content: 'Test message from diagnostic function',
+          userId: user.id,
+          is_human: true,
+          conversation_id: current.conversationId
         }
-      } else {
-        const successData = await response.json();
-        console.log('✅ Test Success:', successData);
-        alert(`POST test successful!\n\n${JSON.stringify(successData, null, 2)}`);
+      },
+      {
+        name: 'Payload without conversation_id',
+        payload: {
+          content: 'Test without conversation_id',
+          userId: user.id,
+          is_human: true
+        }
+      },
+      {
+        name: 'Payload without is_human',
+        payload: {
+          content: 'Test without is_human',
+          userId: user.id,
+          conversation_id: current.conversationId
+        }
+      },
+      {
+        name: 'Simple content only',
+        payload: {
+          content: 'Simple test'
+        }
       }
-    } catch (err: any) {
-      console.error('❌ Test Exception:', err);
-      alert(`Test exception: ${err.message}`);
+    ];
+
+    for (const test of testPayloads) {
+      console.log(`\n📤 Testing: ${test.name}`);
+      console.log('📝 Payload:', test.payload);
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(test.payload)
+        });
+
+        console.log(`📡 ${test.name} Response Status:`, response.status);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ ${test.name} Failed - Status:`, response.status);
+          console.error(`❌ ${test.name} Response:`, errorText);
+          
+          try {
+            const errorJson = JSON.parse(errorText);
+            console.error(`❌ ${test.name} JSON Error:`, errorJson);
+          } catch {
+            // Not JSON
+          }
+        } else {
+          const successData = await response.json();
+          console.log(`✅ ${test.name} Success:`, successData);
+          alert(`${test.name} successful!\n\nCheck console for details.`);
+          break; // Stop if one works
+        }
+      } catch (err: any) {
+        console.error(`❌ ${test.name} Exception:`, err.message);
+      }
+      
+      // Wait a bit between tests
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
+    
+    alert('All POST tests complete. Check console for results.');
+  };
+
+  // Test GET endpoints to see what's expected
+  const inspectEndpoints = async () => {
+    if (!current?.conversationId) {
+      alert('No conversation ID found');
+      return;
+    }
+
+    console.group('🔍 Inspecting Endpoints');
+    
+    // Check what the conversation looks like
+    try {
+      console.log('📋 Fetching conversation details...');
+      const convResponse = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
+        credentials: 'include'
+      });
+      
+      console.log('📋 Conversation Status:', convResponse.status);
+      if (convResponse.ok) {
+        const convData = await convResponse.json();
+        console.log('📋 Conversation Data:', convData);
+        
+        // Check what fields exist in posts
+        if (convData.conversation?.posts?.[0]) {
+          console.log('📋 Example Post Structure:', convData.conversation.posts[0]);
+        }
+      }
+    } catch (err) {
+      console.error('❌ Failed to fetch conversation:', err);
+    }
+    
+    console.groupEnd();
+    alert('Endpoint inspection complete. Check console for details.');
   };
 
   // FIX #3: Proper token check and interjection handling WITH DEBUGGING
@@ -444,155 +511,143 @@ export default function DailyForgePage() {
 
     console.log('✅ All checks passed, making POST request...');
     console.log('📤 POST URL:', `${API_BASE_URL}/api/conversations/${current.conversationId}/posts`);
-    console.log('📝 POST Body:', JSON.stringify({
-      content: message,
-      userId: user.id
-    }));
-
+    
     setSending(true);
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    // Try different payload formats to see what works
+    const payloads = [
+      {
+        name: 'Standard payload',
+        payload: {
           content: message,
           userId: user.id,
           is_human: true,
           conversation_id: current.conversationId
-        })
-      });
-
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
-
-      if (!response.ok) {
-        let errorMessage = 'Failed to send interjection';
-        let errorDetails = '';
-        
-        try {
-          const errorText = await response.text();
-          console.error('❌ Server error text:', errorText);
-          errorDetails = errorText;
-          
-          try {
-            const errorData = JSON.parse(errorText);
-            console.error('❌ Backend error details:', errorData);
-            errorMessage = errorData.message || errorData.error || `Server error: ${response.status}`;
-            errorDetails = JSON.stringify(errorData, null, 2);
-          } catch (parseError) {
-            errorMessage = `Server error: ${response.status} ${response.statusText}`;
-          }
-        } catch (textError) {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
-        
-        setLastErrorDetails(errorDetails);
-        throw new Error(errorMessage);
+      },
+      {
+        name: 'Alternative payload',
+        payload: {
+          content: message,
+          userId: user.id,
+          is_human: true
+          // No conversation_id - maybe it's inferred from URL
+        }
+      },
+      {
+        name: 'Simple payload',
+        payload: {
+          content: message,
+          userId: user.id
+        }
       }
+    ];
 
-      const responseData = await response.json();
-      console.log('✅ Interjection successful:', responseData);
-
-      setMessage('');
-      setLastErrorDetails('');
-
-      // Update tokens if returned
-      if (responseData.tokens_remaining !== undefined) {
-        console.log('💰 Updated tokens:', responseData.tokens_remaining);
-        setUserTokens(responseData.tokens_remaining);
-      }
-
-      // If backend returns the new post, add it to the list
-      if (responseData.post) {
-        const newPost: Message = {
-          id: responseData.post.id,
-          name: user.username || 'User',
-          content: responseData.post.content,
-          sender: 'user',
-          tokens_remaining: responseData.tokens_remaining,
-          created_at: responseData.post.created_at || new Date().toISOString()
-        };
-        setAllPosts(prev => [newPost, ...prev]);
-        console.log('📝 Added new post to list:', newPost);
-      }
-
-      alert("✅ Interjection sent! The council will respond soon.");
-
-      // Refresh posts after successful interjection
-      if (current.conversationId) {
-        setTimeout(async () => {
-          try {
-            console.log('🔄 Refreshing posts...');
-            const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
-              credentials: 'include'
-            });
-            if (postsRes.ok) {
-              const conv = await postsRes.json();
-              const posts = conv.conversation?.posts || [];
-              const formatted = posts.map((p: any) => ({
-                id: p.id,
-                name: p.is_human ? p.user?.username || 'User' : p.ai_model || 'AI Council',
-                content: p.content,
-                sender: p.is_human ? 'user' : 'ai',
-                created_at: p.created_at
-              })).reverse();
-              setAllPosts(formatted);
-              console.log('✅ Posts refreshed, count:', formatted.length);
-            }
-          } catch (refreshErr) {
-            console.error('Failed to refresh posts:', refreshErr);
-          }
-        }, 2000);
-      }
-
-    } catch (err: any) {
-      console.error('❌ Interjection failed:', err);
-
-      // Enhanced error handling with retry suggestion
-      let alertMessage = err.message || 'Please try again';
-      let showRetryButton = false;
+    for (const payloadTest of payloads) {
+      console.log(`\n🔍 Trying ${payloadTest.name}:`, payloadTest.payload);
       
-      if (err.message.includes('500') || err.message.includes('Internal server error')) {
-        alertMessage = 'Server error. Please try again in a moment. If this continues, contact support.';
-        showRetryButton = true;
-      } else if (err.message.includes('401') || err.message.includes('403')) {
-        alertMessage = 'Session expired. Please refresh the page and sign in again.';
-      } else if (err.message.includes('404')) {
-        alertMessage = 'Conversation not found. Please refresh the page.';
-      } else if (err.message.includes('NetworkError') || err.message.includes('Failed to fetch')) {
-        alertMessage = 'Network error. Please check your connection and try again.';
-        showRetryButton = true;
-      }
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payloadTest.payload)
+        });
 
-      // Log detailed error for debugging
-      console.error('🔴 Full error details:', {
-        message: err.message,
-        stack: err.stack,
-        currentForge: current,
-        userTokens,
-        timeLeft
-      });
+        console.log(`📡 ${payloadTest.name} Response status:`, response.status);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
-      // Show retry option for certain errors
-      if (showRetryButton) {
-        const shouldRetry = window.confirm(`${alertMessage}\n\nLast error details:\n${lastErrorDetails}\n\nWould you like to retry?`);
-        if (shouldRetry) {
-          // Small delay before retry
-          setTimeout(() => {
-            handleInterject(e);
-          }, 2000);
-          return;
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ ${payloadTest.name} Failed:`, errorText);
+          
+          if (payloadTest.name !== 'Simple payload') {
+            continue; // Try next payload
+          }
+          
+          setLastErrorDetails(`Status: ${response.status}\n\nResponse: ${errorText}`);
+          throw new Error(`Server error: ${response.status}`);
         }
-      } else {
-        alert(`Failed to send interjection: ${alertMessage}\n\nError details:\n${lastErrorDetails}`);
+
+        // SUCCESS!
+        const responseData = await response.json();
+        console.log('✅ Interjection successful:', responseData);
+
+        setMessage('');
+        setLastErrorDetails('');
+
+        // Update tokens if returned
+        if (responseData.tokens_remaining !== undefined) {
+          console.log('💰 Updated tokens:', responseData.tokens_remaining);
+          setUserTokens(responseData.tokens_remaining);
+        }
+
+        // If backend returns the new post, add it to the list
+        if (responseData.post) {
+          const newPost: Message = {
+            id: responseData.post.id,
+            name: user.username || 'User',
+            content: responseData.post.content,
+            sender: 'user',
+            tokens_remaining: responseData.tokens_remaining,
+            created_at: responseData.post.created_at || new Date().toISOString()
+          };
+          setAllPosts(prev => [newPost, ...prev]);
+          console.log('📝 Added new post to list:', newPost);
+        }
+
+        alert(`✅ Interjection sent using ${payloadTest.name}! The council will respond soon.`);
+
+        // Refresh posts after successful interjection
+        if (current.conversationId) {
+          setTimeout(async () => {
+            try {
+              console.log('🔄 Refreshing posts...');
+              const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}`, {
+                credentials: 'include'
+              });
+              if (postsRes.ok) {
+                const conv = await postsRes.json();
+                const posts = conv.conversation?.posts || [];
+                const formatted = posts.map((p: any) => ({
+                  id: p.id,
+                  name: p.is_human ? p.user?.username || 'User' : p.ai_model || 'AI Council',
+                  content: p.content,
+                  sender: p.is_human ? 'user' : 'ai',
+                  created_at: p.created_at
+                })).reverse();
+                setAllPosts(formatted);
+                console.log('✅ Posts refreshed, count:', formatted.length);
+              }
+            } catch (refreshErr) {
+              console.error('Failed to refresh posts:', refreshErr);
+            }
+          }, 2000);
+        }
+
+        setSending(false);
+        return; // Exit function on success
+
+      } catch (err: any) {
+        console.error(`❌ ${payloadTest.name} failed:`, err);
+        
+        if (payloadTest.name === 'Simple payload') {
+          // This was our last attempt
+          let alertMessage = err.message || 'Please try again';
+          
+          if (err.message.includes('500') || err.message.includes('Internal server error')) {
+            alertMessage = 'Server error. Please try again in a moment. If this continues, contact support.';
+          }
+
+          console.error('🔴 All payload attempts failed');
+          alert(`Failed to send interjection: ${alertMessage}\n\nAll payload formats failed. Please check backend logs.`);
+        }
       }
-    } finally {
-      setSending(false);
     }
+    
+    setSending(false);
   };
 
   // Test function for debugging
@@ -653,6 +708,12 @@ export default function DailyForgePage() {
               className="px-4 py-2 bg-green-500 text-white rounded-lg font-bold"
             >
               📤 Test POST Endpoint
+            </button>
+            <button
+              onClick={inspectEndpoints}
+              className="px-4 py-2 bg-yellow-500 text-white rounded-lg font-bold"
+            >
+              🔍 Inspect Endpoints
             </button>
           </div>
         )}
