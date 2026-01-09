@@ -7,7 +7,6 @@
 // • Falls back gracefully if no topics/votes yet
 // • Replaces the old TopicSelectionInProgress component (now automated, no need for force button)
 
-
 "use client";
 export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
@@ -183,9 +182,14 @@ export default function DailyForgePage() {
       } catch (historyErr) {
         console.error('❌ Failed to fetch history:', historyErr);
       }
-      // Set up timer for debate countdown
+      // Set up timer for debate countdown - Force end at next midnight EST (05:00 UTC)
       if (currentData.date) {
-        const endTime = new Date(currentData.date).getTime() + 24 * 60 * 60 * 1000;
+        const forgeDate = new Date(currentData.date);
+        // Calculate next midnight EST (05:00 UTC the next day)
+        const nextMidnightEST = new Date(forgeDate);
+        nextMidnightEST.setDate(nextMidnightEST.getDate() + 1);
+        nextMidnightEST.setUTCHours(5, 0, 0, 0); // 05:00 UTC = midnight EST
+        const endTime = nextMidnightEST.getTime();
         const updateTimer = () => {
           const now = Date.now();
           const diff = endTime - now;
@@ -315,18 +319,15 @@ export default function DailyForgePage() {
       setSending(false);
     }
   };
-
   // New: Topic Selection & Vote Display Component
   const TopicSelectionAndVote = () => {
     if (!current?.scoutedTopics) return null;
-
     let scoutedTopics: any[] = [];
     try {
       scoutedTopics = JSON.parse(current.scoutedTopics || '[]');
     } catch (e) {
       console.error('Failed to parse scouted topics:', e);
     }
-
     let councilVotes: Record<string, string> = {};
     try {
       councilVotes = JSON.parse(current.councilVotes || '{}');
@@ -337,16 +338,13 @@ export default function DailyForgePage() {
     } catch (e) {
       console.error('Failed to parse council votes:', e);
     }
-
     const winningTitle = current.winningTopic || 'Selection in progress...';
-
     return (
       <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-700/50 rounded-3xl p-8 mb-12">
         <div className="flex items-center gap-4 mb-8">
           <Trophy className="text-yellow-400" size={32} />
           <h3 className="text-3xl font-black text-indigo-300">Daily Topic Selection & Council Vote</h3>
         </div>
-
         {/* Scouted Topics */}
         <div className="mb-10">
           <h4 className="text-xl font-bold text-purple-300 mb-6 flex items-center gap-3">
@@ -381,7 +379,6 @@ export default function DailyForgePage() {
             ))}
           </div>
         </div>
-
         {/* Council Votes */}
         {Object.keys(councilVotes).length > 0 && (
           <div>
@@ -418,7 +415,6 @@ export default function DailyForgePage() {
       </div>
     );
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -462,7 +458,6 @@ export default function DailyForgePage() {
           <div className="mb-32">
             {/* NEW: Always show topic selection & vote info when available */}
             <TopicSelectionAndVote />
-
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
                 {current.winningTopic || "Today's topic being selected..."}
@@ -508,7 +503,6 @@ export default function DailyForgePage() {
                 </div>
               </div>
             </div>
-
             {/* Opening Council Debate */}
             {current.openingThoughts && (
               <div className="space-y-12 mb-16">
