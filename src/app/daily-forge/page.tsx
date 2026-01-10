@@ -292,7 +292,8 @@ export default function DailyForgePage() {
           content: message,
           userId: user.id,
           is_human: true,
-          conversation_id: current.conversationId
+          conversationid: current.conversationId
+          isLiveChat: false  // Prevents any Live fallback
         })
       });
       if (!response.ok) {
