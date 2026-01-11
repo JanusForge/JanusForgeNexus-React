@@ -53,7 +53,7 @@ export default function DailyForgePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const postsEndRef = useRef<HTMLDivElement>(null); // For auto-scroll to top (newest)
+  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to top (newest)
 
   // Monitor network connectivity
   useEffect(() => {
@@ -182,7 +182,7 @@ export default function DailyForgePage() {
               sender: p.is_human ? 'user' : 'ai',
               created_at: p.created_at
             }));
-            // No .reverse() — newest at top
+            // No .reverse() — newest at top (DB order)
             setAllPosts(formatted);
             // Scroll to top after fetch
             postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -381,6 +381,11 @@ export default function DailyForgePage() {
     }
   };
 
+  // Scroll to top on new posts
+  useEffect(() => {
+    postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [allPosts]);
+
   // New: Topic Selection & Vote Display Component
   const TopicSelectionAndVote = () => {
     if (!current?.scoutedTopics) return null;
@@ -393,7 +398,6 @@ export default function DailyForgePage() {
     let councilVotes: Record<string, string> = {};
     try {
       councilVotes = JSON.parse(current.councilVotes || '{}');
-      // Normalize keys to lowercase for consistency
       councilVotes = Object.fromEntries(
         Object.entries(councilVotes).map(([k, v]) => [k.toLowerCase(), v as string])
       );
