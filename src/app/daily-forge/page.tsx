@@ -53,7 +53,7 @@ export default function DailyForgePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const postsEndRef = useRef<HTMLDivElement>(null); // For auto-scroll to bottom
+  const postsEndRef = useRef<HTMLDivElement>(null); // For auto-scroll to top (newest)
 
   // Monitor network connectivity
   useEffect(() => {
@@ -105,15 +105,15 @@ export default function DailyForgePage() {
         setError('Realtime updates unavailable. Page will refresh periodically.');
       });
       socketRef.current.on('post:incoming', (msg: Message) => {
-        console.log('📨 New post received:', msg);
+        console.log('📨 New post received via socket:', msg);
         setAllPosts(prev => {
           if (prev.some(p => p.id === msg.id)) return prev; // Prevent duplicates
-          return [msg, ...prev];
+          return [msg, ...prev]; // Newest at top
         });
         if (msg.tokens_remaining !== undefined) {
           setUserTokens(msg.tokens_remaining);
         }
-        // Scroll to bottom on new post
+        // Scroll to top (newest)
         postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
     } catch (err) {
@@ -181,9 +181,10 @@ export default function DailyForgePage() {
               content: p.content,
               sender: p.is_human ? 'user' : 'ai',
               created_at: p.created_at
-            })).reverse();
+            }));
+            // No .reverse() — newest at top
             setAllPosts(formatted);
-            // Scroll to bottom after fetch
+            // Scroll to top after fetch
             postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
         } catch (postsErr) {
@@ -313,7 +314,7 @@ export default function DailyForgePage() {
 
     setSending(true);
 
-    // Optimistic UI: Add your message locally for instant feedback
+    // Optimistic UI: Add your message locally for instant feedback (newest at top)
     const optimisticPost: Message = {
       id: crypto.randomUUID(),
       name: user.username || 'You',
@@ -323,7 +324,7 @@ export default function DailyForgePage() {
     };
     setAllPosts(prev => [optimisticPost, ...prev]);
 
-    // Scroll to bottom after optimistic add
+    // Scroll to top (newest)
     postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
     try {
@@ -380,11 +381,6 @@ export default function DailyForgePage() {
     }
   };
 
-  // Scroll to bottom on new posts
-  useEffect(() => {
-    postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [allPosts]);
-
   // New: Topic Selection & Vote Display Component
   const TopicSelectionAndVote = () => {
     if (!current?.scoutedTopics) return null;
@@ -397,6 +393,7 @@ export default function DailyForgePage() {
     let councilVotes: Record<string, string> = {};
     try {
       councilVotes = JSON.parse(current.councilVotes || '{}');
+      // Normalize keys to lowercase for consistency
       councilVotes = Object.fromEntries(
         Object.entries(councilVotes).map(([k, v]) => [k.toLowerCase(), v as string])
       );
@@ -661,12 +658,12 @@ export default function DailyForgePage() {
                       <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
                     </div>
                   ))}
-                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll */}
+                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to top */}
                 </div>
               )}
             </div>
 
-            {/* Interjection Form - Moved to bottom, above last comment via sticky */}
+            {/* Interjection Form - Sticky at bottom */}
             {timeLeft !== "Debate Closed" && (
               <div className="max-w-4xl mx-auto sticky bottom-0 bg-black/80 backdrop-blur-md border-t border-purple-500/30 p-6 z-20">
                 <div className="text-center mb-4">
