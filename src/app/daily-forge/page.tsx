@@ -6,7 +6,6 @@
 // • This section shows even after voting (for transparency), placed above the main topic
 // • Falls back gracefully if no topics/votes yet
 // • Replaces the old TopicSelectionInProgress component (now automated, no need for force button)
-
 "use client";
 export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
@@ -14,7 +13,9 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
 import { Calendar, Clock, Zap, Wifi, WifiOff, AlertCircle, Users, Vote, MessageSquare, Trophy } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
+
 interface DailyForge {
   id: string;
   date: string;
@@ -26,6 +27,7 @@ interface DailyForge {
   phase?: string;
   councilVotes?: string;
 }
+
 interface Message {
   id: string;
   name: string;
@@ -34,6 +36,7 @@ interface Message {
   tokens_remaining?: number;
   created_at?: string;
 }
+
 export default function DailyForgePage() {
   const { user, isAuthenticated } = useAuth();
   const [current, setCurrent] = useState<DailyForge | null>(null);
@@ -50,6 +53,7 @@ export default function DailyForgePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
+
   // Monitor network connectivity
   useEffect(() => {
     const handleOnline = () => {
@@ -70,6 +74,7 @@ export default function DailyForgePage() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
   // Sync initial tokens from user object
   useEffect(() => {
     if (user && user.tokens_remaining !== undefined) {
@@ -77,6 +82,7 @@ export default function DailyForgePage() {
       setUserTokens(user.tokens_remaining);
     }
   }, [user]);
+
   // Socket connection
   useEffect(() => {
     try {
@@ -112,6 +118,7 @@ export default function DailyForgePage() {
       socketRef.current?.disconnect();
     };
   }, [current?.conversationId]);
+
   // Enhanced polling for topic selection phase
   const startPolling = () => {
     if (pollingInterval) {
@@ -126,12 +133,14 @@ export default function DailyForgePage() {
     setPollingInterval(interval);
     return interval;
   };
+
   const stopPolling = () => {
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
     }
   };
+
   const fetchData = async () => {
     try {
       console.log('🔄 Fetching Daily Forge data...');
@@ -215,6 +224,7 @@ export default function DailyForgePage() {
       setIsRefreshing(false);
     }
   };
+
   // Initial data fetch
   useEffect(() => {
     fetchData();
@@ -223,13 +233,16 @@ export default function DailyForgePage() {
       stopPolling();
     };
   }, [isAuthenticated, user?.id]);
+
   // Manual refresh function
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchData();
   };
+
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
+
     // Check if council debate is complete
     const isCouncilDebateComplete = () => {
       if (!current) return false;
@@ -237,11 +250,13 @@ export default function DailyForgePage() {
       const hasConversationId = !!current.conversationId;
       return hasOpeningThoughts && hasConversationId;
     };
+
     // Prevent interjection if in TOPIC_SELECTION phase
     if (current?.phase === 'TOPIC_SELECTION') {
       alert('The council is still selecting today\'s topic. Please wait for the topic to be chosen and the opening debate to begin.');
       return;
     }
+
     if (!isCouncilDebateComplete()) {
       if (!current?.openingThoughts) {
         alert('Council debate has not started yet. Please wait for the opening statements.');
@@ -252,35 +267,44 @@ export default function DailyForgePage() {
       }
       return;
     }
+
     if (!message.trim()) {
       alert('Please enter a message.');
       return;
     }
+
     if (!current) {
       alert('No active forge found.');
       return;
     }
+
     if (!user) {
       alert('Please sign in to interject.');
       return;
     }
+
     if (userTokens < 1) {
       alert('You need at least 1 token to interject. Please purchase tokens first.');
       return;
     }
+
     if (timeLeft === "Debate Closed") {
       alert('This debate is now closed. A new Daily Forge starts tomorrow.');
       return;
     }
+
     if (!current.conversationId) {
       alert('This conversation is not ready for interjections yet. Please try again in a moment.');
       return;
     }
+
     if (!isOnline) {
       alert('You are offline. Please check your internet connection and try again.');
       return;
     }
+
     setSending(true);
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
         method: 'POST',
@@ -292,10 +316,11 @@ export default function DailyForgePage() {
           content: message,
           userId: user.id,
           is_human: true,
-          conversationid: current.conversationId
-          isLiveChat: false  // Prevents any Live fallback
+          conversationId: current.conversationId,  // FIXED: camelCase to match backend
+          isLiveChat: false  // FIXED: Explicitly prevent Live Chat fallback
         })
       });
+
       if (!response.ok) {
         let errorMessage = 'Failed to send interjection';
         try {
@@ -307,11 +332,24 @@ export default function DailyForgePage() {
         }
         throw new Error(errorMessage);
       }
+
       const responseData = await response.json();
       setMessage('');
+
+      // Optimistic UI update: Add your message locally for instant feedback
+      const newPost: Message = {
+        id: crypto.randomUUID(),
+        name: user.username || 'You',
+        content: message,
+        sender: 'user',
+        created_at: new Date().toISOString(),
+      };
+      setAllPosts(prev => [newPost, ...prev]);
+
       if (responseData.tokens_remaining !== undefined) {
         setUserTokens(responseData.tokens_remaining);
       }
+
       alert("✅ Interjection sent! The council will respond soon.");
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
@@ -320,6 +358,7 @@ export default function DailyForgePage() {
       setSending(false);
     }
   };
+
   // New: Topic Selection & Vote Display Component
   const TopicSelectionAndVote = () => {
     if (!current?.scoutedTopics) return null;
@@ -388,13 +427,13 @@ export default function DailyForgePage() {
               Council Votes
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {['deepseek', 'grok', 'gemini'].map((ai) => (
+              {['deepseek', 'grok', 'gemini_pro'].map((ai) => (
                 <div key={ai} className="bg-gray-900/60 p-6 rounded-2xl border border-gray-700">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-xl">
                       {ai[0].toUpperCase()}
                     </div>
-                    <h5 className="text-xl font-bold capitalize text-purple-300">{ai}</h5>
+                    <h5 className="text-xl font-bold capitalize text-purple-300">{ai.replace('_', ' ')}</h5>
                   </div>
                   <p className="text-gray-200">
                     Voted for:{' '}
@@ -416,6 +455,7 @@ export default function DailyForgePage() {
       </div>
     );
   };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -427,6 +467,7 @@ export default function DailyForgePage() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-black text-white py-24">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -439,9 +480,11 @@ export default function DailyForgePage() {
             </div>
           </div>
         )}
+
         <h1 className="text-6xl md:text-8xl font-black text-center mb-16 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
           Daily Forge
         </h1>
+
         {error && (
           <div className="bg-red-900/30 border border-red-700 rounded-2xl p-6 mb-8">
             <p className="text-red-300">⚠️ {error}</p>
@@ -455,14 +498,17 @@ export default function DailyForgePage() {
             )}
           </div>
         )}
+
         {current ? (
           <div className="mb-32">
             {/* NEW: Always show topic selection & vote info when available */}
             <TopicSelectionAndVote />
+
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
                 {current.winningTopic || "Today's topic being selected..."}
               </h2>
+
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-gray-400">
                 <div className="flex items-center gap-2">
                   <Calendar size={20} />
@@ -504,6 +550,7 @@ export default function DailyForgePage() {
                 </div>
               </div>
             </div>
+
             {/* Opening Council Debate */}
             {current.openingThoughts && (
               <div className="space-y-12 mb-16">
@@ -525,6 +572,7 @@ export default function DailyForgePage() {
                 ))}
               </div>
             )}
+
             {/* Community Interjections */}
             <div className="space-y-8 mb-16">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -536,6 +584,7 @@ export default function DailyForgePage() {
                   </div>
                 )}
               </div>
+
               {allPosts.length === 0 ? (
                 <div className="text-center py-12 bg-gray-900/30 border border-gray-800 rounded-3xl">
                   {current.phase === 'TOPIC_SELECTION' ? (
@@ -583,6 +632,7 @@ export default function DailyForgePage() {
                 </div>
               )}
             </div>
+
             {/* Interjection Form */}
             {timeLeft !== "Debate Closed" && (
               <div className="max-w-4xl mx-auto">
@@ -644,6 +694,7 @@ export default function DailyForgePage() {
                     </p>
                   )}
                 </div>
+
                 {/* Interjection Form */}
                 {current?.openingThoughts && current?.conversationId && isAuthenticated && userTokens >= 1 && (
                   <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/50 rounded-3xl p-12">
@@ -687,6 +738,7 @@ export default function DailyForgePage() {
             <p className="text-xl text-gray-400">The council is preparing today's debate. Check back soon!</p>
           </div>
         )}
+
         {/* History */}
         <div className="mt-32">
           <h2 className="text-5xl font-black text-center mb-16">Daily Forge History</h2>
