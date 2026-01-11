@@ -305,6 +305,16 @@ export default function DailyForgePage() {
 
     setSending(true);
 
+    // Optimistic UI: Add your message locally for instant feedback
+    const optimisticPost: Message = {
+      id: crypto.randomUUID(),
+      name: user.username || 'You',
+      content: message,
+      sender: 'user',
+      created_at: new Date().toISOString(),
+    };
+    setAllPosts(prev => [optimisticPost, ...prev]); // Add immediately
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
         method: 'POST',
@@ -316,12 +326,14 @@ export default function DailyForgePage() {
           content: message,
           userId: user.id,
           is_human: true,
-          conversationId: current.conversationId,  // FIXED: camelCase to match backend
-          isLiveChat: false  // FIXED: Explicitly prevent Live Chat fallback
+          conversationId: current.conversationId,  // FIXED: camelCase
+          isLiveChat: false  // FIXED: Explicitly prevent Live fallback
         })
       });
 
       if (!response.ok) {
+        // Rollback optimistic add on failure
+        setAllPosts(prev => prev.filter(p => p.id !== optimisticPost.id));
         let errorMessage = 'Failed to send interjection';
         try {
           const errorText = await response.text();
@@ -336,24 +348,19 @@ export default function DailyForgePage() {
       const responseData = await response.json();
       setMessage('');
 
-      // Optimistic UI update: Add your message locally for instant feedback
-      const newPost: Message = {
-        id: crypto.randomUUID(),
-        name: user.username || 'You',
-        content: message,
-        sender: 'user',
-        created_at: new Date().toISOString(),
-      };
-      setAllPosts(prev => [newPost, ...prev]);
-
       if (responseData.tokens_remaining !== undefined) {
         setUserTokens(responseData.tokens_remaining);
       }
 
       alert("✅ Interjection sent! The council will respond soon.");
+
+      // Re-fetch full conversation after delay to sync council responses
+      setTimeout(() => fetchData(), 5000); // 5 seconds delay for AI responses
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
       alert(`Failed to send interjection: ${err.message}`);
+      // Rollback optimistic add on error
+      setAllPosts(prev => prev.filter(p => p.id !== optimisticPost.id));
     } finally {
       setSending(false);
     }
