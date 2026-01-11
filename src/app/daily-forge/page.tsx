@@ -1,4 +1,5 @@
 // src/app/daily-forge/page.tsx - Updated with minimal changes
+// • Added Socket.IO connection, join room, and post:incoming listener for real-time updates
 // • Newest interjections at top
 // • Enter key submits (no Shift), Shift+Enter for new line
 // • Interjection textarea sticky at bottom, above last comment
@@ -82,7 +83,7 @@ export default function DailyForgePage() {
     }
   }, [user]);
 
-  // Socket connection
+  // Socket connection + join room + real-time updates
   useEffect(() => {
     try {
       socketRef.current = io(API_BASE_URL, {
@@ -92,16 +93,20 @@ export default function DailyForgePage() {
         reconnectionAttempts: 5,
         reconnectionDelay: 1000
       });
+
       socketRef.current.on('connect', () => {
         console.log('✅ Daily Forge socket connected');
         if (current?.conversationId) {
-          socketRef.current?.emit('join-conversation', current.conversationId);
+          socketRef.current?.emit('join', { conversationId: current.conversationId });
+          console.log('Joined room:', current.conversationId);
         }
       });
+
       socketRef.current.on('connect_error', (err) => {
         console.error('❌ Socket connection error:', err.message);
         setError('Realtime updates unavailable. Page will refresh periodically.');
       });
+
       socketRef.current.on('post:incoming', (msg: Message) => {
         console.log('📨 New post received via socket:', msg);
         setAllPosts(prev => {
@@ -180,9 +185,7 @@ export default function DailyForgePage() {
               sender: p.is_human ? 'user' : 'ai',
               created_at: p.created_at
             }));
-            // No .reverse() — newest at top (DB order)
-            setAllPosts(formatted);
-            // Scroll to top after fetch
+            setAllPosts(formatted); // Newest at top (no reverse)
             postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
         } catch (postsErr) {
@@ -656,106 +659,3 @@ export default function DailyForgePage() {
                             {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
-                      </div>
-                      <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
-                    </div>
-                  ))}
-                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to top */}
-                </div>
-              )}
-            </div>
-
-            {/* Interjection Form - Sticky at bottom */}
-            {timeLeft !== "Debate Closed" && (
-              <div className="max-w-4xl mx-auto sticky bottom-0 bg-black/80 backdrop-blur-md border-t border-purple-500/30 p-6 z-20">
-                <div className="text-center mb-4">
-                  <h3 className="text-2xl font-black text-purple-300">Join the Conversation</h3>
-                  <p className="text-gray-400 text-sm">Share your insight (costs 1 token)</p>
-                </div>
-                <form onSubmit={handleInterject} className="space-y-4">
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (!sending && message.trim()) {
-                          handleInterject(e);
-                        }
-                      }
-                    }}
-                    placeholder="Challenge the council. Add your insight. Shape the synthesis... (costs 1 token)"
-                    className="w-full bg-black/50 border border-gray-700 rounded-2xl p-6 text-white min-h-[120px] outline-none focus:border-purple-500 resize-none text-lg"
-                    required
-                    disabled={sending || !isOnline || current?.phase === 'TOPIC_SELECTION'}
-                  />
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="text-gray-400">
-                      {message.length > 0 && `Characters: ${message.length}`}
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={sending || !message.trim() || userTokens < 1 || !isOnline || current?.phase === 'TOPIC_SELECTION'}
-                      className="inline-flex items-center gap-4 px-10 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black text-lg uppercase tracking-wider transition-all shadow-2xl shadow-purple-900/50"
-                    >
-                      <Zap size={20} />
-                      {sending ? "Sending..." : `Interject (1 Token)`}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {timeLeft === "Debate Closed" && (
-              <div className="text-center py-16 bg-gray-900/30 border border-gray-800 rounded-3xl">
-                <p className="text-3xl text-gray-300 mb-4">⚖️ This Daily Forge is now closed.</p>
-                <p className="text-xl text-gray-400">The council has finished debating. A new topic begins tomorrow.</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <p className="text-3xl text-gray-300 mb-4">No active Daily Forge found</p>
-            <p className="text-xl text-gray-400">The council is preparing today's debate. Check back soon!</p>
-          </div>
-        )}
-
-        {/* History */}
-        <div className="mt-32">
-          <h2 className="text-5xl font-black text-center mb-16">Daily Forge History</h2>
-          {history.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-2xl text-gray-500">No past debates yet.</p>
-              <p className="text-xl text-gray-400 mt-4">The first Daily Forge begins soon.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {history.map((forge) => (
-                <Link
-                  key={forge.id}
-                  href={`/conversation/${forge.conversationId || forge.id}/public`}
-                  className="block bg-gray-900/50 border border-gray-800 rounded-3xl p-8 hover:border-purple-500/50 hover:bg-gray-900/70 transition-all group"
-                >
-                  <h3 className="text-xl font-bold mb-4 line-clamp-3 group-hover:text-purple-400 transition-colors">
-                    {forge.winningTopic}
-                  </h3>
-                  <p className="text-gray-400 text-sm mb-6">
-                    {new Date(forge.date).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                  <p className="text-purple-400 font-bold group-hover:text-purple-300 transition-colors">
-                    View Debate →
-                  </p>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
