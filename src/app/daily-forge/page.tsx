@@ -1,10 +1,10 @@
 // src/app/daily-forge/page.tsx - Updated with minimal changes
-// • Added Socket.IO connection, join room, and post:incoming listener for real-time updates
+// • Fixed socket join event name ('join' instead of 'join-conversation')
+// • Added aggressive polling after interjection to force-sync council replies
 // • Newest interjections at top
 // • Enter key submits (no Shift), Shift+Enter for new line
 // • Interjection textarea sticky at bottom, above last comment
 // • Optimistic UI + auto-scroll to top
-// • Delayed re-fetch for council responses
 "use client";
 export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
@@ -339,8 +339,8 @@ export default function DailyForgePage() {
           content: message,
           userId: user.id,
           is_human: true,
-          conversationId: current.conversationId,
-          isLiveChat: false
+          conversationId: current.conversationId, // camelCase
+          isLiveChat: false // prevent fallback
         })
       });
 
@@ -367,11 +367,14 @@ export default function DailyForgePage() {
 
       alert("✅ Interjection sent! The council will respond soon.");
 
-      // Re-fetch full conversation after delay to sync council responses
-      setTimeout(() => {
+      // Aggressive polling for council replies (every 2s for 30s)
+      let pollCount = 0;
+      const poll = setInterval(() => {
         fetchData();
-        postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 5000); // 5 seconds delay for AI responses
+        pollCount++;
+        if (pollCount >= 15) clearInterval(poll);
+      }, 2000);
+
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
       alert(`Failed to send interjection: ${err.message}`);
@@ -762,6 +765,3 @@ export default function DailyForgePage() {
     </div>
   );
 }
-
-
-// Keep it clean
