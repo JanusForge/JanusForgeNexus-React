@@ -1,11 +1,9 @@
 // src/app/daily-forge/page.tsx - Updated with minimal changes
-// • New "Topic Selection & Council Vote" section that appears when scoutedTopics exist
-// • Shows the 3 scouted topics with descriptions
-// • Displays each council member's vote (DeepSeek, Grok, Gemini)
-// • Highlights the winning topic clearly
-// • This section shows even after voting (for transparency), placed above the main topic
-// • Falls back gracefully if no topics/votes yet
-// • Replaces the old TopicSelectionInProgress component (now automated, no need for force button)
+// • Newest interjections at top
+// • Enter key submits (no Shift), Shift+Enter for new line
+// • Interjection textarea sticky at bottom, above last comment
+// • Optimistic UI + auto-scroll to top
+// • Delayed re-fetch for council responses
 "use client";
 export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
@@ -600,7 +598,7 @@ export default function DailyForgePage() {
             )}
 
             {/* Community Interjections */}
-            <div className="space-y-8 mb-16 relative">
+            <div className="space-y-8 mb-32 relative"> {/* mb-32 to leave space for sticky form */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sticky top-0 bg-black z-10 py-4">
                 <h3 className="text-2xl font-black">Community Interjections</h3>
                 {isAuthenticated && (
