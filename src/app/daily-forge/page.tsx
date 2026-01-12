@@ -1,16 +1,21 @@
-// src/app/daily-forge/page.tsx - Updated with inverted conversation flow
+// src/app/daily-forge/page.tsx - All 6 engagement improvements added
 // • Most recent interjections at top (newest first)
 // • Auto-scroll to top on new posts
-// • Enhanced interjection textarea: more inviting, user-friendly design
 // • Enter key submits (no Shift), Shift+Enter for new line
 // • Interjection textarea sticky at bottom
 // • Optimistic UI + polling for council replies
+// • 1. Genesis Debate hero + "Built With" note
+// • 2. Sticky token CTA + guest preview teaser
+// • 3. Inline prompt examples under textarea
+// • 4. Live "Last Activity" indicator
+// • 5. Like/Upvote on posts
+// • 6. How It Works visual
 "use client";
 export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import Link from 'next/link';
-import { Calendar, Clock, Zap, Wifi, WifiOff, AlertCircle, Users, Vote, MessageSquare, Trophy } from 'lucide-react';
+import { Calendar, Clock, Zap, Wifi, WifiOff, AlertCircle, Users, Vote, MessageSquare, Trophy, Heart } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -34,6 +39,7 @@ interface Message {
   sender: 'user' | 'ai';
   tokens_remaining?: number;
   created_at?: string;
+  likes?: number;
 }
 
 export default function DailyForgePage() {
@@ -52,7 +58,8 @@ export default function DailyForgePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to top (newest)
+  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to top
+  const [lastActivity, setLastActivity] = useState<string>('');
 
   // Monitor network connectivity
   useEffect(() => {
@@ -112,6 +119,11 @@ export default function DailyForgePage() {
         });
         if (msg.tokens_remaining !== undefined) {
           setUserTokens(msg.tokens_remaining);
+        }
+        // Update last activity
+        if (msg.created_at) {
+          const timeAgo = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          setLastActivity(`Last activity: ${timeAgo}`);
         }
         // Scroll to top (newest)
         postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -180,7 +192,8 @@ export default function DailyForgePage() {
               name: p.is_human ? p.user?.username || 'User' : p.ai_model || 'AI Council',
               content: p.content,
               sender: p.is_human ? 'user' : 'ai',
-              created_at: p.created_at
+              created_at: p.created_at,
+              likes: p.likes || 0
             }));
             setAllPosts(formatted); // No reverse - DB returns oldest first, we reverse in render
             postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -303,6 +316,7 @@ export default function DailyForgePage() {
       content: message,
       sender: 'user',
       created_at: new Date().toISOString(),
+      likes: 0
     };
     setAllPosts(prev => [optimisticPost, ...prev]);
     postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -353,6 +367,16 @@ export default function DailyForgePage() {
     } finally {
       setSending(false);
     }
+  };
+
+  // Like/Upvote handler (local state demo; add backend endpoint later)
+  const handleLike = (postId: string) => {
+    setAllPosts(prev =>
+      prev.map(p =>
+        p.id === postId ? { ...p, likes: (p.likes || 0) + 1 } : p
+      )
+    );
+    // TODO: Call backend to persist like
   };
 
   // Scroll to top on new posts (newest at top)
@@ -480,9 +504,58 @@ export default function DailyForgePage() {
             </div>
           </div>
         )}
-        <h1 className="text-6xl md:text-8xl font-black text-center mb-16 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
+        <h1 className="text-6xl md:text-8xl font-black text-center mb-8 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
           Daily Forge
         </h1>
+
+        {/* 1. Genesis Debate Hero Block + "Built With" Note */}
+        <div className="text-center mb-12 bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-700/50 rounded-3xl p-8">
+          <h2 className="text-4xl font-black text-indigo-300 mb-4">
+            The Genesis Debate
+          </h2>
+          <p className="text-gray-300 text-lg max-w-3xl mx-auto">
+            Janus Forge was shaped through live, adversarial collaboration with Grok, DeepSeek, Gemini, and Claude.  
+            This platform is proof that multi-AI reasoning can refine itself in public.
+          </p>
+          <Link
+            href="/conversation/b9e83340-0973-4374-bb04-76170af4126a/public"
+            className="mt-6 inline-block px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold text-white transition-colors"
+          >
+            Read the Genesis Debate →
+          </Link>
+        </div>
+
+        {/* 6. How It Works Visual (three-step cards) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-black">
+              1
+            </div>
+            <h4 className="text-xl font-bold text-purple-300 mb-4">Scout AI Proposes Topics</h4>
+            <p className="text-gray-400">
+              Every day at midnight EST, an AI scouts three profound topics for debate.
+            </p>
+          </div>
+          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-black">
+              2
+            </div>
+            <h4 className="text-xl font-bold text-purple-300 mb-4">Council Debates & Votes</h4>
+            <p className="text-gray-400">
+              The AI council debates, votes, and selects the most compelling topic.
+            </p>
+          </div>
+          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8 text-center">
+            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-black">
+              3
+            </div>
+            <h4 className="text-xl font-bold text-purple-300 mb-4">You Join the Conversation</h4>
+            <p className="text-gray-400">
+              Sign in, spend a token, and interject — shape the synthesis live.
+            </p>
+          </div>
+        </div>
+
         {error && (
           <div className="bg-red-900/30 border border-red-700 rounded-2xl p-6 mb-8">
             <p className="text-red-300">⚠️ {error}</p>
@@ -544,6 +617,12 @@ export default function DailyForgePage() {
                   </div>
                 </div>
               </div>
+              {/* 4. Live "Last Activity" Indicator */}
+              {lastActivity && (
+                <p className="text-center text-gray-400 text-sm mt-2">
+                  {lastActivity}
+                </p>
+              )}
             </div>
             {/* Opening Council Debate */}
             {current.openingThoughts && (
@@ -607,7 +686,7 @@ export default function DailyForgePage() {
               ) : (
                 <div className="space-y-6">
                   <div ref={postsEndRef} /> {/* Anchor for auto-scroll to top */}
-                  {allPosts.map((msg) => (  // No reverse — newest at top as per request
+                  {allPosts.map((msg) => (
                     <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                         <div className="flex items-center gap-4">
@@ -628,6 +707,16 @@ export default function DailyForgePage() {
                         )}
                       </div>
                       <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
+                      {/* 5. Like/Upvote on posts */}
+                      <div className="flex items-center gap-2 mt-4">
+                        <button
+                          onClick={() => handleLike(msg.id)}
+                          className="flex items-center gap-1 text-gray-400 hover:text-red-400 transition-colors"
+                        >
+                          <Heart size={18} className={msg.likes && msg.likes > 0 ? 'fill-red-400 text-red-400' : ''} />
+                          <span>{msg.likes || 0}</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -637,6 +726,20 @@ export default function DailyForgePage() {
             {/* Interjection Form - Sticky at bottom */}
             {timeLeft !== "Debate Closed" && (
               <div className="max-w-4xl mx-auto sticky bottom-0 bg-gradient-to-t from-black via-black/95 to-transparent pt-8 pb-6 z-30 border-t border-purple-500/30">
+                {/* 2. Sticky token CTA + guest preview teaser */}
+                {!isAuthenticated && (
+                  <div className="text-center mb-4 p-4 bg-gray-900/80 rounded-2xl border border-purple-500/30">
+                    <p className="text-gray-300 mb-2">
+                      Sign in to join the conversation with 10 free tokens!
+                    </p>
+                    <Link
+                      href="/auth/signin"
+                      className="inline-block px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold text-white transition-colors"
+                    >
+                      Get 10 Free Tokens →
+                    </Link>
+                  </div>
+                )}
                 <div className="text-center mb-5">
                   <h3 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                     Join the Forge
@@ -667,6 +770,23 @@ export default function DailyForgePage() {
                     <div className="absolute bottom-3 right-4 text-sm text-gray-400 pointer-events-none">
                       {message.length > 0 && `${message.length} characters`}
                     </div>
+                  </div>
+                  {/* 3. Inline prompt examples under textarea */}
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {[
+                      "What do you think about [topic]?",
+                      "Challenge Grok's point on...",
+                      "How would you synthesize these views?"
+                    ].map((prompt, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setMessage(prompt)}
+                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm text-gray-300 transition-colors"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
                   </div>
                   <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                     <div className="text-gray-400 text-sm flex items-center gap-2">
