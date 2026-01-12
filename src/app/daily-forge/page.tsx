@@ -1,10 +1,9 @@
-// src/app/daily-forge/page.tsx - Updated with minimal changes
-// • Fixed socket join event name ('join' instead of 'join-conversation')
-// • Added aggressive polling after interjection to force-sync council replies
-// • Newest interjections at top
+// src/app/daily-forge/page.tsx - Updated with inverted conversation flow
+// • Newest interjections at bottom (traditional chat)
+// • Auto-scroll to bottom on new posts
 // • Enter key submits (no Shift), Shift+Enter for new line
-// • Interjection textarea sticky at bottom, above last comment
-// • Optimistic UI + auto-scroll to top
+// • Interjection textarea sticky at bottom
+// • Optimistic UI + polling for council replies
 "use client";
 export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
@@ -52,7 +51,7 @@ export default function DailyForgePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to top (newest)
+  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to bottom
 
   // Monitor network connectivity
   useEffect(() => {
@@ -93,7 +92,6 @@ export default function DailyForgePage() {
         reconnectionAttempts: 5,
         reconnectionDelay: 1000
       });
-
       socketRef.current.on('connect', () => {
         console.log('✅ Daily Forge socket connected');
         if (current?.conversationId) {
@@ -101,22 +99,20 @@ export default function DailyForgePage() {
           console.log('Joined room:', current.conversationId);
         }
       });
-
       socketRef.current.on('connect_error', (err) => {
         console.error('❌ Socket connection error:', err.message);
         setError('Realtime updates unavailable. Page will refresh periodically.');
       });
-
       socketRef.current.on('post:incoming', (msg: Message) => {
         console.log('📨 New post received via socket:', msg);
         setAllPosts(prev => {
           if (prev.some(p => p.id === msg.id)) return prev; // Prevent duplicates
-          return [msg, ...prev]; // Newest at top
+          return [...prev, msg]; // Append to bottom
         });
         if (msg.tokens_remaining !== undefined) {
           setUserTokens(msg.tokens_remaining);
         }
-        // Scroll to top (newest)
+        // Scroll to bottom (newest)
         postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
     } catch (err) {
@@ -185,7 +181,7 @@ export default function DailyForgePage() {
               sender: p.is_human ? 'user' : 'ai',
               created_at: p.created_at
             }));
-            setAllPosts(formatted); // Newest at top (no reverse)
+            setAllPosts(formatted); // Oldest first (chronological)
             postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
         } catch (postsErr) {
@@ -204,10 +200,9 @@ export default function DailyForgePage() {
       // Set up timer for debate countdown - Force end at next midnight EST (05:00 UTC)
       if (currentData.date) {
         const forgeDate = new Date(currentData.date);
-        // Calculate next midnight EST (05:00 UTC the next day)
         const nextMidnightEST = new Date(forgeDate);
         nextMidnightEST.setDate(nextMidnightEST.getDate() + 1);
-        nextMidnightEST.setUTCHours(5, 0, 0, 0); // 05:00 UTC = midnight EST
+        nextMidnightEST.setUTCHours(5, 0, 0, 0);
         const endTime = nextMidnightEST.getTime();
         const updateTimer = () => {
           const now = Date.now();
@@ -223,7 +218,6 @@ export default function DailyForgePage() {
         };
         updateTimer();
         const timer = setInterval(updateTimer, 1000);
-        // Clean up timer
         return () => clearInterval(timer);
       }
     } catch (err: any) {
@@ -238,7 +232,6 @@ export default function DailyForgePage() {
   // Initial data fetch
   useEffect(() => {
     fetchData();
-    // Clean up polling on unmount
     return () => {
       stopPolling();
     };
@@ -252,7 +245,6 @@ export default function DailyForgePage() {
 
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
-
     // Check if council debate is complete
     const isCouncilDebateComplete = () => {
       if (!current) return false;
@@ -260,13 +252,10 @@ export default function DailyForgePage() {
       const hasConversationId = !!current.conversationId;
       return hasOpeningThoughts && hasConversationId;
     };
-
-    // Prevent interjection if in TOPIC_SELECTION phase
     if (current?.phase === 'TOPIC_SELECTION') {
       alert('The council is still selecting today\'s topic. Please wait for the topic to be chosen and the opening debate to begin.');
       return;
     }
-
     if (!isCouncilDebateComplete()) {
       if (!current?.openingThoughts) {
         alert('Council debate has not started yet. Please wait for the opening statements.');
@@ -277,45 +266,36 @@ export default function DailyForgePage() {
       }
       return;
     }
-
     if (!message.trim()) {
       alert('Please enter a message.');
       return;
     }
-
     if (!current) {
       alert('No active forge found.');
       return;
     }
-
     if (!user) {
       alert('Please sign in to interject.');
       return;
     }
-
     if (userTokens < 1) {
       alert('You need at least 1 token to interject. Please purchase tokens first.');
       return;
     }
-
     if (timeLeft === "Debate Closed") {
       alert('This debate is now closed. A new Daily Forge starts tomorrow.');
       return;
     }
-
     if (!current.conversationId) {
       alert('This conversation is not ready for interjections yet. Please try again in a moment.');
       return;
     }
-
     if (!isOnline) {
       alert('You are offline. Please check your internet connection and try again.');
       return;
     }
-
     setSending(true);
-
-    // Optimistic UI: Add your message locally for instant feedback (newest at top)
+    // Optimistic UI: Add your message at bottom
     const optimisticPost: Message = {
       id: crypto.randomUUID(),
       name: user.username || 'You',
@@ -323,11 +303,8 @@ export default function DailyForgePage() {
       sender: 'user',
       created_at: new Date().toISOString(),
     };
-    setAllPosts(prev => [optimisticPost, ...prev]);
-
-    // Scroll to top (newest)
+    setAllPosts(prev => [...prev, optimisticPost]);
     postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-
     try {
       const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
         method: 'POST',
@@ -339,13 +316,11 @@ export default function DailyForgePage() {
           content: message,
           userId: user.id,
           is_human: true,
-          conversationId: current.conversationId, // camelCase
-          isLiveChat: false // prevent fallback
+          conversationId: current.conversationId,
+          isLiveChat: false
         })
       });
-
       if (!response.ok) {
-        // Rollback optimistic add on failure
         setAllPosts(prev => prev.filter(p => p.id !== optimisticPost.id));
         let errorMessage = 'Failed to send interjection';
         try {
@@ -357,16 +332,12 @@ export default function DailyForgePage() {
         }
         throw new Error(errorMessage);
       }
-
       const responseData = await response.json();
       setMessage('');
-
       if (responseData.tokens_remaining !== undefined) {
         setUserTokens(responseData.tokens_remaining);
       }
-
       alert("✅ Interjection sent! The council will respond soon.");
-
       // Aggressive polling for council replies (every 2s for 30s)
       let pollCount = 0;
       const poll = setInterval(() => {
@@ -374,23 +345,21 @@ export default function DailyForgePage() {
         pollCount++;
         if (pollCount >= 15) clearInterval(poll);
       }, 2000);
-
     } catch (err: any) {
       console.error('❌ Interjection failed:', err);
       alert(`Failed to send interjection: ${err.message}`);
-      // Rollback optimistic add on error
       setAllPosts(prev => prev.filter(p => p.id !== optimisticPost.id));
     } finally {
       setSending(false);
     }
   };
 
-  // Scroll to top on new posts
+  // Scroll to bottom on new posts
   useEffect(() => {
     postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [allPosts]);
 
-  // New: Topic Selection & Vote Display Component
+  // Topic Selection & Vote Display Component (unchanged)
   const TopicSelectionAndVote = () => {
     if (!current?.scoutedTopics) return null;
     let scoutedTopics: any[] = [];
@@ -510,11 +479,9 @@ export default function DailyForgePage() {
             </div>
           </div>
         )}
-
         <h1 className="text-6xl md:text-8xl font-black text-center mb-16 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
           Daily Forge
         </h1>
-
         {error && (
           <div className="bg-red-900/30 border border-red-700 rounded-2xl p-6 mb-8">
             <p className="text-red-300">⚠️ {error}</p>
@@ -528,17 +495,14 @@ export default function DailyForgePage() {
             )}
           </div>
         )}
-
         {current ? (
           <div className="mb-32">
-            {/* NEW: Always show topic selection & vote info when available */}
+            {/* Topic Selection & Vote */}
             <TopicSelectionAndVote />
-
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
                 {current.winningTopic || "Today's topic being selected..."}
               </h2>
-
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-gray-400">
                 <div className="flex items-center gap-2">
                   <Calendar size={20} />
@@ -580,7 +544,6 @@ export default function DailyForgePage() {
                 </div>
               </div>
             </div>
-
             {/* Opening Council Debate */}
             {current.openingThoughts && (
               <div className="space-y-12 mb-16">
@@ -602,8 +565,7 @@ export default function DailyForgePage() {
                 ))}
               </div>
             )}
-
-            {/* Community Interjections */}
+            {/* Community Interjections - INVERTED FLOW */}
             <div className="space-y-8 mb-32 relative">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sticky top-0 bg-black z-10 py-4">
                 <h3 className="text-2xl font-black">Community Interjections</h3>
@@ -621,7 +583,6 @@ export default function DailyForgePage() {
                   {isRefreshing ? 'Refreshing...' : 'Refresh Thread'}
                 </button>
               </div>
-
               {allPosts.length === 0 ? (
                 <div className="text-center py-12 bg-gray-900/30 border border-gray-800 rounded-3xl">
                   {current.phase === 'TOPIC_SELECTION' ? (
@@ -666,11 +627,10 @@ export default function DailyForgePage() {
                       <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
                     </div>
                   ))}
-                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to top */}
+                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to bottom */}
                 </div>
               )}
             </div>
-
             {/* Interjection Form - Sticky at bottom */}
             {timeLeft !== "Debate Closed" && (
               <div className="max-w-4xl mx-auto sticky bottom-0 bg-black/80 backdrop-blur-md border-t border-purple-500/30 p-6 z-20">
@@ -711,7 +671,6 @@ export default function DailyForgePage() {
                 </form>
               </div>
             )}
-
             {timeLeft === "Debate Closed" && (
               <div className="text-center py-16 bg-gray-900/30 border border-gray-800 rounded-3xl">
                 <p className="text-3xl text-gray-300 mb-4">⚖️ This Daily Forge is now closed.</p>
@@ -725,7 +684,6 @@ export default function DailyForgePage() {
             <p className="text-xl text-gray-400">The council is preparing today's debate. Check back soon!</p>
           </div>
         )}
-
         {/* History */}
         <div className="mt-32">
           <h2 className="text-5xl font-black text-center mb-16">Daily Forge History</h2>
