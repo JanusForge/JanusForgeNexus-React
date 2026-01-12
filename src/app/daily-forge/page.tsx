@@ -1,4 +1,4 @@
-// src/app/daily-forge/page.tsx - All 6 engagement improvements added
+// src/app/daily-forge/page.tsx - All 6 engagement improvements added + syntax fix
 // • Most recent interjections at top (newest first)
 // • Auto-scroll to top on new posts
 // • Enter key submits (no Shift), Shift+Enter for new line
@@ -384,7 +384,7 @@ export default function DailyForgePage() {
     postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [allPosts]);
 
-  // Topic Selection & Vote Display Component (unchanged)
+  // Topic Selection & Vote Display Component (with syntax fix)
   const TopicSelectionAndVote = () => {
     if (!current?.scoutedTopics) return null;
     let scoutedTopics: any[] = [];
@@ -442,15 +442,15 @@ export default function DailyForgePage() {
               </div>
             ))}
           </div>
-        </
-        {/* Council Votes - Now with Claude */}
+        </div>
+        {/* Council Votes */}
         {Object.keys(councilVotes).length > 0 && (
           <div>
             <h4 className="text-xl font-bold text-purple-300 mb-6 flex items-center gap-3">
               <Vote size={24} />
               Council Votes
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6"> {/* Changed to 4 columns */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {['deepseek', 'grok', 'gemini_pro', 'claude'].map((ai) => (
                 <div key={ai} className="bg-gray-900/60 p-6 rounded-2xl border border-gray-700">
                   <div className="flex items-center gap-4 mb-4">
@@ -531,10 +531,10 @@ export default function DailyForgePage() {
         </div>
 
         {/* 6. How It Works Visual (three-step cards) */}
-        <h3 className="text-3xl md:text-4xl font-black text-center mb-10 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-          How The Daily Forge Works
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <h3 className="text-3xl md:text-4xl font-black text-center mb-10 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+            How The Daily Forge Works
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-black">
               1
