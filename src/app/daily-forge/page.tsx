@@ -52,7 +52,7 @@ export default function DailyForgePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to top
+  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to top (newest)
 
   // Monitor network connectivity
   useEffect(() => {
@@ -182,7 +182,7 @@ export default function DailyForgePage() {
               sender: p.is_human ? 'user' : 'ai',
               created_at: p.created_at
             }));
-            setAllPosts(formatted); // Newest at top (no reverse)
+            setAllPosts(formatted); // No reverse - DB returns oldest first, we reverse in render
             postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
         } catch (postsErr) {
@@ -606,7 +606,8 @@ export default function DailyForgePage() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {allPosts.map((msg) => (
+                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to top */}
+                  {allPosts.map((msg) => (  // No reverse — newest at top as per request
                     <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
                         <div className="flex items-center gap-4">
@@ -629,12 +630,11 @@ export default function DailyForgePage() {
                       <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
                     </div>
                   ))}
-                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to top */}
                 </div>
               )}
             </div>
 
-            {/* Enhanced Interjection Form - Sticky at bottom */}
+            {/* Interjection Form - Sticky at bottom */}
             {timeLeft !== "Debate Closed" && (
               <div className="max-w-4xl mx-auto sticky bottom-0 bg-gradient-to-t from-black via-black/95 to-transparent pt-8 pb-6 z-30 border-t border-purple-500/30">
                 <div className="text-center mb-5">
