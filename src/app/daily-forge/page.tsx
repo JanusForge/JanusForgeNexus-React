@@ -1,6 +1,6 @@
 // src/app/daily-forge/page.tsx - Updated with inverted conversation flow
-// • Newest interjections at bottom (traditional chat)
-// • Auto-scroll to bottom on new posts
+// • Most recent interjections at top (newest first)
+// • Auto-scroll to top on new posts
 // • Enter key submits (no Shift), Shift+Enter for new line
 // • Interjection textarea sticky at bottom
 // • Optimistic UI + polling for council replies
@@ -51,7 +51,7 @@ export default function DailyForgePage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to bottom
+  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to top
 
   // Monitor network connectivity
   useEffect(() => {
@@ -107,12 +107,12 @@ export default function DailyForgePage() {
         console.log('📨 New post received via socket:', msg);
         setAllPosts(prev => {
           if (prev.some(p => p.id === msg.id)) return prev; // Prevent duplicates
-          return [...prev, msg]; // Append to bottom
+          return [msg, ...prev]; // Newest at top
         });
         if (msg.tokens_remaining !== undefined) {
           setUserTokens(msg.tokens_remaining);
         }
-        // Scroll to bottom (newest)
+        // Scroll to top (newest)
         postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       });
     } catch (err) {
@@ -181,7 +181,7 @@ export default function DailyForgePage() {
               sender: p.is_human ? 'user' : 'ai',
               created_at: p.created_at
             }));
-            setAllPosts(formatted); // Oldest first (chronological)
+            setAllPosts(formatted); // No reverse - DB returns oldest first, we reverse in render
             postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
         } catch (postsErr) {
@@ -295,7 +295,7 @@ export default function DailyForgePage() {
       return;
     }
     setSending(true);
-    // Optimistic UI: Add your message at bottom
+    // Optimistic UI: Add your message at top
     const optimisticPost: Message = {
       id: crypto.randomUUID(),
       name: user.username || 'You',
@@ -303,7 +303,7 @@ export default function DailyForgePage() {
       sender: 'user',
       created_at: new Date().toISOString(),
     };
-    setAllPosts(prev => [...prev, optimisticPost]);
+    setAllPosts(prev => [optimisticPost, ...prev]);
     postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     try {
       const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
@@ -354,7 +354,7 @@ export default function DailyForgePage() {
     }
   };
 
-  // Scroll to bottom on new posts
+  // Scroll to top on new posts (newest at top)
   useEffect(() => {
     postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [allPosts]);
@@ -565,7 +565,7 @@ export default function DailyForgePage() {
                 ))}
               </div>
             )}
-            {/* Community Interjections - INVERTED FLOW */}
+            {/* Community Interjections - MOST RECENT AT TOP */}
             <div className="space-y-8 mb-32 relative">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sticky top-0 bg-black z-10 py-4">
                 <h3 className="text-2xl font-black">Community Interjections</h3>
@@ -583,6 +583,7 @@ export default function DailyForgePage() {
                   {isRefreshing ? 'Refreshing...' : 'Refresh Thread'}
                 </button>
               </div>
+
               {allPosts.length === 0 ? (
                 <div className="text-center py-12 bg-gray-900/30 border border-gray-800 rounded-3xl">
                   {current.phase === 'TOPIC_SELECTION' ? (
@@ -627,10 +628,11 @@ export default function DailyForgePage() {
                       <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
                     </div>
                   ))}
-                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to bottom */}
+                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to top */}
                 </div>
               )}
             </div>
+
             {/* Interjection Form - Sticky at bottom */}
             {timeLeft !== "Debate Closed" && (
               <div className="max-w-4xl mx-auto sticky bottom-0 bg-black/80 backdrop-blur-md border-t border-purple-500/30 p-6 z-20">
