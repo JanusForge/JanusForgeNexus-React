@@ -510,7 +510,7 @@ export default function DailyForgePage() {
           </div>
         )}
         <h1 className="text-6xl md:text-8xl font-black text-center mb-8 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
-          Daily Forge
+          The Daily Forge
         </h1>
 
         {/* 1. Genesis Debate Hero Block + "Built With" Note */}
