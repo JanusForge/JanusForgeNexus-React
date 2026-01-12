@@ -1,6 +1,7 @@
 // src/app/daily-forge/page.tsx - Updated with inverted conversation flow
 // • Most recent interjections at top (newest first)
 // • Auto-scroll to top on new posts
+// • Enhanced interjection textarea: more inviting, user-friendly design
 // • Enter key submits (no Shift), Shift+Enter for new line
 // • Interjection textarea sticky at bottom
 // • Optimistic UI + polling for council replies
@@ -181,7 +182,7 @@ export default function DailyForgePage() {
               sender: p.is_human ? 'user' : 'ai',
               created_at: p.created_at
             }));
-            setAllPosts(formatted); // No reverse - DB returns oldest first, we reverse in render
+            setAllPosts(formatted); // Newest at top (no reverse)
             postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
           }
         } catch (postsErr) {
@@ -633,41 +634,52 @@ export default function DailyForgePage() {
               )}
             </div>
 
-            {/* Interjection Form - Sticky at bottom */}
+            {/* Enhanced Interjection Form - Sticky at bottom */}
             {timeLeft !== "Debate Closed" && (
-              <div className="max-w-4xl mx-auto sticky bottom-0 bg-black/80 backdrop-blur-md border-t border-purple-500/30 p-6 z-20">
-                <div className="text-center mb-4">
-                  <h3 className="text-2xl font-black text-purple-300">Join the Conversation</h3>
-                  <p className="text-gray-400 text-sm">Share your insight (costs 1 token)</p>
+              <div className="max-w-4xl mx-auto sticky bottom-0 bg-gradient-to-t from-black via-black/95 to-transparent pt-8 pb-6 z-30 border-t border-purple-500/30">
+                <div className="text-center mb-5">
+                  <h3 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                    Join the Forge
+                  </h3>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Add your voice to the council. Costs 1 token — shape the conversation.
+                  </p>
                 </div>
                 <form onSubmit={handleInterject} className="space-y-4">
-                  <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        if (!sending && message.trim()) {
-                          handleInterject(e);
+                  <div className="relative">
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!sending && message.trim()) {
+                            handleInterject(e);
+                          }
                         }
-                      }
-                    }}
-                    placeholder="Challenge the council. Add your insight. Shape the synthesis... (costs 1 token)"
-                    className="w-full bg-black/50 border border-gray-700 rounded-2xl p-6 text-white min-h-[120px] outline-none focus:border-purple-500 resize-none text-lg"
-                    required
-                    disabled={sending || !isOnline || current?.phase === 'TOPIC_SELECTION'}
-                  />
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="text-gray-400">
-                      {message.length > 0 && `Characters: ${message.length}`}
+                      }}
+                      placeholder="What do you see in the reflection? Challenge the council. Inspire the synthesis... (1 token)"
+                      className="w-full bg-gradient-to-b from-gray-950 to-black border border-purple-500/40 rounded-2xl p-6 text-white min-h-[140px] md:min-h-[160px] outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/30 resize-none text-lg placeholder-gray-500 transition-all shadow-lg shadow-purple-900/20 hover:shadow-purple-900/30"
+                      required
+                      disabled={sending || !isOnline || current?.phase === 'TOPIC_SELECTION'}
+                      aria-label="Your interjection to the council"
+                    />
+                    <div className="absolute bottom-3 right-4 text-sm text-gray-400 pointer-events-none">
+                      {message.length > 0 && `${message.length} characters`}
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className="text-gray-400 text-sm flex items-center gap-2">
+                      <Zap size={16} className="text-yellow-400 animate-pulse" />
+                      1 token • Your insight fuels the forge
                     </div>
                     <button
                       type="submit"
                       disabled={sending || !message.trim() || userTokens < 1 || !isOnline || current?.phase === 'TOPIC_SELECTION'}
-                      className="inline-flex items-center gap-4 px-10 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black text-lg uppercase tracking-wider transition-all shadow-2xl shadow-purple-900/50"
+                      className="inline-flex items-center gap-3 px-12 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black text-lg uppercase tracking-wider transition-all shadow-xl shadow-purple-900/50 hover:shadow-purple-900/70 active:scale-95"
                     >
-                      <Zap size={20} />
-                      {sending ? "Sending..." : `Interject (1 Token)`}
+                      <Zap size={20} className="animate-pulse" />
+                      {sending ? "Sending..." : "Interject"}
                     </button>
                   </div>
                 </form>
