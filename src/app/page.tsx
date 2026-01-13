@@ -100,6 +100,23 @@ export default function HomePage() {
         onToggle={() => setSidebarOpen(!sidebarOpen)}
       />
 
+      <Link href="/" className="flex items-center gap-3">
+  <div className="w-12 h-12 overflow-hidden rounded-lg flex items-center justify-center bg-black border border-zinc-800">
+    <video
+      autoPlay
+      muted
+      loop
+      playsInline
+      className="w-full h-full object-cover"
+    >
+      <source src="/janus-logo-video.mp4" type="video/mp4" />
+    </video>
+  </div>
+  <span className="text-white font-black text-xl hidden sm:block italic uppercase tracking-tighter">
+    Janus Forge
+  </span>
+</Link>
+
       <div className="flex-1 overflow-auto p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-4xl font-black mb-8 uppercase tracking-tighter">Live Nexus <span className="text-blue-500">Showdown</span></h1>
@@ -109,8 +126,8 @@ export default function HomePage() {
               <div className="flex items-center gap-3">
                 <Radio className="text-red-500 animate-pulse" />
                 <div>
-                  <span className="font-bold uppercase text-sm tracking-widest block">Frontier Synthesis</span>
-                  <span className="text-[10px] text-gray-500 uppercase font-mono">2026 Reasoning Engine Active</span>
+                  <span className="font-bold uppercase text-lg tracking-widest block">Frontier Synthesis</span>
+                  <span className="text-[14px] text-gray-500 uppercase font-mono">2026 Reasoning Engine Active</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
