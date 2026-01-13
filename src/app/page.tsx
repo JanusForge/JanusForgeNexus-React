@@ -114,32 +114,39 @@ export default function HomePage() {
             </div>
 
               {/* CENTERED LOGO VIDEO & INPUT AREA */}
-<div className="p-10 border-b border-gray-800 bg-black/20 flex flex-col items-center">
+<div className="p-6 md:p-10 border-b border-gray-800 bg-black/20 flex flex-col items-center">
 
-  {/* ENHANCED & ENLARGED LOGO VIDEO */}
-  <div className="mb-10 relative group">
-    {/* Outer Neon Pulse - Larger Blur Radius */}
-    <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-full blur-xl opacity-30 group-hover:opacity-60 transition duration-1000 animate-pulse"></div>
+  {/* RESPONSIVE ENHANCED LOGO VIDEO */}
+  <div className="mb-8 md:mb-10 relative group">
+    {/* Mobile-First Glow: Smaller on mobile, XL on desktop */}
+    <div className="absolute -inset-1.5 md:-inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-full blur-lg md:blur-xl opacity-40 group-hover:opacity-70 transition duration-1000 animate-pulse"></div>
     
-    {/* Main Video Container - Scaled to w-48 (12rem / 192px) */}
-    <div className="relative w-48 h-48 overflow-hidden rounded-full border-4 border-zinc-700 bg-black flex items-center justify-center shadow-2xl shadow-blue-500/20">
+    {/* Main Video Container: w-32 (128px) on mobile, w-48 (192px) on desktop */}
+    <div className="relative w-32 h-32 md:w-48 md:h-48 overflow-hidden rounded-full border-2 md:border-4 border-zinc-700 bg-black flex items-center justify-center shadow-2xl shadow-blue-500/30">
       <video 
         autoPlay 
         muted 
         loop 
         playsInline 
-        className="w-full h-full object-cover scale-110" /* Slight scale to ensure no edge gaps */
+        className="w-full h-full object-cover scale-110"
       >
         <source src="/janus-logo-video.mp4" type="video/mp4" />
       </video>
     </div>
 
-    {/* Status Badge - Adjusted for larger size */}
-    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-zinc-900 px-5 py-1 rounded-full border border-zinc-600 shadow-xl">
-       <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Nexus-V3</span>
+    {/* Status Badge: Scaled for mobile */}
+    <div className="absolute -bottom-2 md:-bottom-3 left-1/2 -translate-x-1/2 bg-zinc-900 px-3 md:px-5 py-0.5 md:py-1 rounded-full border border-zinc-600 shadow-xl whitespace-nowrap">
+       <span className="text-[7px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Nexus-V3</span>
     </div>
-  </div>              
-            
+  </div>
+
+  {/* MOBILE-OPTIMIZED TEXTAREA */}
+  <textarea
+    value={userMessage}
+    onChange={(e) => setUserMessage(e.target.value)}
+    placeholder={isOwner ? "Owner: Interject freely..." : "Submit query (3 Tokens)..."}
+    className="w-full bg-black/60 border border-gray-700 rounded-2xl p-4 md:p-6 text-white min-h-[120px] md:min-h-[140px] outline-none focus:border-blue-500 transition-all placeholder:text-zinc-700 text-center text-sm md:text-base"
+  />            
 
               {/* TEXTAREA */}
               <textarea
