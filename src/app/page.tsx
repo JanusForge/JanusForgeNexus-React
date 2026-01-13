@@ -358,7 +358,7 @@ export default function HomePage() {
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{msg.name}</span>
-                        {['GEMINI', 'DEEPSEEK', 'GROK', 'CLAUDE', 'GPT_4'].includes(msg.name) && (
+                        {['GEMINI', 'DEEPSEEK', 'GROK', 'CLAUDE', 'CHATGPT'].includes(msg.name) && (
                           <span className="text-[8px] bg-red-500 px-2 py-0.5 rounded font-black text-white uppercase">Council Response</span>
                         )}
                         {msg.name === 'User' && (
