@@ -97,7 +97,7 @@ export default function HomePage() {
 
       <div className="flex-1 overflow-auto p-4 md:p-8">
         <div className="max-w-5xl mx-auto">
-          
+
           <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden flex flex-col min-h-[700px]">
             {/* TOP INFO BAR */}
             <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-black/40">
@@ -113,49 +113,32 @@ export default function HomePage() {
               </div>
             </div>
 
-              {/* CENTERED LOGO VIDEO & INPUT AREA */}
-<div className="p-6 md:p-10 border-b border-gray-800 bg-black/20 flex flex-col items-center">
+            {/* CENTERED LOGO VIDEO & INPUT AREA */}
+            <div className="p-6 md:p-10 border-b border-gray-800 bg-black/20 flex flex-col items-center">
 
-  {/* RESPONSIVE ENHANCED LOGO VIDEO */}
-  <div className="mb-8 md:mb-10 relative group">
-    {/* Mobile-First Glow: Smaller on mobile, XL on desktop */}
-    <div className="absolute -inset-1.5 md:-inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-full blur-lg md:blur-xl opacity-40 group-hover:opacity-70 transition duration-1000 animate-pulse"></div>
-    
-    {/* Main Video Container: w-32 (128px) on mobile, w-48 (192px) on desktop */}
-    <div className="relative w-32 h-32 md:w-64 md:h-64 overflow-hidden rounded-full border-2 md:border-4 border-zinc-700 bg-black flex items-center justify-center shadow-2xl shadow-blue-500/30">
-      <video 
-        autoPlay 
-        muted 
-        loop 
-        playsInline 
-        className="w-full h-full object-cover scale-110"
-      >
-        <source src="/janus-logo-video.mp4" type="video/mp4" />
-      </video>
-    </div>
+              {/* RESPONSIVE ENHANCED LOGO VIDEO */}
+              <div className="mb-8 md:mb-10 relative group">
+                <div className="absolute -inset-1.5 md:-inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-full blur-lg md:blur-xl opacity-40 group-hover:opacity-70 transition duration-1000 animate-pulse"></div>
 
-    {/* Status Badge: Scaled for mobile */}
-    <div className="absolute -bottom-2 md:-bottom-3 left-1/2 -translate-x-1/2 bg-zinc-900 px-3 md:px-5 py-0.5 md:py-1 rounded-full border border-zinc-600 shadow-xl whitespace-nowrap">
-       <span className="text-[7px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Nexus-V3</span>
-    </div>
-  </div>
+                <div className="relative w-32 h-32 md:w-64 md:h-64 overflow-hidden rounded-full border-2 md:border-4 border-zinc-700 bg-black flex items-center justify-center shadow-2xl shadow-blue-500/30">
+                  <video autoPlay muted loop playsInline className="w-full h-full object-cover scale-110">
+                    <source src="/janus-logo-video.mp4" type="video/mp4" />
+                  </video>
+                </div>
 
-  {/* MOBILE-OPTIMIZED TEXTAREA */}
-  <textarea
-    value={userMessage}
-    onChange={(e) => setUserMessage(e.target.value)}
-    placeholder={isOwner ? "Owner: Interject freely..." : "Submit query (3 Tokens)..."}
-    className="w-full bg-black/60 border border-gray-700 rounded-2xl p-4 md:p-6 text-white min-h-[120px] md:min-h-[140px] outline-none focus:border-blue-500 transition-all placeholder:text-zinc-700 text-center text-sm md:text-base"
-  />            
+                <div className="absolute -bottom-2 md:-bottom-3 left-1/2 -translate-x-1/2 bg-zinc-900 px-3 md:px-5 py-0.5 md:py-1 rounded-full border border-zinc-600 shadow-xl whitespace-nowrap">
+                   <span className="text-[7px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Nexus-V3</span>
+                </div>
+              </div>
 
-              {/* TEXTAREA */}
+              {/* SINGLE RESPONSIVE TEXTAREA */}
               <textarea
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
-                placeholder={isOwner ? "Owner Mode: Interject freely..." : "Submit query to Council (3 Tokens)..."}
-                className="w-full bg-black/60 border border-gray-700 rounded-2xl p-6 text-white min-h-[140px] outline-none focus:border-blue-500 transition-all placeholder:text-zinc-700 text-center"
+                placeholder={isOwner ? "Owner: Interject freely..." : "Submit query (3 Tokens)..."}
+                className="w-full bg-black/60 border border-gray-700 rounded-2xl p-4 md:p-6 text-white min-h-[120px] md:min-h-[140px] outline-none focus:border-blue-500 transition-all placeholder:text-zinc-700 text-center text-sm md:text-base"
               />
-              
+
               <button
                 onClick={handleSendMessage}
                 disabled={isSending || !userMessage.trim() || !canAfford}
@@ -163,9 +146,9 @@ export default function HomePage() {
               >
                 {isSending ? <Loader2 className="animate-spin mx-auto" /> : canAfford ? 'Initialize Showdown' : 'Insufficient Balance'}
               </button>
-              
+
               {!isOwner && (
-                <p className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] font-bold mt-4">
+                <p className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] font-bold mt-4 text-center px-4">
                   Triggers adversarial synthesis across 5 frontier models
                 </p>
               )}
@@ -191,8 +174,8 @@ export default function HomePage() {
                         {msg.name}
                       </div>
                       <div className={`text-sm leading-relaxed p-5 rounded-3xl ${
-                        msg.sender === 'user' 
-                        ? 'bg-blue-600 text-white rounded-tr-none' 
+                        msg.sender === 'user'
+                        ? 'bg-blue-600 text-white rounded-tr-none'
                         : 'bg-zinc-800/50 text-zinc-300 rounded-tl-none border border-zinc-700'
                       }`}>
                         {msg.content}

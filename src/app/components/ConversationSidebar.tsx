@@ -4,7 +4,6 @@ import {
   MessageSquare,
   Clock,
   ChevronLeft,
-  ChevronRight,
   Search,
   MoreVertical,
   Edit3,
@@ -12,7 +11,9 @@ import {
   Trash2,
   Share2,
   Download,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Printer,
+  FileCode
 } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import jsPDF from 'jspdf';
@@ -43,6 +44,7 @@ export default function ConversationSidebar({
   const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  
   // Menu & modal state
   const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,8 +63,6 @@ export default function ConversationSidebar({
           const data = await res.json();
           setConversations(data);
           setFilteredConversations(data);
-        } else {
-          console.error("Fetch failed:", res.status);
         }
       } catch (err) {
         console.error("Failed to load conversations:", err);
@@ -82,370 +82,160 @@ export default function ConversationSidebar({
     const lowerQuery = searchQuery.toLowerCase();
     const filtered = conversations.filter(conv =>
       conv.title.toLowerCase().includes(lowerQuery) ||
-      conv.preview.toLowerCase().includes(lowerQuery) ||
-      (conv.note && conv.note.toLowerCase().includes(lowerQuery))
+      conv.preview.toLowerCase().includes(lowerQuery)
     );
     setFilteredConversations(filtered);
   }, [searchQuery, conversations]);
 
   const formatDate = (date: Date) => {
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
+    const diff = now.getTime() - new Date(date).getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     if (days === 0) return 'Today';
     if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
+    return `${days}d ago`;
   };
 
-  // === PERSISTENT ACTIONS ===
+  // === NEW ACTION: RAW TXT DOWNLOAD ===
+  const handleDownloadTxt = async (conv: Conversation) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/conversations/${conv.id}`);
+      const data = await res.json();
+      const content = data.conversation.posts.map((p: any) => 
+        `[${p.is_human ? 'ARCHITECT' : p.ai_model || 'COUNCIL'}]\n${p.content}\n`
+      ).join('\n---\n\n');
+      
+      const element = document.createElement("a");
+      const file = new Blob([content], {type: 'text/plain'});
+      element.href = URL.createObjectURL(file);
+      element.download = `Janus-Synthesis-${conv.title.replace(/\s+/g, '_')}.txt`;
+      document.body.appendChild(element);
+      element.click();
+    } catch (err) {
+      console.error("Download failed", err);
+    }
+  };
+
+  // === NEW ACTION: PRINT ===
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleRename = async (id: string, newTitle: string) => {
-    const original = conversations.find(c => c.id === id);
-    if (!original) return;
-    // Optimistic update
     setConversations(prev => prev.map(c => c.id === id ? {...c, title: newTitle} : c));
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: newTitle })
-      });
-      if (!res.ok) throw new Error("Failed to save title");
-    } catch (err) {
-      console.error("Rename failed:", err);
-      // Rollback on error
-      setConversations(prev => prev.map(c => c.id === id ? original : c));
-      alert("Failed to save title — reverted");
-    }
+    await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: newTitle })
+    });
     setEditingId(null);
-  };
-
-  const handleAddNote = async (id: string, note: string) => {
-    const original = conversations.find(c => c.id === id);
-    if (!original) return;
-    // Optimistic update
-    setConversations(prev => prev.map(c => c.id === id ? {...c, note} : c));
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ note })
-      });
-      if (!res.ok) throw new Error("Failed to save note");
-    } catch (err) {
-      console.error("Note save failed:", err);
-      // Rollback
-      setConversations(prev => prev.map(c => c.id === id ? original : c));
-      alert("Failed to save note — reverted");
-    }
-    setNotingId(null);
   };
 
   const handleDelete = async (id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
+    await fetch(`${API_BASE_URL}/api/conversations/${id}`, { method: 'DELETE' });
     setDeletingId(null);
-    if (currentConversationId === id) {
-      onSelectConversation('');
-    }
+    if (currentConversationId === id) onSelectConversation('');
   };
 
   const handleExportPDF = async (conv: Conversation) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/conversations/${conv.id}`);
-      if (!res.ok) throw new Error("Failed to load thread");
       const data = await res.json();
       const posts = data.conversation.posts;
       const doc = new jsPDF();
       let y = 20;
-      doc.setFontSize(20);
-      doc.text(conv.title || "Janus Forge Nexus Synthesis", 20, y);
-      y += 10;
-      doc.setFontSize(12);
-      doc.text(`Date: ${new Date(conv.timestamp).toLocaleDateString()}`, 20, y);
-      y += 10;
-      doc.text("Janus Forge Nexus — Thesis. Antithesis. Humanity.", 20, y);
+      doc.setFontSize(22);
+      doc.text(conv.title, 20, y);
       y += 15;
       posts.forEach((p: any) => {
         const name = p.is_human ? 'Architect' : p.ai_model || 'Council';
-        doc.setFontSize(14);
+        doc.setFontSize(12);
+        doc.setTextColor(100);
         doc.text(`${name}:`, 20, y);
-        y += 8;
-        doc.setFontSize(11);
+        y += 7;
+        doc.setTextColor(0);
         const lines = doc.splitTextToSize(p.content, 170);
         doc.text(lines, 25, y);
         y += lines.length * 7 + 10;
-        if (y > 280) {
-          doc.addPage();
-          y = 20;
-        }
+        if (y > 270) { doc.addPage(); y = 20; }
       });
-      doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
-    } catch (err) {
-      alert("Failed to generate full PDF — using preview");
-      // Fallback
-      const doc = new jsPDF();
-      doc.setFontSize(20);
-      doc.text(conv.title, 20, 20);
-      doc.setFontSize(12);
-      doc.text("Janus Forge Nexus Synthesis", 20, 30);
-      doc.text(new Date().toLocaleDateString(), 20, 40);
-      doc.text(conv.preview, 20, 60, { maxWidth: 170 });
-      doc.save(`${conv.title.replace(/[^a-z0-9]/gi, '_') || 'synthesis'}.pdf`);
-    }
+      doc.save(`${conv.title}.pdf`);
+    } catch (err) { console.error(err); }
   };
 
   const handleCopyLink = (convId: string) => {
-    const publicLink = `https://janusforge.ai/conversation/${convId}/public`;
+    const publicLink = `${window.location.origin}/share/${convId}`;
     navigator.clipboard.writeText(publicLink);
-    alert("Public link copied to clipboard!");
-    window.open(publicLink, '_blank'); // ← Opens in new tab
+    alert("Public link copied!");
   };
 
   return (
     <>
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/70 z-40 lg:hidden"
-          onClick={onToggle}
-        />
-      )}
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-gray-900/95 backdrop-blur-lg border-r border-gray-800 transform transition-transform duration-300 lg:translate-x-0 lg:static lg:inset-0 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      {isOpen && <div className="fixed inset-0 bg-black/70 z-40 lg:hidden" onClick={onToggle} />}
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-zinc-950 border-r border-zinc-800 transform transition-transform duration-300 lg:translate-x-0 lg:static ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-800">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black uppercase tracking-tighter text-white">
-                Your Syntheses
-              </h2>
-              <button
-                onClick={onToggle}
-                className="lg:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
-              >
-                <ChevronLeft size={20} className="text-gray-400" />
-              </button>
-            </div>
-            {/* Search */}
+          <div className="p-6 border-b border-zinc-800">
+            <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-4">Neural History</h2>
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search conversations..."
-                className="w-full pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
+                placeholder="Search..."
+                className="w-full pl-9 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-xl text-xs focus:outline-none focus:border-blue-500"
               />
             </div>
           </div>
-          {/* List */}
-          <div className="flex-1 overflow-y-auto">
-            {loading ? (
-              <div className="p-8 text-center text-gray-500">
-                <div className="animate-pulse">Loading history...</div>
-              </div>
-            ) : filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <MessageSquare size={48} className="mx-auto mb-4 text-gray-700" />
-                <p>{searchQuery ? 'No matches found' : 'No conversations yet'}</p>
-                {!searchQuery && <p className="text-sm mt-2">Start one on the main panel →</p>}
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-800">
-                {filteredConversations.map((conv) => (
-                  <div key={conv.id} className="relative group">
-                    {/* Main clickable row */}
-                    <button
-                      onClick={() => {
-                        onSelectConversation(conv.id);
-                        onToggle();
-                      }}
-                      className={`w-full p-4 text-left transition-all hover:bg-gray-800/50 cursor-pointer focus:outline-none ${
-                        currentConversationId === conv.id ? 'bg-blue-900/20 border-l-4 border-blue-500' : ''
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-1">
-                        {editingId === conv.id ? (
-                          <input
-                            type="text"
-                            value={editingTitle}
-                            onChange={(e) => setEditingTitle(e.target.value)}
-                            onBlur={() => handleRename(conv.id, editingTitle)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleRename(conv.id, editingTitle)}
-                            onClick={(e) => e.stopPropagation()}
-                            autoFocus
-                            className="bg-gray-800/50 border border-blue-500 rounded px-2 py-1 text-white"
-                          />
-                        ) : (
-                          <h3 className="font-bold text-white truncate pr-8 group-hover:text-blue-300 transition-colors">
-                            {conv.title}
-                          </h3>
-                        )}
-                        <span className="text-xs text-gray-500 flex-shrink-0">
-                          <Clock size={12} className="inline mr-1" />
-                          {formatDate(new Date(conv.timestamp))}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-400 line-clamp-2 group-hover:text-gray-300 transition-colors">
-                        {conv.preview}
-                      </p>
-                      {conv.note && (
-                        <p className="text-xs text-blue-400 mt-2 italic">
-                          Note: {conv.note}
-                        </p>
-                      )}
-                    </button>
-                    {/* Context Menu */}
-                    <div className="absolute right-2 top-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpenFor(menuOpenFor === conv.id ? null : conv.id);
-                        }}
-                        className="p-2 hover:bg-gray-800 rounded-lg"
-                      >
-                        <MoreVertical size={16} className="text-gray-400" />
-                      </button>
-                      {menuOpenFor === conv.id && (
-                        <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-10">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingId(conv.id);
-                              setEditingTitle(conv.title);
-                              setMenuOpenFor(null);
-                            }}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 text-sm"
-                          >
-                            <Edit3 size={16} />
-                            Rename
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setNotingId(conv.id);
-                              setNotingText(conv.note || '');
-                              setMenuOpenFor(null);
-                            }}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 text-sm"
-                          >
-                            <FileText size={16} />
-                            {conv.note ? 'Edit Note' : 'Add Note'}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSharingId(conv.id);
-                              setMenuOpenFor(null);
-                            }}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 text-sm"
-                          >
-                            <Share2 size={16} />
-                            Share Thread
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeletingId(conv.id);
-                              setMenuOpenFor(null);
-                            }}
-                            className="w-full px-4 py-3 text-left hover:bg-red-900/50 flex items-center gap-3 text-sm text-red-400"
-                          >
-                            <Trash2 size={16} />
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    {/* Share Modal */}
-                    {sharingId === conv.id && (
-                      <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setSharingId(null)}>
-                        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-700" onClick={(e) => e.stopPropagation()}>
-                          <h3 className="text-lg font-bold mb-4">Share "{conv.title}"</h3>
-                          <div className="space-y-4">
-                            <button
-                              onClick={() => handleExportPDF(conv)}
-                              className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg flex items-center justify-center gap-3 font-bold"
-                            >
-                              <Download size={18} />
-                              Export as PDF
-                            </button>
-                            <button
-                              onClick={() => handleCopyLink(conv.id)}
-                              className="w-full py-3 bg-purple-600 hover:bg-purple-500 rounded-lg flex items-center justify-center gap-3 font-bold"
-                            >
-                              <LinkIcon size={18} />
-                              Copy Public Link
-                            </button>
-                          </div>
-                          <button
-                            onClick={() => setSharingId(null)}
-                            className="w-full mt-4 py-2 bg-gray-800 rounded-lg"
-                          >
-                            Close
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    {/* Note Modal */}
-                    {notingId === conv.id && (
-                      <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setNotingId(null)}>
-                        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-700" onClick={(e) => e.stopPropagation()}>
-                          <h3 className="text-lg font-bold mb-4">Add Note</h3>
-                          <textarea
-                            value={notingText}
-                            onChange={(e) => setNotingText(e.target.value)}
-                            className="w-full bg-gray-800/50 border border-gray-700 rounded-lg p-3 text-white min-h-[120px]"
-                            placeholder="Your personal note..."
-                          />
-                          <div className="flex gap-3 mt-4">
-                            <button
-                              onClick={() => handleAddNote(conv.id, notingText)}
-                              className="flex-1 py-2 bg-blue-600 rounded-lg font-bold"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={() => setNotingId(null)}
-                              className="flex-1 py-2 bg-gray-800 rounded-lg"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {/* Delete Confirmation */}
-                    {deletingId === conv.id && (
-                      <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setDeletingId(null)}>
-                        <div className="bg-gray-900 rounded-2xl p-6 max-w-md w-full border border-gray-700" onClick={(e) => e.stopPropagation()}>
-                          <h3 className="text-lg font-bold mb-4 text-red-400">Delete Conversation?</h3>
-                          <p className="text-gray-400 mb-6">
-                            This will permanently delete "{conv.title}". This cannot be undone.
-                          </p>
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => handleDelete(conv.id)}
-                              className="flex-1 py-2 bg-red-600 rounded-lg font-bold"
-                            >
-                              Delete Forever
-                            </button>
-                            <button
-                              onClick={() => setDeletingId(null)}
-                              className="flex-1 py-2 bg-gray-800 rounded-lg"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {filteredConversations.map((conv) => (
+              <div key={conv.id} className="relative group">
+                <button
+                  onClick={() => { onSelectConversation(conv.id); onToggle(); }}
+                  className={`w-full p-4 text-left rounded-xl transition-all border ${currentConversationId === conv.id ? 'bg-blue-600/10 border-blue-500/40' : 'bg-transparent border-transparent hover:bg-zinc-900'}`}
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-bold text-xs truncate pr-6">{conv.title}</h3>
+                    <span className="text-[9px] text-zinc-600 uppercase font-mono">{formatDate(conv.timestamp)}</span>
                   </div>
-                ))}
+                  <p className="text-[10px] text-zinc-500 line-clamp-1">{conv.preview}</p>
+                </button>
+
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMenuOpenFor(menuOpenFor === conv.id ? null : conv.id); }}
+                  className="absolute right-2 top-4 p-1 text-zinc-600 hover:text-white"
+                >
+                  <MoreVertical size={14} />
+                </button>
+
+                {menuOpenFor === conv.id && (
+                  <div className="absolute right-0 mt-2 w-48 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl z-50 p-2 text-[10px] font-black uppercase tracking-tighter">
+                    <button onClick={() => { setEditingId(conv.id); setEditingTitle(conv.title); setMenuOpenFor(null); }} className="flex items-center gap-3 w-full p-2 hover:bg-zinc-800 rounded-lg text-zinc-400"><Edit3 size={12} /> Rename</button>
+                    <button onClick={() => handlePrint()} className="flex items-center gap-3 w-full p-2 hover:bg-zinc-800 rounded-lg text-zinc-400"><Printer size={12} /> Print Synthesis</button>
+                    <button onClick={() => { setSharingId(conv.id); setMenuOpenFor(null); }} className="flex items-center gap-3 w-full p-2 hover:bg-zinc-800 rounded-lg text-blue-400"><Share2 size={12} /> Share / Save</button>
+                    <div className="h-[1px] bg-zinc-800 my-1" />
+                    <button onClick={() => setDeletingId(conv.id)} className="flex items-center gap-3 w-full p-2 hover:bg-red-950 text-red-500 rounded-lg"><Trash2 size={12} /> Delete</button>
+                  </div>
+                )}
+
+                {/* SHARE MODAL */}
+                {sharingId === conv.id && (
+                  <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4" onClick={() => setSharingId(null)}>
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-[2rem] p-8 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
+                      <Share2 className="mx-auto mb-4 text-blue-500" size={32} />
+                      <h3 className="text-lg font-black uppercase italic mb-6">Distribute Synthesis</h3>
+                      <div className="grid grid-cols-1 gap-3">
+                        <button onClick={() => handleExportPDF(conv)} className="flex items-center justify-center gap-3 bg-zinc-800 p-4 rounded-2xl hover:bg-zinc-700 transition-all text-[10px] font-black uppercase tracking-widest"><Download size={16} /> Export PDF</button>
+                        <button onClick={() => handleDownloadTxt(conv)} className="flex items-center justify-center gap-3 bg-zinc-800 p-4 rounded-2xl hover:bg-zinc-700 transition-all text-[10px] font-black uppercase tracking-widest"><FileCode size={16} /> Download .TXT</button>
+                        <button onClick={() => handleCopyLink(conv.id)} className="flex items-center justify-center gap-3 bg-blue-600 p-4 rounded-2xl hover:bg-blue-500 transition-all text-[10px] font-black uppercase tracking-widest"><LinkIcon size={16} /> Copy Public Link</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
