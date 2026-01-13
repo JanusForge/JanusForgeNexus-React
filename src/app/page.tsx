@@ -113,21 +113,33 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* CENTERED LOGO VIDEO & INPUT AREA */}
-            <div className="p-8 border-b border-gray-800 bg-black/20 flex flex-col items-center">
-              
-              {/* CENTERED LOGO VIDEO */}
-              <div className="mb-6 relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
-                <div className="relative w-24 h-24 overflow-hidden rounded-full border-2 border-zinc-700 bg-black flex items-center justify-center">
-                  <video autoPlay muted loop playsInline className="w-full h-full object-cover">
-                    <source src="/janus-logo-video.mp4" type="video/mp4" />
-                  </video>
-                </div>
-                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-zinc-900 px-3 py-0.5 rounded-full border border-zinc-700">
-                   <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">Nexus-V3</span>
-                </div>
-              </div>
+              {/* CENTERED LOGO VIDEO & INPUT AREA */}
+<div className="p-10 border-b border-gray-800 bg-black/20 flex flex-col items-center">
+
+  {/* ENHANCED & ENLARGED LOGO VIDEO */}
+  <div className="mb-10 relative group">
+    {/* Outer Neon Pulse - Larger Blur Radius */}
+    <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-full blur-xl opacity-30 group-hover:opacity-60 transition duration-1000 animate-pulse"></div>
+    
+    {/* Main Video Container - Scaled to w-48 (12rem / 192px) */}
+    <div className="relative w-48 h-48 overflow-hidden rounded-full border-4 border-zinc-700 bg-black flex items-center justify-center shadow-2xl shadow-blue-500/20">
+      <video 
+        autoPlay 
+        muted 
+        loop 
+        playsInline 
+        className="w-full h-full object-cover scale-110" /* Slight scale to ensure no edge gaps */
+      >
+        <source src="/janus-logo-video.mp4" type="video/mp4" />
+      </video>
+    </div>
+
+    {/* Status Badge - Adjusted for larger size */}
+    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-zinc-900 px-5 py-1 rounded-full border border-zinc-600 shadow-xl">
+       <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Nexus-V3</span>
+    </div>
+  </div>              
+            
 
               {/* TEXTAREA */}
               <textarea
