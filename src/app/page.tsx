@@ -122,7 +122,7 @@ export default function HomePage() {
     <div className="absolute -inset-1.5 md:-inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-full blur-lg md:blur-xl opacity-40 group-hover:opacity-70 transition duration-1000 animate-pulse"></div>
     
     {/* Main Video Container: w-32 (128px) on mobile, w-48 (192px) on desktop */}
-    <div className="relative w-32 h-32 md:w-64 md:h-64 overflow-hidden rounded-full border-2 md:border-4 border-zinc-700 bg-black flex items-center justify-center shadow-2xl shadow-blue-500/30">
+    <div className="relative w-32 h-32 md:w-76 md:h-76 overflow-hidden rounded-full border-2 md:border-4 border-zinc-700 bg-black flex items-center justify-center shadow-2xl shadow-blue-500/30">
       <video 
         autoPlay 
         muted 
