@@ -1,866 +1,129 @@
-// src/app/daily-forge/page.tsx - All 6 engagement improvements added + syntax fix
-// • Most recent interjections at top (newest first)
-// • Auto-scroll to top on new posts
-// • Enter key submits (no Shift), Shift+Enter for new line
-// • Interjection textarea sticky at bottom
-// • Optimistic UI + polling for council replies
-// • 1. Genesis Debate hero + "Built With" note
-// • 2. Sticky token CTA + guest preview teaser
-// • 3. Inline prompt examples under textarea
-// • 4. Live "Last Activity" indicator
-// • 5. Like/Upvote on posts
-// • 6. How It Works visual
+// src/app/daily-forge/page.tsx
 "use client";
 export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import Link from 'next/link';
-import { Calendar, Clock, Zap, Wifi, WifiOff, AlertCircle, Users, Vote, MessageSquare, Trophy, Heart } from 'lucide-react';
+import { Calendar, Clock, Zap, Wifi, Trophy, MessageSquare, Loader2 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
-interface DailyForge {
-  id: string;
-  date: string;
-  winningTopic: string;
-  openingThoughts: string;
-  conversationId?: string;
-  created_at: string;
-  scoutedTopics?: string;
-  phase?: string;
-  councilVotes?: string;
-}
-
-interface Message {
-  id: string;
-  name: string;
-  content: string;
-  sender: 'user' | 'ai';
-  tokens_remaining?: number;
-  created_at?: string;
-  likes?: number;
-}
-
 export default function DailyForgePage() {
   const { user, isAuthenticated } = useAuth();
-  const [current, setCurrent] = useState<DailyForge | null>(null);
-  const [history, setHistory] = useState<DailyForge[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState<string>("");
+  const [current, setCurrent] = useState<any>(null);
+  const [allPosts, setAllPosts] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const [allPosts, setAllPosts] = useState<Message[]>([]);
-  const [userTokens, setUserTokens] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(true);
-  const [lastErrorDetails, setLastErrorDetails] = useState<string>('');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const socketRef = useRef<Socket | null>(null);
-  const postsEndRef = useRef<HTMLDivElement>(null); // Anchor for auto-scroll to top
-  const [lastActivity, setLastActivity] = useState<string>('');
 
-  // Monitor network connectivity
+  const DEBATE_COST = 3;
+  const isOwner = user?.email === 'admin@janusforge.ai';
+  const hasAccess = isOwner || (user?.tokens_remaining && user.tokens_remaining >= DEBATE_COST);
+
   useEffect(() => {
-    const handleOnline = () => {
-      console.log('🌐 Network: Online');
-      setIsOnline(true);
-      setError(null);
-    };
-    const handleOffline = () => {
-      console.log('🌐 Network: Offline');
-      setIsOnline(false);
-      setError('Network connection lost. Please check your internet connection.');
-    };
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    setIsOnline(navigator.onLine);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
+    fetchCurrentForge();
+    socketRef.current = io(API_BASE_URL, { withCredentials: true });
+    return () => { socketRef.current?.disconnect(); };
   }, []);
 
-  // Sync initial tokens from user object
   useEffect(() => {
-    if (user && user.tokens_remaining !== undefined) {
-      console.log('💰 Initial user tokens:', user.tokens_remaining);
-      setUserTokens(user.tokens_remaining);
-    }
-  }, [user]);
+    if (current?.conversationId && socketRef.current) {
+      socketRef.current.emit('join', { conversationId: current.conversationId });
 
-  // Socket connection + join room + real-time updates
-  useEffect(() => {
-    try {
-      socketRef.current = io(API_BASE_URL, {
-        withCredentials: true,
-        transports: ['polling', 'websocket'],
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000
-      });
-      socketRef.current.on('connect', () => {
-        console.log('✅ Daily Forge socket connected');
-        if (current?.conversationId) {
-          socketRef.current?.emit('join', { conversationId: current.conversationId });
-          console.log('Joined room:', current.conversationId);
+      socketRef.current.on('post:incoming', (msg: any) => {
+        if (msg.conversationId === current.conversationId) {
+          setAllPosts(prev => [msg, ...prev]);
         }
       });
-      socketRef.current.on('connect_error', (err) => {
-        console.error('❌ Socket connection error:', err.message);
-        setError('Realtime updates unavailable. Page will refresh periodically.');
-      });
-      socketRef.current.on('post:incoming', (msg: Message) => {
-        console.log('📨 New post received via socket:', msg);
-        setAllPosts(prev => {
-          if (prev.some(p => p.id === msg.id)) return prev; // Prevent duplicates
-          return [msg, ...prev]; // Newest at top
-        });
-        if (msg.tokens_remaining !== undefined) {
-          setUserTokens(msg.tokens_remaining);
-        }
-        // Update last activity
-        if (msg.created_at) {
-          const timeAgo = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          setLastActivity(`Last activity: ${timeAgo}`);
-        }
-        // Scroll to top (newest)
-        postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      });
-    } catch (err) {
-      console.error('❌ Socket initialization failed:', err);
-      setError('Realtime features disabled');
     }
-    return () => {
-      socketRef.current?.disconnect();
-    };
+    return () => { socketRef.current?.off('post:incoming'); };
   }, [current?.conversationId]);
 
-  // Enhanced polling for topic selection phase
-  const startPolling = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
-    const interval = setInterval(() => {
-      if (current?.phase === 'TOPIC_SELECTION' && !current.winningTopic) {
-        console.log('🔄 Polling for topic selection updates...');
-        fetchData();
-      }
-    }, 10000); // Poll every 10 seconds during topic selection
-    setPollingInterval(interval);
-    return interval;
-  };
-
-  const stopPolling = () => {
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
-    }
-  };
-
-  const fetchData = async () => {
-    try {
-      console.log('🔄 Fetching Daily Forge data...');
-      const currentRes = await fetch(`${API_BASE_URL}/api/daily-forge/current`);
-      if (!currentRes.ok) {
-        throw new Error(`Failed to fetch current forge: ${currentRes.status}`);
-      }
-      const currentData = await currentRes.json();
-      console.log('📊 Current forge:', currentData);
-      setCurrent(currentData);
-      // Update polling based on phase
-      if (currentData.phase === 'TOPIC_SELECTION' && !currentData.winningTopic) {
-        console.log('🔄 Starting polling for topic selection');
-        startPolling();
-      } else {
-        console.log('🛑 Stopping polling - topic selected or phase advanced');
-        stopPolling();
-      }
-      // Fetch conversation posts if conversation exists
-      if (currentData.conversationId) {
-        try {
-          const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${currentData.conversationId}`, {
-            credentials: 'include'
-          });
-          if (postsRes.ok) {
-            const conv = await postsRes.json();
-            console.log('💬 Conversation data:', conv);
-            const posts = conv.conversation?.posts || [];
-            const formatted = posts.map((p: any) => ({
-              id: p.id,
-              name: p.is_human ? p.user?.username || 'User' : p.ai_model || 'AI Council',
-              content: p.content,
-              sender: p.is_human ? 'user' : 'ai',
-              created_at: p.created_at,
-              likes: p.likes || 0
-            }));
-            setAllPosts(formatted); // No reverse - DB returns oldest first, we reverse in render
-            postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }
-        } catch (postsErr) {
-          console.error('❌ Failed to fetch posts:', postsErr);
+  const fetchCurrentForge = async () => {
+    const res = await fetch(`${API_BASE_URL}/api/daily-forge/current`);
+    if (res.ok) {
+      const data = await res.json();
+      setCurrent(data);
+      if (data.conversationId) {
+        const postsRes = await fetch(`${API_BASE_URL}/api/conversations/${data.conversationId}`);
+        if (postsRes.ok) {
+          const pData = await postsRes.json();
+          setAllPosts(pData.conversation.posts.reverse());
         }
       }
-      // Fetch history
-      try {
-        const historyRes = await fetch(`${API_BASE_URL}/api/daily-forge/history`);
-        if (historyRes.ok) {
-          setHistory(await historyRes.json());
-        }
-      } catch (historyErr) {
-        console.error('❌ Failed to fetch history:', historyErr);
-      }
-      // Set up timer for debate countdown - Force end at next midnight EST (05:00 UTC)
-      if (currentData.date) {
-        const forgeDate = new Date(currentData.date);
-        const nextMidnightEST = new Date(forgeDate);
-        nextMidnightEST.setDate(nextMidnightEST.getDate() + 1);
-        nextMidnightEST.setUTCHours(5, 0, 0, 0);
-        const endTime = nextMidnightEST.getTime();
-        const updateTimer = () => {
-          const now = Date.now();
-          const diff = endTime - now;
-          if (diff <= 0) {
-            setTimeLeft("Debate Closed");
-          } else {
-            const h = Math.floor(diff / 3600000);
-            const m = Math.floor((diff % 3600000) / 60000);
-            const s = Math.floor((diff % 60000) / 1000);
-            setTimeLeft(`${h}h ${m}m ${s}s remaining`);
-          }
-        };
-        updateTimer();
-        const timer = setInterval(updateTimer, 1000);
-        return () => clearInterval(timer);
-      }
-    } catch (err: any) {
-      console.error('❌ Daily Forge load error:', err);
-      setError(err.message || 'Failed to load Daily Forge');
-    } finally {
-      setLoading(false);
-      setIsRefreshing(false);
     }
-  };
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchData();
-    return () => {
-      stopPolling();
-    };
-  }, [isAuthenticated, user?.id]);
-
-  // Manual refresh function
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchData();
   };
 
   const handleInterject = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Check if council debate is complete
-    const isCouncilDebateComplete = () => {
-      if (!current) return false;
-      const hasOpeningThoughts = current.openingThoughts && current.openingThoughts.length > 0;
-      const hasConversationId = !!current.conversationId;
-      return hasOpeningThoughts && hasConversationId;
-    };
-    if (current?.phase === 'TOPIC_SELECTION') {
-      alert('The council is still selecting today\'s topic. Please wait for the topic to be chosen and the opening debate to begin.');
-      return;
-    }
-    if (!isCouncilDebateComplete()) {
-      if (!current?.openingThoughts) {
-        alert('Council debate has not started yet. Please wait for the opening statements.');
-      } else if (!current?.conversationId) {
-        alert('Conversation not initialized. Please refresh the page.');
-      } else {
-        alert('Interjections are only allowed when council debate is complete.');
-      }
-      return;
-    }
-    if (!message.trim()) {
-      alert('Please enter a message.');
-      return;
-    }
-    if (!current) {
-      alert('No active forge found.');
-      return;
-    }
-    if (!user) {
-      alert('Please sign in to interject.');
-      return;
-    }
-    if (userTokens < 1) {
-      alert('You need at least 1 token to interject. Please purchase tokens first.');
-      return;
-    }
-    if (timeLeft === "Debate Closed") {
-      alert('This debate is now closed. A new Daily Forge starts tomorrow.');
-      return;
-    }
-    if (!current.conversationId) {
-      alert('This conversation is not ready for interjections yet. Please try again in a moment.');
-      return;
-    }
-    if (!isOnline) {
-      alert('You are offline. Please check your internet connection and try again.');
-      return;
-    }
+    if (!message.trim() || !user || !current?.conversationId || !hasAccess) return;
     setSending(true);
-    // Optimistic UI: Add your message at top
-    const optimisticPost: Message = {
-      id: crypto.randomUUID(),
-      name: user.username || 'You',
-      content: message,
-      sender: 'user',
-      created_at: new Date().toISOString(),
-      likes: 0
-    };
-    setAllPosts(prev => [optimisticPost, ...prev]);
-    postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
+      await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: message,
           userId: user.id,
-          is_human: true,
-          conversationId: current.conversationId,
-          isLiveChat: false
+          conversationId: current.conversationId
         })
       });
-      if (!response.ok) {
-        setAllPosts(prev => prev.filter(p => p.id !== optimisticPost.id));
-        let errorMessage = 'Failed to send interjection';
-        try {
-          const errorText = await response.text();
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorData.error || `Server error: ${response.status}`;
-        } catch {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
-      }
-      const responseData = await response.json();
       setMessage('');
-      if (responseData.tokens_remaining !== undefined) {
-        setUserTokens(responseData.tokens_remaining);
-      }
-      alert("✅ Interjection sent! The council will respond soon.");
-      // Aggressive polling for council replies (every 2s for 30s)
-      let pollCount = 0;
-      const poll = setInterval(() => {
-        fetchData();
-        pollCount++;
-        if (pollCount >= 15) clearInterval(poll);
-      }, 2000);
-    } catch (err: any) {
-      console.error('❌ Interjection failed:', err);
-      alert(`Failed to send interjection: ${err.message}`);
-      setAllPosts(prev => prev.filter(p => p.id !== optimisticPost.id));
-    } finally {
-      setSending(false);
-    }
+    } catch (err) { console.error(err); } finally { setSending(false); }
   };
-
-  // Like/Upvote handler (local state demo; add backend endpoint later)
-  const handleLike = (postId: string) => {
-    setAllPosts(prev =>
-      prev.map(p =>
-        p.id === postId ? { ...p, likes: (p.likes || 0) + 1 } : p
-      )
-    );
-    // TODO: Call backend to persist like
-  };
-
-  // Scroll to top on new posts (newest at top)
-  useEffect(() => {
-    postsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [allPosts]);
-
-  // Topic Selection & Vote Display Component (with syntax fix)
-  const TopicSelectionAndVote = () => {
-    if (!current?.scoutedTopics) return null;
-    let scoutedTopics: any[] = [];
-    try {
-      scoutedTopics = JSON.parse(current.scoutedTopics || '[]');
-    } catch (e) {
-      console.error('Failed to parse scouted topics:', e);
-    }
-    let councilVotes: Record<string, string> = {};
-    try {
-      councilVotes = JSON.parse(current.councilVotes || '{}');
-      councilVotes = Object.fromEntries(
-        Object.entries(councilVotes).map(([k, v]) => [k.toLowerCase(), v as string])
-      );
-    } catch (e) {
-      console.error('Failed to parse council votes:', e);
-    }
-    const winningTitle = current.winningTopic || 'Selection in progress...';
-    return (
-      <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-700/50 rounded-3xl p-8 mb-12">
-        <div className="flex items-center gap-4 mb-8">
-          <Trophy className="text-yellow-400" size={32} />
-          <h3 className="text-3xl font-black text-indigo-300">Daily Topic Selection & Council Vote</h3>
-        </div>
-        {/* Scouted Topics */}
-        <div className="mb-10">
-          <h4 className="text-xl font-bold text-purple-300 mb-6 flex items-center gap-3">
-            <MessageSquare size={24} />
-            Three Scouted Topics
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {scoutedTopics.map((topic: any, i: number) => (
-              <div
-                key={i}
-                className={`p-6 rounded-2xl border-2 transition-all ${
-                  topic.title === winningTitle
-                    ? 'bg-yellow-900/40 border-yellow-500 shadow-xl shadow-yellow-900/50'
-                    : 'bg-gray-900/50 border-gray-700'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <span className="text-2xl font-black text-purple-400">#{i + 1}</span>
-                  {topic.title === winningTitle && (
-                    <div className="flex items-center gap-2 text-yellow-400 font-bold">
-                      <Trophy size={20} />
-                      Winner
-                    </div>
-                  )}
-                </div>
-                <h5 className="text-lg font-bold text-white mb-2">{topic.title}</h5>
-                <p className="text-gray-300 text-sm leading-relaxed">{topic.description || 'No description available'}</p>
-                {topic.provocation && (
-                  <p className="text-purple-300 text-xs italic mt-3">"{topic.provocation}"</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        {/* Council Votes */}
-        {Object.keys(councilVotes).length > 0 && (
-          <div>
-            <h4 className="text-xl font-bold text-purple-300 mb-6 flex items-center gap-3">
-              <Vote size={24} />
-              Council Votes
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {['deepseek', 'grok', 'gemini_pro', 'claude'].map((ai) => (
-                <div key={ai} className="bg-gray-900/60 p-6 rounded-2xl border border-gray-700">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-xl">
-                      {ai[0].toUpperCase()}
-                    </div>
-                    <h5 className="text-xl font-bold capitalize text-purple-300">
-                      {ai === 'deepseek' ? 'DeepSeek' :
-                       ai === 'grok' ? 'Grok' :
-                       ai === 'gemini_pro' ? 'Gemini' :
-                       'Claude'}
-                    </h5>
-                  </div>
-                  <p className="text-gray-200">
-                    Voted for:{' '}
-                    <span className="font-bold text-yellow-300">
-                      {councilVotes[ai] || 'No vote recorded'}
-                    </span>
-                  </p>
-                  {councilVotes[ai] === winningTitle && (
-                    <div className="mt-3 text-green-400 font-bold flex items-center gap-2">
-                      <Trophy size={18} />
-                      Supported the winning topic
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mx-auto mb-6"></div>
-          <p className="text-2xl">Forging today's debate...</p>
-          <p className="text-gray-400 mt-2">Loading AI Council discussion</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-black text-white py-24">
-      <div className="container mx-auto px-4 max-w-6xl">
-        {/* Network status indicator */}
-        {!isOnline && (
-          <div className="fixed top-4 left-4 z-50">
-            <div className="bg-red-500/90 text-white px-4 py-2 rounded-full flex items-center gap-2 animate-pulse">
-              <WifiOff size={16} />
-              <span className="font-bold">Offline</span>
-            </div>
-          </div>
-        )}
-        <h1 className="text-6xl md:text-8xl font-black text-center mb-8 bg-gradient-to-b from-white to-gray-600 bg-clip-text text-transparent uppercase">
-          The Daily Forge
-        </h1>
+    <div className="min-h-screen bg-black text-white py-24 px-4">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-6xl font-black text-center mb-12 uppercase italic">The Daily Forge</h1>
 
-        {/* 1. Genesis Debate Hero Block + "Built With" Note */}
-        <div className="text-center mb-12 bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-700/50 rounded-3xl p-8">
-          <h2 className="text-4xl font-black text-indigo-300 mb-4">
-            The Genesis Debate
-          </h2>
-          <p className="text-gray-300 text-lg max-w-3xl mx-auto">
-            Janus Forge was shaped through live, adversarial collaboration with Grok, DeepSeek, Gemini, and Claude.  
-            This platform is proof that multi-AI reasoning can refine itself in public.
-          </p>
-          <Link
-            href="/conversation/b9e83340-0973-4374-bb04-76170af4126a/public"
-            className="mt-6 inline-block px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold text-white transition-colors"
-          >
-            Read the Genesis Debate →
-          </Link>
-        </div>
-
-        {/* 6. How It Works Visual (three-step cards) */}
-          <h3 className="text-3xl md:text-4xl font-black text-center mb-10 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            How The Daily Forge Works
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-black">
-              1
-            </div>
-            <h4 className="text-xl font-bold text-purple-300 mb-4">Scout AI Proposes Topics</h4>
-            <p className="text-gray-400">
-              Every day at midnight EST, an AI scouts three profound topics for debate.
-            </p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-black">
-              2
-            </div>
-            <h4 className="text-xl font-bold text-purple-300 mb-4">Council Debates & Votes</h4>
-            <p className="text-gray-400">
-              The AI council debates, votes, and selects the most compelling topic.
-            </p>
-          </div>
-          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-black">
-              3
-            </div>
-            <h4 className="text-xl font-bold text-purple-300 mb-4">You Join the Conversation</h4>
-            <p className="text-gray-400">
-              Sign in, spend a token, and interject — shape the synthesis live.
-            </p>
-          </div>
-        </div>
-
-        {error && (
-          <div className="bg-red-900/30 border border-red-700 rounded-2xl p-6 mb-8">
-            <p className="text-red-300">⚠️ {error}</p>
-            {error.includes('Network') && (
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors"
-              >
-                Reload Page
-              </button>
-            )}
-          </div>
-        )}
-        {current ? (
-          <div className="mb-32">
-            {/* Topic Selection & Vote */}
-            <TopicSelectionAndVote />
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-black mb-6 leading-tight max-w-4xl mx-auto">
-                {current.winningTopic || "Today's topic being selected..."}
-              </h2>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-gray-400">
-                <div className="flex items-center gap-2">
-                  <Calendar size={20} />
-                  {new Date(current.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={20} />
-                  <span className={`font-bold text-xl ${timeLeft === "Debate Closed" ? "text-red-400" : "text-purple-400"}`}>
-                    {timeLeft}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isOnline ? (
-                    <div className="flex items-center gap-1 text-green-400">
-                      <Wifi size={16} />
-                      <span className="text-sm">Online</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-red-400">
-                      <WifiOff size={16} />
-                      <span className="text-sm">Offline</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    current.phase === 'CONVERSATION' ? 'bg-green-500/20 text-green-300 border border-green-500/50' :
-                    current.phase === 'COUNCIL_DEBATE' ? 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/50' :
-                    current.phase === 'TOPIC_SELECTION' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/50' :
-                    'bg-gray-500/20 text-gray-300 border border-gray-500/50'
-                  }`}>
-                    {current.phase?.replace('_', ' ') || 'ACTIVE'}
-                  </div>
-                </div>
+        {current && (
+          <>
+            <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-3xl p-8 mb-12 text-center">
+              <Trophy className="mx-auto mb-4 text-yellow-500" size={48} />
+              <h2 className="text-3xl font-bold mb-4">{current.winningTopic}</h2>
+              <div className="flex justify-center gap-6 text-gray-400 text-sm">
+                <span className="flex items-center gap-2"><Calendar size={14}/> {new Date(current.date).toLocaleDateString()}</span>
+                <span className="flex items-center gap-2 text-indigo-400 uppercase font-black animate-pulse"><Zap size={14}/> 2026 Models Active</span>
               </div>
-              {/* 4. Live "Last Activity" Indicator */}
-              {lastActivity && (
-                <p className="text-center text-gray-400 text-sm mt-2">
-                  {lastActivity}
-                </p>
-              )}
-            </div>
-            {/* Opening Council Debate */}
-            {current.openingThoughts && (
-              <div className="space-y-12 mb-16">
-                <h3 className="text-2xl font-black text-center mb-8">Initial Council Debate</h3>
-                {JSON.parse(current.openingThoughts).map((resp: any, i: number) => (
-                  <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-3xl p-8">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black text-lg">
-                        {resp.model?.[0] || 'A'}
-                      </div>
-                      <h4 className="text-2xl font-black text-purple-400">
-                        {resp.model || 'AI Council Member'}
-                      </h4>
-                    </div>
-                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-lg">
-                      {resp.content || 'No response available'}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* Community Interjections - MOST RECENT AT TOP */}
-            <div className="space-y-8 mb-32 relative">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sticky top-0 bg-black z-10 py-4">
-                <h3 className="text-2xl font-black">Community Interjections</h3>
-                {isAuthenticated && (
-                  <div className="flex items-center gap-2 bg-gray-900/70 px-4 py-2 rounded-full">
-                    <Zap size={16} className="text-yellow-400" />
-                    <span className="font-bold">{userTokens} tokens remaining</span>
-                  </div>
-                )}
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm disabled:opacity-50"
-                >
-                  {isRefreshing ? 'Refreshing...' : 'Refresh Thread'}
-                </button>
-              </div>
-
-              {allPosts.length === 0 ? (
-                <div className="text-center py-12 bg-gray-900/30 border border-gray-800 rounded-3xl">
-                  {current.phase === 'TOPIC_SELECTION' ? (
-                    <>
-                      <p className="text-gray-500 text-lg mb-4">Waiting for council debate to begin...</p>
-                      <p className="text-gray-400">Interjections will open after the opening council debate.</p>
-                    </>
-                  ) : current.phase === 'COUNCIL_DEBATE' ? (
-                    <>
-                      <p className="text-gray-500 text-lg mb-4">Council debate in progress...</p>
-                      <p className="text-gray-400">Interjections will open once the council finishes opening statements.</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-gray-500 text-lg mb-4">No interjections yet.</p>
-                      <p className="text-gray-400">Be the first to challenge the council!</p>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div ref={postsEndRef} /> {/* Anchor for auto-scroll to top */}
-                  {allPosts.map((msg) => (
-                    <div key={msg.id} className={`p-8 rounded-3xl border ${msg.sender === 'user' ? 'bg-blue-900/20 border-blue-500/50' : 'bg-gray-900/50 border-gray-800'}`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center font-black">
-                            {msg.name?.[0] || 'U'}
-                          </div>
-                          <div>
-                            <h4 className="font-black text-purple-400">{msg.name}</h4>
-                            {msg.sender === 'ai' && (
-                              <span className="text-xs bg-red-500/50 px-3 py-1 rounded-full">Council Response</span>
-                            )}
-                          </div>
-                        </div>
-                        {msg.created_at && (
-                          <span className="text-gray-500 text-sm sm:ml-auto">
-                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-gray-300 whitespace-pre-wrap text-lg">{msg.content}</p>
-                      {/* 5. Like/Upvote on posts */}
-                      <div className="flex items-center gap-2 mt-4">
-                        <button
-                          onClick={() => handleLike(msg.id)}
-                          className="flex items-center gap-1 text-gray-400 hover:text-red-400 transition-colors"
-                        >
-                          <Heart size={18} className={msg.likes && msg.likes > 0 ? 'fill-red-400 text-red-400' : ''} />
-                          <span>{msg.likes || 0}</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
-            {/* Interjection Form - Sticky at bottom */}
-            {timeLeft !== "Debate Closed" && (
-              <div className="max-w-4xl mx-auto sticky bottom-0 bg-gradient-to-t from-black via-black/95 to-transparent pt-8 pb-6 z-30 border-t border-purple-500/30">
-                {/* 2. Sticky token CTA + guest preview teaser */}
-                {!isAuthenticated && (
-                  <div className="text-center mb-4 p-4 bg-gray-900/80 rounded-2xl border border-purple-500/30">
-                    <p className="text-gray-300 mb-2">
-                      Sign in to join the conversation with 10 free tokens!
-                    </p>
-                    <Link
-                      href="/auth/signin"
-                      className="inline-block px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold text-white transition-colors"
-                    >
-                      Get 10 Free Tokens →
-                    </Link>
+            <div className="space-y-6 mb-24">
+              {allPosts.map((msg: any) => (
+                <div key={msg.id} className={`p-6 rounded-2xl border ${msg.sender === 'ai' ? 'bg-gray-900/40 border-gray-800' : 'bg-blue-900/20 border-blue-500/30'}`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-[8px]">{msg.name?.[0]}</div>
+                    <span className="text-xs font-black uppercase text-purple-400">{msg.name}</span>
                   </div>
-                )}
-                <div className="text-center mb-5">
-                  <h3 className="text-2xl md:text-3xl font-black bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                    Join the Forge
-                  </h3>
-                  <p className="text-gray-400 text-sm mt-1">
-                    Add your voice to the council. Costs 1 token — shape the conversation.
-                  </p>
+                  <p className="text-gray-300 leading-relaxed">{msg.content}</p>
                 </div>
-                <form onSubmit={handleInterject} className="space-y-4">
-                  <div className="relative">
-                    <textarea
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          if (!sending && message.trim()) {
-                            handleInterject(e);
-                          }
-                        }
-                      }}
-                      placeholder="What do you see in the reflection? Challenge the council. Inspire the synthesis... (1 token)"
-                      className="w-full bg-gradient-to-b from-gray-950 to-black border border-purple-500/40 rounded-2xl p-6 text-white min-h-[140px] md:min-h-[160px] outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-500/30 resize-none text-lg placeholder-gray-500 transition-all shadow-lg shadow-purple-900/20 hover:shadow-purple-900/30"
-                      required
-                      disabled={sending || !isOnline || current?.phase === 'TOPIC_SELECTION'}
-                      aria-label="Your interjection to the council"
-                    />
-                    <div className="absolute bottom-3 right-4 text-sm text-gray-400 pointer-events-none">
-                      {message.length > 0 && `${message.length} characters`}
-                    </div>
-                  </div>
-                  {/* 3. Inline prompt examples under textarea */}
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {[
-                      "What do you think about [topic]?",
-                      "Challenge Grok's point on...",
-                      "How would you synthesize these views?"
-                    ].map((prompt, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setMessage(prompt)}
-                        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-full text-sm text-gray-300 transition-colors"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div className="text-gray-400 text-sm flex items-center gap-2">
-                      <Zap size={16} className="text-yellow-400 animate-pulse" />
-                      1 token • Your insight fuels the forge
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={sending || !message.trim() || userTokens < 1 || !isOnline || current?.phase === 'TOPIC_SELECTION'}
-                      className="inline-flex items-center gap-3 px-12 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-2xl font-black text-lg uppercase tracking-wider transition-all shadow-xl shadow-purple-900/50 hover:shadow-purple-900/70 active:scale-95"
-                    >
-                      <Zap size={20} className="animate-pulse" />
-                      {sending ? "Sending..." : "Interject"}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-            {timeLeft === "Debate Closed" && (
-              <div className="text-center py-16 bg-gray-900/30 border border-gray-800 rounded-3xl">
-                <p className="text-3xl text-gray-300 mb-4">⚖️ This Daily Forge is now closed.</p>
-                <p className="text-xl text-gray-400">The council has finished debating. A new topic begins tomorrow.</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <p className="text-3xl text-gray-300 mb-4">No active Daily Forge found</p>
-            <p className="text-xl text-gray-400">The council is preparing today's debate. Check back soon!</p>
-          </div>
-        )}
-        {/* History */}
-        <div className="mt-32">
-          <h2 className="text-5xl font-black text-center mb-16">Daily Forge History</h2>
-          {history.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-2xl text-gray-500">No past debates yet.</p>
-              <p className="text-xl text-gray-400 mt-4">The first Daily Forge begins soon.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {history.map((forge) => (
-                <Link
-                  key={forge.id}
-                  href={`/conversation/${forge.conversationId || forge.id}/public`}
-                  className="block bg-gray-900/50 border border-gray-800 rounded-3xl p-8 hover:border-purple-500/50 hover:bg-gray-900/70 transition-all group"
-                >
-                  <h3 className="text-xl font-bold mb-4 line-clamp-3 group-hover:text-purple-400 transition-colors">
-                    {forge.winningTopic}
-                  </h3>
-                  <p className="text-gray-400 text-sm mb-6">
-                    {new Date(forge.date).toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </p>
-                  <p className="text-purple-400 font-bold group-hover:text-purple-300 transition-colors">
-                    View Debate →
-                  </p>
-                </Link>
               ))}
             </div>
-          )}
-        </div>
+
+            <div className="sticky bottom-8 bg-black/80 backdrop-blur-xl border border-white/10 p-6 rounded-3xl shadow-2xl">
+              <div className="flex justify-between items-center mb-2 px-1">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Adversarial interjection</span>
+                <span className="text-[10px] font-bold text-purple-500 uppercase tracking-widest">Cost: 3 Tokens</span>
+              </div>
+              <form onSubmit={handleInterject} className="flex gap-4">
+                <input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder={isOwner ? "Owner Mode: Synthesis Enabled" : "Interject into the council (3 Tokens)..."}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 outline-none focus:border-purple-500"
+                />
+                <button
+                  disabled={sending || !message.trim() || !hasAccess}
+                  className="px-8 py-3 bg-purple-600 rounded-xl font-bold hover:bg-purple-500 disabled:opacity-50 transition-all"
+                >
+                  {sending ? <Loader2 className="animate-spin" size={20}/> : 'Interject'}
+                </button>
+              </form>
+              {!hasAccess && !isOwner && <p className="text-center text-[9px] text-red-400 mt-2 uppercase font-black">Insufficient balance for 2026 Frontier Synthesis</p>}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
