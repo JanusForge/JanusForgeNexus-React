@@ -3,7 +3,7 @@
 import { useAuth } from '@/components/auth/AuthProvider';
 import { History, ShieldCheck, ChevronLeft, Plus } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { io } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -22,8 +22,6 @@ export default function ConversationSidebar({
 }: SidebarProps) {
   const { user } = useAuth();
   const [history, setHistory] = useState<any[]>([]);
-  
-  // OWNER IDENTIFICATION: admin@janusforge.ai [cite: 2025-11-27]
   const isOwner = user?.email === 'admin@janusforge.ai'; 
 
   const fetchHistory = useCallback(async () => {
@@ -36,10 +34,9 @@ export default function ConversationSidebar({
   useEffect(() => {
     fetchHistory();
 
-    // Listen for real-time title updates
     const socket = io(API_BASE_URL);
     socket.on('sidebar:update', () => {
-      fetchHistory(); // Refresh the list when a new title is generated
+      fetchHistory();
     });
 
     return () => { socket.disconnect(); };
@@ -52,7 +49,6 @@ export default function ConversationSidebar({
       bg-[#050505]/80 backdrop-blur-3xl border-r border-white/10 
       flex flex-col transition-transform duration-300
     `}>
-      {/* HEADER - Matched to Top Nav Scale */}
       <div className="p-10 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <History size={18} className="text-indigo-500" />
@@ -62,7 +58,6 @@ export default function ConversationSidebar({
         </div>
       </div>
 
-      {/* NEW SYNTHESIS BUTTON */}
       <div className="p-6">
         <button 
           onClick={() => onSelectConversation(null)}
@@ -75,7 +70,6 @@ export default function ConversationSidebar({
         </button>
       </div>
 
-      {/* DYNAMIC HISTORY LIST */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
         {history.map((item) => (
           <button
@@ -93,7 +87,6 @@ export default function ConversationSidebar({
         ))}
       </div>
 
-      {/* OWNER BADGE */}
       {isOwner && (
         <div className="p-10 border-t border-white/5 bg-indigo-500/5">
           <div className="flex items-center gap-4">
