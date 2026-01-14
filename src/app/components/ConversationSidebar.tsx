@@ -2,7 +2,10 @@
 
 import { useAuth } from '@/components/auth/AuthProvider';
 import { History, ShieldCheck, ChevronLeft, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 interface SidebarProps {
   onSelectConversation: (id: string | null) => void;
@@ -23,14 +26,24 @@ export default function ConversationSidebar({
   // OWNER IDENTIFICATION: admin@janusforge.ai [cite: 2025-11-27]
   const isOwner = user?.email === 'admin@janusforge.ai'; 
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      const endpoint = isOwner ? '/api/admin/all-conversations' : '/api/conversations';
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`);
-      if (res.ok) setHistory(await res.json());
-    };
-    if (user) fetchHistory();
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    const endpoint = isOwner ? '/api/admin/all-conversations' : `/api/conversations?userId=${user.id}`;
+    const res = await fetch(`${API_BASE_URL}${endpoint}`);
+    if (res.ok) setHistory(await res.json());
   }, [user, isOwner]);
+
+  useEffect(() => {
+    fetchHistory();
+
+    // Listen for real-time title updates
+    const socket = io(API_BASE_URL);
+    socket.on('sidebar:update', () => {
+      fetchHistory(); // Refresh the list when a new title is generated
+    });
+
+    return () => { socket.disconnect(); };
+  }, [fetchHistory]);
 
   return (
     <aside className={`
@@ -39,7 +52,7 @@ export default function ConversationSidebar({
       bg-[#050505]/80 backdrop-blur-3xl border-r border-white/10 
       flex flex-col transition-transform duration-300
     `}>
-      {/* HEADER: Matched to Frontier Model Cluster Online scale */}
+      {/* HEADER - Matched to Top Nav Scale */}
       <div className="p-10 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <History size={18} className="text-indigo-500" />
@@ -47,12 +60,9 @@ export default function ConversationSidebar({
             {isOwner ? 'Master Archive' : 'Neural History'}
           </span>
         </div>
-        <button onClick={onToggle} className="lg:hidden text-zinc-500">
-          <ChevronLeft size={24} />
-        </button>
       </div>
 
-      {/* ➕ NEW CONVERSATION BUTTON */}
+      {/* NEW SYNTHESIS BUTTON */}
       <div className="p-6">
         <button 
           onClick={() => onSelectConversation(null)}
@@ -65,7 +75,7 @@ export default function ConversationSidebar({
         </button>
       </div>
 
-      {/* HISTORY LIST */}
+      {/* DYNAMIC HISTORY LIST */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
         {history.map((item) => (
           <button
@@ -77,13 +87,13 @@ export default function ConversationSidebar({
                 : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/10'}`}
           >
             <p className="text-sm font-bold text-zinc-300 truncate group-hover:text-white uppercase tracking-wider">
-              {item.title || 'Untitled Synthesis'}
+              {item.title || 'Initializing Title...'}
             </p>
           </button>
         ))}
       </div>
 
-      {/* OWNER STATUS FOOTER */}
+      {/* OWNER BADGE */}
       {isOwner && (
         <div className="p-10 border-t border-white/5 bg-indigo-500/5">
           <div className="flex items-center gap-4">
