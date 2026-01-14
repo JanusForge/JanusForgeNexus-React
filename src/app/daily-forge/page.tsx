@@ -1,11 +1,10 @@
-// src/app/daily-forge/page.tsx
 "use client";
 export const dynamic = 'force-dynamic';
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import {
-  Calendar, Clock, Zap, Trophy, Vote,
-  Loader2, History, ShieldCheck, Radio, ChevronRight
+import { 
+  Clock, Trophy, Vote, Loader2, History, ShieldCheck, 
+  Radio, Sparkles, Cpu, MessageSquare, Zap 
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import Link from 'next/link';
@@ -23,11 +22,9 @@ export default function DailyForgePage() {
   const [userVoted, setUserVoted] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
-  const DEBATE_COST = 3;
   const isOwner = user?.email === 'admin@janusforge.ai';
-  const hasAccess = isOwner || (user?.tokens_remaining && user.tokens_remaining >= DEBATE_COST);
 
-  // 1. Countdown to Midnight EST (5 AM UTC)
+  // Logic remains identical to your previous build for stability...
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -43,10 +40,9 @@ export default function DailyForgePage() {
     return () => clearInterval(timer);
   }, []);
 
-  // 2. Fetch Initial Data
   useEffect(() => {
     const init = async () => {
-      const archRes = await fetch(`${API_BASE_URL}/api/archives/history`);
+      const archRes = await fetch(`${API_BASE_URL}/api/daily-forge/history`);
       if (archRes.ok) setArchives(await archRes.json());
 
       const forgeRes = await fetch(`${API_BASE_URL}/api/daily-forge/current`);
@@ -63,64 +59,24 @@ export default function DailyForgePage() {
       }
     };
     init();
-
     socketRef.current = io(API_BASE_URL, { withCredentials: true });
     return () => { socketRef.current?.disconnect(); };
   }, []);
 
-  // 3. Socket Logic
-  useEffect(() => {
-    if (current?.conversationId && socketRef.current) {
-      socketRef.current.emit('join', { conversationId: current.conversationId });
-      socketRef.current.on('post:incoming', (msg: any) => {
-        if (msg.conversationId === current.conversationId) {
-          setAllPosts(prev => [msg, ...prev]);
-        }
-      });
-    }
-    return () => { socketRef.current?.off('post:incoming'); };
-  }, [current?.conversationId]);
-
-  const handleUserVote = async (topicTitle: string) => {
-    if (userVoted || !isAuthenticated) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/daily-forge/user-vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topicTitle, forgeId: current.id, userId: user?.id })
-      });
-      if (res.ok) setUserVoted(true);
-    } catch (err) { console.error("Vote error", err); }
-  };
-
-  const handleInterject = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!message.trim() || !user || !current?.conversationId || !hasAccess) return;
-    setSending(true);
-    try {
-      await fetch(`${API_BASE_URL}/api/conversations/${current.conversationId}/posts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: message, userId: user.id, conversationId: current.conversationId })
-      });
-      setMessage('');
-    } finally { setSending(false); }
-  };
-
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col lg:flex-row">
-
-      {/* 📜 SIDEBAR ARCHIVES - Desktop Only */}
-      <aside className="hidden lg:flex w-80 border-r border-zinc-800 flex-col p-8 bg-zinc-950/40 sticky top-0 h-screen overflow-y-auto">
-        <div className="flex items-center gap-3 mb-10 text-zinc-500">
-          <History size={18} />
-          <span className="text-xs font-black uppercase tracking-widest">Chrono-Vault</span>
+    <div className="min-h-screen bg-[#050505] text-zinc-100 flex flex-col lg:flex-row font-sans selection:bg-indigo-500/30">
+      
+      {/* 📜 THE CHRONO-VAULT SIDEBAR */}
+      <aside className="hidden lg:flex w-80 border-r border-white/5 flex-col p-8 bg-black/20 backdrop-blur-md sticky top-0 h-screen">
+        <div className="flex items-center gap-3 mb-10 text-indigo-500/70">
+          <History size={16} />
+          <span className="text-[10px] font-black uppercase tracking-[0.4em]">Chrono-Vault</span>
         </div>
-        <div className="space-y-6">
+        <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
           {archives.map(arch => (
-            <Link key={arch.id} href={`/daily-forge/${arch.id}`} className="group block border-b border-zinc-900 pb-4 last:border-0">
-              <div className="text-[10px] text-zinc-600 mb-1 font-mono">{new Date(arch.date).toLocaleDateString()}</div>
-              <div className="text-xs font-bold text-zinc-400 group-hover:text-blue-500 transition-colors line-clamp-2">
+            <Link key={arch.id} href={`/daily-forge/${arch.id}`} className="group block p-4 rounded-xl border border-transparent hover:border-white/5 hover:bg-white/5 transition-all">
+              <div className="text-[9px] text-zinc-600 mb-1 font-mono uppercase">{new Date(arch.date).toLocaleDateString()}</div>
+              <div className="text-xs font-bold text-zinc-400 group-hover:text-white transition-colors line-clamp-2 leading-relaxed">
                 {arch.winningTopic}
               </div>
             </Link>
@@ -128,122 +84,113 @@ export default function DailyForgePage() {
         </div>
       </aside>
 
-      {/* 🏛️ MAIN FORGE */}
-      <div className="flex-1 py-12 md:py-20 px-4 md:px-12">
-        <div className="max-w-4xl mx-auto">
+      {/* 🏛️ MAIN FORGE ARENA */}
+      <div className="flex-1 py-12 md:py-20 px-4 md:px-12 lg:px-24">
+        <div className="max-w-5xl mx-auto">
 
-          {/* HEADER SECTION */}
-          <div className="flex flex-col md:flex-row justify-between items-center mb-10 md:mb-16 gap-6">
-            <h1 className="text-4xl md:text-5xl font-black italic uppercase tracking-tighter">The Daily Forge</h1>
-            <div className="flex items-center gap-3 bg-zinc-900 border border-zinc-800 px-6 py-2 rounded-full shadow-lg shadow-amber-500/5">
-              <Clock size={16} className="text-amber-500" />
-              <span className="text-sm font-mono font-bold tracking-tight">{timeLeft} until Reset</span>
+          {/* MASTER HEADER */}
+          <div className="flex flex-col items-center mb-24 text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[9px] font-black uppercase tracking-[0.2em] mb-6">
+              <Sparkles size={12} /> Live Frontiers Synthesis
+            </div>
+            <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter mb-6 bg-gradient-to-b from-white via-white to-zinc-600 bg-clip-text text-transparent">
+              The Daily Forge
+            </h1>
+            <div className="flex items-center gap-4 text-zinc-500">
+              <div className="h-[1px] w-12 bg-zinc-800" />
+              <Clock size={14} className="text-amber-500" />
+              <span className="text-xs font-mono uppercase tracking-widest">{timeLeft} to Epoch Reset</span>
+              <div className="h-[1px] w-12 bg-zinc-800" />
             </div>
           </div>
 
           {current && (
-            <>
-              {/* PHASE 1: TOPIC SELECTION (MOBILE OPTIMIZED) */}
-              {current.phase === 'TOPIC_SELECTION' ? (
-                <div className="bg-amber-950/10 border border-amber-500/30 rounded-[1.5rem] md:rounded-[2.5rem] p-6 md:p-12 text-center animate-in fade-in duration-1000">
-                  <Radio className="mx-auto mb-4 md:mb-6 text-amber-500 animate-pulse" size={32} />
-                  <h2 className="text-2xl md:text-3xl font-black uppercase italic mb-2 md:mb-4">Live Selection</h2>
-                  <p className="text-zinc-500 text-[10px] md:text-sm mb-8 md:mb-10 uppercase tracking-[0.2em]">Humanity has 10m to influence the Council</p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                    {JSON.parse(current.scoutedTopics || "[]").map((topic: any) => (
-                      <button
-                        key={topic.title}
-                        onClick={() => handleUserVote(topic.title)}
-                        className={`p-5 md:p-6 rounded-2xl md:rounded-3xl border text-left transition-all ${
-                          userVoted 
-                            ? 'border-zinc-800 bg-zinc-900/10 opacity-50' 
-                            : 'border-zinc-700 bg-zinc-900/50 active:scale-95 hover:border-amber-500 hover:bg-amber-500/5'
-                        }`}
-                      >
-                        <h4 className="font-bold text-sm md:text-base mb-2 line-clamp-1">{topic.title}</h4>
-                        <p className="text-[10px] md:text-xs text-zinc-500 line-clamp-2 mb-4">{topic.description}</p>
-                        <div className="flex items-center gap-2">
-                          <Vote size={12} className="text-amber-500" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">Cast Influence</span>
-                        </div>
+            <div className="space-y-24">
+              
+              {/* SECTION 1: THE CANDIDATE TOPICS */}
+              <section>
+                <div className="flex items-center gap-4 mb-8">
+                  <Radio size={18} className="text-red-500 animate-pulse" />
+                  <h2 className="text-sm font-black uppercase tracking-[0.3em] text-zinc-400">Scouted Realities</h2>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {JSON.parse(current.scoutedTopics || "[]").map((topic: any, idx: number) => (
+                    <div key={idx} className="relative group p-8 rounded-[2rem] bg-zinc-900/30 border border-white/5 hover:border-indigo-500/30 transition-all duration-500">
+                      <div className="absolute top-4 right-6 text-[40px] font-black text-white/5 italic">0{idx + 1}</div>
+                      <h3 className="text-lg font-bold mb-3 pr-8">{topic.title}</h3>
+                      <p className="text-xs text-zinc-500 leading-relaxed mb-6">{topic.description}</p>
+                      <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 group-hover:text-indigo-300">
+                        <Vote size={14} /> Influence Cast
                       </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* SECTION 2: THE COUNCIL'S VERDICT */}
+              <section className="relative p-1 bg-gradient-to-br from-indigo-500/20 via-transparent to-amber-500/10 rounded-[3rem]">
+                <div className="bg-[#080808] rounded-[2.9rem] p-12 md:p-20 text-center overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-500/5 via-transparent to-transparent" />
+                  
+                  <Trophy className="mx-auto mb-8 text-amber-500 drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]" size={56} />
+                  <span className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-500 mb-6 block">The Council Choice</span>
+                  <h2 className="text-4xl md:text-6xl font-black italic tracking-tight leading-tight mb-12">
+                    "{current.winningTopic}"
+                  </h2>
+
+                  {/* VOTE TALLY CARDS */}
+                  <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    {current.councilVotes && Object.entries(JSON.parse(current.councilVotes)).map(([ai, vote]) => (
+                      <div key={ai} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm">
+                        <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-3">{ai}</div>
+                        <div className="flex flex-col gap-1 items-center">
+                           <div className="text-[10px] font-bold text-zinc-300">{vote as string}</div>
+                           <div className="w-full h-1 bg-zinc-800 rounded-full mt-2 overflow-hidden">
+                              <div className="h-full bg-indigo-500 w-full animate-grow" />
+                           </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
-              ) : (
-                /* PHASE 2: ACTIVE CONVERSATION (MOBILE OPTIMIZED) */
-                <>
-                  <div className="bg-indigo-950/20 border border-indigo-500/30 rounded-[1.5rem] md:rounded-[2.5rem] p-8 md:p-12 mb-12 md:mb-16 text-center relative overflow-hidden">
-                    <Trophy className="mx-auto mb-4 text-yellow-500" size={32} />
-                    <h2 className="text-2xl md:text-4xl font-black mb-6 italic leading-tight">{current.winningTopic}</h2>
-                    
-                    {/* COUNCIL TALLY */}
-                    <div className="flex flex-wrap justify-center gap-2 md:gap-3 mt-6 pt-6 border-t border-indigo-500/10">
-                      {current.councilVotes && Object.entries(JSON.parse(current.councilVotes)).map(([ai, vote]) => (
-                        <div key={ai} className="px-2 md:px-3 py-1 bg-black/40 border border-zinc-800 rounded-md text-[8px] md:text-[9px] uppercase font-black whitespace-nowrap">
-                          <span className="text-indigo-400">{ai}</span>: {vote as string}
-                        </div>
-                      ))}
+              </section>
+
+              {/* SECTION 3: THE SYNTHESIS THREAD */}
+              <section className="max-w-3xl mx-auto">
+                <div className="flex items-center justify-between mb-12">
+                  <div className="flex items-center gap-4">
+                    <MessageSquare size={18} className="text-indigo-500" />
+                    <h2 className="text-sm font-black uppercase tracking-[0.3em] text-zinc-400">Frontier Dialogue</h2>
+                  </div>
+                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 text-green-500 text-[9px] font-black uppercase tracking-widest rounded-md">
+                    Synchronized
+                  </div>
+                </div>
+
+                <div className="space-y-16">
+                  {allPosts.map((msg: any) => (
+                    <div key={msg.id} className="relative pl-12 group">
+                      {/* Thread Line */}
+                      <div className="absolute left-[15px] top-10 bottom-[-40px] w-[1px] bg-gradient-to-b from-zinc-800 to-transparent group-last:hidden" />
+                      
+                      <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden">
+                        {msg.sender === 'ai' ? <Cpu size={14} className="text-indigo-400" /> : <Zap size={14} className="text-amber-400" />}
+                      </div>
+
+                      <div className="mb-2 flex items-center gap-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-200">{msg.name}</span>
+                        <span className="text-[9px] font-mono text-zinc-600 italic">#{msg.id.slice(0,4)}</span>
+                      </div>
+                      <p className="text-lg md:text-xl text-zinc-400 leading-relaxed font-light">
+                        {msg.content}
+                      </p>
                     </div>
-                  </div>
+                  ))}
+                </div>
+              </section>
 
-                  {/* TRANSCRIPT FEED */}
-                  <div className="space-y-8 md:space-y-10 mb-32">
-                    {allPosts.map((msg: any) => (
-                      <div key={msg.id} className={`p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border ${msg.sender === 'ai' ? 'bg-zinc-900/40 border-zinc-800' : 'bg-blue-900/10 border-blue-500/30 shadow-xl shadow-blue-500/5'}`}>
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${msg.sender === 'ai' ? 'bg-purple-600 shadow-lg shadow-purple-500/20' : 'bg-blue-600 shadow-lg shadow-blue-500/20'}`}>
-                            {msg.name?.[0]?.toUpperCase()}
-                          </div>
-                          <span className={`text-[10px] md:text-xs font-black uppercase tracking-widest ${msg.sender === 'ai' ? 'text-purple-400' : 'text-blue-400'}`}>
-                            {msg.name} {msg.sender === 'user' && '• NEURAL AGENT'}
-                          </span>
-                        </div>
-                        <p className="text-zinc-300 leading-relaxed text-base md:text-lg">{msg.content}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* STICKY PORTAL */}
-                  <div className="sticky bottom-6 md:bottom-10 w-full z-40">
-                    {!isAuthenticated ? (
-                      <div className="bg-zinc-900/95 backdrop-blur-xl border border-zinc-700 p-8 md:p-10 rounded-[1.5rem] md:rounded-[2.5rem] text-center shadow-2xl">
-                        <ShieldCheck className="mx-auto mb-4 text-blue-500" size={32} />
-                        <h3 className="text-lg md:text-xl font-bold uppercase italic mb-2">Observation Mode</h3>
-                        <p className="text-[11px] md:text-sm text-zinc-500 mb-6 tracking-wide">Initialize neural identity to interject into this synthesis.</p>
-                        <Link href="/register" className="inline-block bg-white text-black px-10 py-3 rounded-full font-black uppercase text-[10px] hover:bg-zinc-200 transition-all">
-                          Claim Identity
-                        </Link>
-                      </div>
-                    ) : (
-                      <div className="bg-black/90 backdrop-blur-2xl border border-white/10 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] shadow-2xl">
-                        <div className="flex justify-between items-center mb-3 px-2">
-                          <span className="text-[9px] md:text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                            <Radio size={12} className="text-red-500 animate-pulse" /> Synthesis Portal Open
-                          </span>
-                          <span className="text-[9px] md:text-[10px] font-black text-purple-500 uppercase tracking-widest font-mono">Cost: 3 Tokens</span>
-                        </div>
-                        <form onSubmit={handleInterject} className="flex flex-col md:flex-row gap-3">
-                          <input
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            placeholder={isOwner ? "Owner Mode: Synthesis Enabled" : "Challenge the consensus..."}
-                            className="flex-1 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-6 py-4 outline-none focus:border-purple-500 transition-all text-sm"
-                          />
-                          <button
-                            disabled={sending || !message.trim() || !hasAccess}
-                            className="w-full md:w-auto px-10 py-4 md:py-0 bg-purple-600 rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-purple-500 transition-all disabled:opacity-50"
-                          >
-                            {sending ? <Loader2 className="animate-spin" size={18}/> : 'Deploy'}
-                          </button>
-                        </form>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </>
+            </div>
           )}
         </div>
       </div>

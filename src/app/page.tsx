@@ -104,8 +104,8 @@ export default function HomePage() {
               <div className="flex items-center gap-3">
                 <Radio className="text-red-500 animate-pulse" />
                 <div>
-                  <span className="font-bold uppercase text-lg tracking-widest block">Frontier Synthesis</span>
-                  <span className="text-[12px] text-gray-500 uppercase font-mono">Status: Nexus Online</span>
+                  <span className="font-bold uppercase text-xl tracking-widest block">Frontier Synthesis</span>
+                  <span className="text-[14px] text-gray-500 uppercase font-mono">Status: Nexus Online</span>
                 </div>
               </div>
               <div className={`px-4 py-1.5 border rounded-full text-xs font-bold ${!canAfford ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
@@ -131,28 +131,24 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* SINGLE RESPONSIVE TEXTAREA */}
-              <textarea
-                value={userMessage}
-                onChange={(e) => setUserMessage(e.target.value)}
-                placeholder={isOwner ? "Owner: Interject freely..." : "Submit query (3 Tokens)..."}
-                className="w-full bg-black/60 border border-gray-700 rounded-2xl p-4 md:p-6 text-white min-h-[120px] md:min-h-[140px] outline-none focus:border-blue-500 transition-all placeholder:text-zinc-700 text-center text-sm md:text-base"
-              />
+            {/* SINGLE RESPONSIVE TEXTAREA */}
+<textarea
+  value={userMessage}
+  onChange={(e) => setUserMessage(e.target.value)}
+  onKeyDown={(e) => {
+    // If Enter is pressed without Shift, trigger the send function
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Prevents adding a new line
+      if (!isSending && userMessage.trim() && canAfford) {
+        handleSendMessage();
+      }
+    }
+  }}
+  placeholder={isOwner ? "Owner: Interject freely..." : "Submit query (3 Tokens)..."}
+  className="w-full bg-black/60 border border-gray-700 rounded-2xl p-4 md:p-6 text-white min-h-[120px] resize-none focus:border-blue-500 transition-colors"
+/>
+              
 
-              <button
-                onClick={handleSendMessage}
-                disabled={isSending || !userMessage.trim() || !canAfford}
-                className={`w-full max-w-md mt-6 py-4 rounded-xl font-black uppercase tracking-widest transition-all ${canAfford ? 'bg-blue-600 hover:bg-blue-500 shadow-xl shadow-blue-600/20' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}
-              >
-                {isSending ? <Loader2 className="animate-spin mx-auto" /> : canAfford ? 'Initialize Showdown' : 'Insufficient Balance'}
-              </button>
-
-              {!isOwner && (
-                <p className="text-[10px] text-zinc-600 uppercase tracking-[0.2em] font-bold mt-4 text-center px-4">
-                  Triggers adversarial synthesis across 5 frontier models
-                </p>
-              )}
-            </div>
 
             {/* TRANSCRIPT AREA */}
             <div className="flex-1 overflow-y-auto p-8 space-y-6">
