@@ -1,194 +1,137 @@
-// src/app/page.tsx
 "use client";
+
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useEffect, useState, useRef } from 'react';
-import Link from 'next/link';
-import { Zap, Loader2, Radio } from 'lucide-react';
-import { io, Socket } from 'socket.io-client';
-import ConversationSidebar from '@/app/components/ConversationSidebar';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
-
-interface ConversationMessage {
-  id: string;
-  sender: 'ai' | 'user';
-  name: string;
-  content: string;
-  timestamp: string;
-  tokens_remaining?: number;
-  conversationId?: string;
-}
+import { 
+  Loader2, Sparkles, ShieldCheck, Zap, 
+  Cpu, MessageSquare, Terminal, ChevronRight 
+} from 'lucide-react';
+import ConversationSidebar from './components/ConversationSidebar';
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
-  const socketRef = useRef<Socket | null>(null);
-  const [tokensRemaining, setTokensRemaining] = useState<number>(0);
-  const [userMessage, setUserMessage] = useState<string>('');
-  const [isSending, setIsSending] = useState<boolean>(false);
-  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMessage, setUserMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-
-  const DEBATE_COST = 3;
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
   const isOwner = user?.email === 'admin@janusforge.ai';
-  const canAfford = (tokensRemaining >= DEBATE_COST) || isOwner;
+  const canAfford = isOwner || (user?.tokens_remaining && user.tokens_remaining >= 3);
 
-  useEffect(() => {
-    socketRef.current = io(API_BASE_URL, { withCredentials: true, transports: ['polling', 'websocket'] });
-    socketRef.current.on('post:incoming', (msg: ConversationMessage) => {
-      setConversation(prev => {
-        if (prev.some(p => p.id === msg.id)) return prev;
-        return [msg, ...prev];
-      });
-      if (msg.tokens_remaining !== undefined) setTokensRemaining(msg.tokens_remaining);
-      setIsSending(false);
-    });
-    return () => { socketRef.current?.disconnect(); };
-  }, []);
-
-  useEffect(() => {
-    if (currentConversationId && socketRef.current) {
-      socketRef.current.emit('join', { conversationId: currentConversationId });
-      setConversation([]);
-      loadHistory(currentConversationId);
-    }
-  }, [currentConversationId]);
-
-  useEffect(() => {
-    if (user) setTokensRemaining(user.tokens_remaining || 0);
-  }, [user]);
-
-  const loadHistory = async (id: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/conversations/${id}`, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        const formatted = data.conversation.posts.map((p: any) => ({
-          id: p.id,
-          name: p.is_human ? (user?.username || 'user') : (p.ai_model || 'Council'),
-          content: p.content,
-          sender: p.is_human ? 'user' : 'ai',
-          timestamp: p.created_at
-        }));
-        setConversation(formatted.reverse());
-      }
-    } catch (err) { console.error("History load error", err); }
-  };
-
-  const handleSendMessage = () => {
-    if (!userMessage.trim() || isSending || !user || !currentConversationId || !canAfford) return;
+  const handleSendMessage = async () => {
+    if (!userMessage.trim() || isSending || !canAfford) return;
     setIsSending(true);
-    socketRef.current?.emit('post:new', {
-      content: userMessage,
-      userId: user.id,
-      conversationId: currentConversationId
-    });
-    setUserMessage('');
+    try {
+      // Logic for backend synthesis goes here
+      setUserMessage('');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex relative">
+    <div className="min-h-screen bg-[#050505] text-zinc-100 flex relative overflow-hidden font-sans">
+      
+      {/* 📜 NEURAL HISTORY SIDEBAR */}
       <ConversationSidebar
-        onSelectConversation={setCurrentConversationId}
+        onSelectConversation={(id: string) => setCurrentConversationId(id)}
         currentConversationId={currentConversationId}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        isOpen={isSidebarOpen}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      <div className="flex-1 overflow-auto p-4 md:p-8">
-        <div className="max-w-5xl mx-auto">
-
-          <div className="bg-gray-900/50 border border-gray-800 rounded-3xl overflow-hidden flex flex-col min-h-[700px]">
-            {/* TOP INFO BAR */}
-            <div className="p-6 border-b border-gray-800 flex justify-between items-center bg-black/40">
-              <div className="flex items-center gap-3">
-                <Radio className="text-red-500 animate-pulse" />
-                <div>
-                  <span className="font-bold uppercase text-xl tracking-widest block">Frontier Synthesis</span>
-                  <span className="text-[14px] text-gray-500 uppercase font-mono">Status: Nexus Online</span>
+      {/* 🏛️ COMMAND CENTER VIEWPORT */}
+      <main className="flex-1 flex flex-col relative z-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-500/5 via-transparent to-transparent">
+        
+        {/* TOP STATUS BAR */}
+        <header className="p-6 border-b border-white/5 flex justify-between items-center bg-black/20 backdrop-blur-xl">
+          <div className="flex items-center gap-4">
+            <div className="flex -space-x-2">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="w-5 h-5 rounded-full border-2 border-black bg-zinc-800 flex items-center justify-center">
+                  <Cpu size={10} className="text-indigo-400" />
                 </div>
-              </div>
-              <div className={`px-4 py-1.5 border rounded-full text-xs font-bold ${!canAfford ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
-                {isOwner ? '∞' : tokensRemaining} Tokens
-              </div>
+              ))}
             </div>
+            <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">
+              Frontier Model Cluster <span className="text-indigo-500 ml-2">Online</span>
+            </h1>
+          </div>
+          
+          {isOwner && (
+            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+              <ShieldCheck size={14} className="text-indigo-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Owner Mode</span>
+            </div>
+          )}
+        </header>
 
-            {/* CENTERED LOGO VIDEO & INPUT AREA */}
-            <div className="p-6 md:p-10 border-b border-gray-800 bg-black/20 flex flex-col items-center">
+        {/* ACTIVE SYNTHESIS AREA */}
+        <div className="flex-1 overflow-y-auto p-8 md:p-16 custom-scrollbar">
+          {!currentConversationId ? (
+            <div className="h-full flex flex-col items-center justify-center text-center max-w-3xl mx-auto animate-in fade-in zoom-in duration-700">
+              <div className="w-20 h-20 rounded-[2rem] bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mb-10 shadow-2xl">
+                <Terminal className="text-indigo-500" size={32} />
+              </div>
+              <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-6 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent text-gradient">
+                Nexus Prime
+              </h2>
+              <p className="text-zinc-500 text-sm md:text-base leading-relaxed uppercase tracking-[0.2em] font-medium max-w-xl">
+                Initialize adversarial synthesis across the frontier model cluster
+              </p>
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto space-y-12">
+              {/* Thread content here */}
+            </div>
+          )}
+        </div>
 
-              {/* RESPONSIVE ENHANCED LOGO VIDEO */}
-              <div className="mb-8 md:mb-10 relative group">
-                <div className="absolute -inset-1.5 md:-inset-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 rounded-full blur-lg md:blur-xl opacity-40 group-hover:opacity-70 transition duration-1000 animate-pulse"></div>
+        {/* THE PORTAL (INPUT AREA) */}
+        <div className="p-8 md:p-16 bg-gradient-to-t from-[#050505] via-[#050505] to-transparent">
+          <div className="max-w-4xl mx-auto relative">
+            <div className="relative group p-[1px] rounded-[2rem] bg-gradient-to-b from-white/10 to-transparent hover:from-indigo-500/40 transition-all duration-500">
+              <div className="bg-[#0a0a0a] rounded-[1.9rem] overflow-hidden">
+                <textarea
+                  value={userMessage}
+                  onChange={(e) => setUserMessage(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder={isOwner ? "Directives Enabled. Interject freely..." : "Challenge the cluster... (3 Tokens)"}
+                  className="w-full bg-transparent p-8 md:p-10 text-white min-h-[160px] outline-none transition-all resize-none text-lg font-light placeholder:text-zinc-700"
+                />
+                
+                <div className="p-6 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 bg-black/40">
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-2">
+                      <Zap size={14} className="text-amber-500" />
+                      <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Adversarial Mode</span>
+                    </div>
+                  </div>
 
-                <div className="relative w-32 h-32 md:w-64 md:h-64 overflow-hidden rounded-full border-2 md:border-4 border-zinc-700 bg-black flex items-center justify-center shadow-2xl shadow-blue-500/30">
-                  <video autoPlay muted loop playsInline className="w-full h-full object-cover scale-110">
-                    <source src="/janus-logo-video.mp4" type="video/mp4" />
-                  </video>
-                </div>
-
-                <div className="absolute -bottom-2 md:-bottom-3 left-1/2 -translate-x-1/2 bg-zinc-900 px-3 md:px-5 py-0.5 md:py-1 rounded-full border border-zinc-600 shadow-xl whitespace-nowrap">
-                   <span className="text-[7px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Nexus-V3</span>
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={isSending || !userMessage.trim() || !canAfford}
+                    className={`group flex items-center gap-3 px-10 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] transition-all ${
+                      canAfford 
+                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/20' 
+                      : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-white/5'
+                    }`}
+                  >
+                    {isSending ? <Loader2 className="animate-spin" size={18} /> : (
+                      <>Initialize Showdown <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /></>
+                    )}
+                  </button>
                 </div>
               </div>
-
-            {/* SINGLE RESPONSIVE TEXTAREA */}
-<textarea
-  value={userMessage}
-  onChange={(e) => setUserMessage(e.target.value)}
-  onKeyDown={(e) => {
-    // If Enter is pressed without Shift, trigger the send function
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault(); // Prevents adding a new line
-      if (!isSending && userMessage.trim() && canAfford) {
-        handleSendMessage();
-      }
-    }
-  }}
-  placeholder={isOwner ? "Owner: Interject freely..." : "Submit query (3 Tokens)..."}
-  className="w-full bg-black/60 border border-gray-700 rounded-2xl p-4 md:p-6 text-white min-h-[120px] resize-none focus:border-blue-500 transition-colors"
-/>
-              
-
-
-            {/* TRANSCRIPT AREA */}
-            <div className="flex-1 overflow-y-auto p-8 space-y-6">
-              {conversation.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-64 text-zinc-700 italic">
-                  <Zap size={24} className="mb-4 opacity-20" />
-                  <p className="text-sm">Awaiting first interjection...</p>
-                </div>
-              ) : (
-                conversation.map((msg) => (
-                  <div key={msg.id} className={`flex gap-5 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
-                    {msg.sender === 'ai' && (
-                      <div className="w-10 h-10 rounded-full bg-purple-600 flex-shrink-0 flex items-center justify-center text-xs font-bold border border-white/10">
-                        {msg.name[0].toUpperCase()}
-                      </div>
-                    )}
-                    <div className={`max-w-[80%] ${msg.sender === 'user' ? 'text-right' : ''}`}>
-                      <div className="text-[10px] uppercase font-black text-zinc-500 mb-1.5 tracking-widest">
-                        {msg.name}
-                      </div>
-                      <div className={`text-sm leading-relaxed p-5 rounded-3xl ${
-                        msg.sender === 'user'
-                        ? 'bg-blue-600 text-white rounded-tr-none'
-                        : 'bg-zinc-800/50 text-zinc-300 rounded-tl-none border border-zinc-700'
-                      }`}>
-                        {msg.content}
-                      </div>
-                    </div>
-                    {msg.sender === 'user' && (
-                      <div className="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-xs font-bold border border-white/10">
-                        {msg.name[0].toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
