@@ -20,7 +20,7 @@ export default function ConversationSidebar({
   const { user } = useAuth();
   const [history, setHistory] = useState<any[]>([]);
   
-  // OWNER IDENTIFICATION: admin@janusforge.ai [cite: 2025-11-27]
+  // OWNER IDENTIFICATION: admin@janusforge.ai
   const isOwner = user?.email === 'admin@janusforge.ai';
 
   useEffect(() => {
@@ -39,7 +39,6 @@ export default function ConversationSidebar({
       bg-black/40 backdrop-blur-xl border-r border-white/5 
       flex flex-col transition-transform duration-300
     `}>
-      {/* SIDEBAR HEADER */}
       <div className="p-6 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <History size={16} className="text-indigo-500" />
@@ -52,33 +51,16 @@ export default function ConversationSidebar({
         </button>
       </div>
 
-      {/* NEW CONVERSATION BUTTON */}
-      <div className="p-4">
-        <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-indigo-600/10 hover:border-indigo-500/30 transition-all group">
-          <Plus size={14} className="text-zinc-500 group-hover:text-indigo-400" />
-          <span className="text-[10px] font-black uppercase tracking-widest">New Synthesis</span>
-        </button>
-      </div>
-
-      {/* HISTORY LIST */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-2">
         {history.map((item) => (
           <button
             key={item.id}
             onClick={() => onSelectConversation(item.id)}
-            className={`
-              w-full text-left p-4 rounded-xl border transition-all relative group
+            className={`w-full text-left p-4 rounded-xl border transition-all relative group
               ${currentConversationId === item.id 
                 ? 'bg-indigo-600/10 border-indigo-500/50' 
-                : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/10'}
-            `}
+                : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/10'}`}
           >
-            <div className="flex items-center gap-3 mb-1">
-              <MessageSquare size={12} className={currentConversationId === item.id ? 'text-indigo-400' : 'text-zinc-600'} />
-              <span className="text-[10px] font-mono text-zinc-500">
-                {new Date(item.created_at).toLocaleDateString()}
-              </span>
-            </div>
             <p className="text-xs font-bold text-zinc-300 truncate group-hover:text-white">
               {item.title || 'Untitled Synthesis'}
             </p>
@@ -86,7 +68,6 @@ export default function ConversationSidebar({
         ))}
       </div>
 
-      {/* OWNER STATUS FOOTER */}
       {isOwner && (
         <div className="p-6 border-t border-white/5 bg-indigo-500/5">
           <div className="flex items-center gap-3">

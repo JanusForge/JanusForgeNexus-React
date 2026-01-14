@@ -14,9 +14,7 @@ import ConversationSidebar from './components/ConversationSidebar';
  */
 const LogoVideo = () => (
   <div className="w-64 h-64 rounded-[3rem] overflow-hidden border border-indigo-500/20 shadow-[0_0_50px_rgba(99,102,241,0.15)] bg-zinc-900/50 backdrop-blur-3xl flex items-center justify-center relative">
-    {/* Inner Glow Effect */}
     <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/10 to-transparent pointer-events-none" />
-    
     <video 
       autoPlay 
       loop 
@@ -36,9 +34,9 @@ export default function HomePage() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // OWNER BYPASS: admin@janusforge.ai [cite: 2025-11-27]
-  const isOwner = user?.email === 'admin@janusforge.ai'; [cite: 2025-11-27]
-  const canAfford = isOwner || (user?.tokens_remaining && user.tokens_remaining >= 3); [cite: 2025-11-27]
+  // OWNER BYPASS: admin@janusforge.ai
+  const isOwner = user?.email === 'admin@janusforge.ai';
+  const canAfford = isOwner || (user?.tokens_remaining && user.tokens_remaining >= 3);
 
   const handleSendMessage = async () => {
     if (!userMessage.trim() || isSending || !canAfford) return;
@@ -60,7 +58,6 @@ export default function HomePage() {
       />
 
       <main className="flex-1 flex flex-col relative z-10">
-        {/* Background Ambient Glow */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] -z-10" />
         
         <header className="p-6 border-b border-white/5 flex justify-between items-center bg-black/20 backdrop-blur-xl">
@@ -70,7 +67,7 @@ export default function HomePage() {
             </h1>
           </div>
           
-          {isOwner && ( [cite: 2025-11-27]
+          {isOwner && (
             <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20">
               <ShieldCheck size={14} className="text-indigo-400" />
               <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Owner Access</span>
@@ -81,12 +78,9 @@ export default function HomePage() {
         <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center justify-center">
           {!currentConversationId && (
             <div className="text-center max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-8 duration-1000">
-              
-              {/* THE HERO LOGO */}
               <div className="mb-12 animate-float flex justify-center">
                 <LogoVideo />
               </div>
-
               <h2 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter mb-6 bg-gradient-to-b from-white via-white to-zinc-600 bg-clip-text text-transparent">
                 Nexus Prime
               </h2>
@@ -97,14 +91,13 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* INPUT PORTAL */}
         <div className="p-8 md:p-16">
           <div className="max-w-4xl mx-auto relative">
             <div className="bg-[#0a0a0a] rounded-[2rem] border border-white/10 overflow-hidden shadow-2xl">
               <textarea
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
-                placeholder={isOwner ? "Owner: Interject Directive..." : "Challenge the cluster..."} [cite: 2025-11-27]
+                placeholder={isOwner ? "Owner: Interject Directive..." : "Challenge the cluster..."}
                 className="w-full bg-transparent p-10 text-white min-h-[160px] outline-none resize-none text-lg font-light"
               />
               <div className="p-6 border-t border-white/5 bg-black/40 flex justify-between items-center">
