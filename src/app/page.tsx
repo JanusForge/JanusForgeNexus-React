@@ -30,8 +30,8 @@ export default function HomePage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
-  const isOwner = user?.email === 'admin@janusforge.ai'; [cite: 2025-11-27]
-  const canAfford = isOwner || (user?.tokens_remaining && user.tokens_remaining >= 3); [cite: 2025-11-27]
+  const isOwner = user?.email === 'admin@janusforge.ai';
+  const canAfford = isOwner || (user?.tokens_remaining && user.tokens_remaining >= 3);
 
   // 1. SOCKET INITIALIZATION
   useEffect(() => {
@@ -53,7 +53,6 @@ export default function HomePage() {
   useEffect(() => {
     if (currentConversationId && socketRef.current) {
       socketRef.current.emit('join:room', currentConversationId);
-      // Fetch existing messages if loading from history
       fetch(`${API_BASE_URL}/api/conversations/${currentConversationId}/posts`)
         .then(res => res.json())
         .then(data => setMessages(data))
@@ -105,7 +104,7 @@ export default function HomePage() {
                Frontier Model Cluster <span className="text-indigo-400 ml-4">Online</span>
              </h1>
           </div>
-          {isOwner && ( [cite: 2025-11-27]
+          {isOwner && (
             <div className="flex items-center gap-3 px-6 py-3 rounded-full bg-indigo-500/10 border border-indigo-500/30">
               <ShieldCheck size={18} className="text-indigo-400" />
               <span className="text-xs font-black uppercase tracking-[0.3em] text-indigo-400">Owner Access</span>
@@ -113,7 +112,6 @@ export default function HomePage() {
           )}
         </header>
 
-        {/* 🏛️ MAIN STAGE: SWITCHES BETWEEN LOGO AND CHAT */}
         <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
           {!currentConversationId ? (
             <div className="h-full flex flex-col items-center justify-center text-center max-w-5xl mx-auto animate-in fade-in zoom-in duration-1000">
@@ -152,14 +150,13 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* INPUT PORTAL */}
         <div className="p-12 md:p-20 bg-gradient-to-t from-black via-black/80 to-transparent">
           <div className="max-w-5xl mx-auto relative">
             <div className="bg-zinc-900/60 rounded-[2.5rem] border border-white/10 overflow-hidden shadow-2xl backdrop-blur-md">
               <textarea
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
-                placeholder={isOwner ? "Owner Directive: Influence the Cluster..." : "Synthesize new logic..."} [cite: 2025-11-27]
+                placeholder={isOwner ? "Owner Directive: Influence the Cluster..." : "Synthesize new logic..."}
                 className="w-full bg-transparent p-12 text-white min-h-[180px] outline-none resize-none text-xl font-light placeholder:text-zinc-800"
               />
               <div className="p-8 border-t border-white/5 bg-black/60 flex justify-between items-center">
