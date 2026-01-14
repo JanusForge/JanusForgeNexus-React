@@ -8,6 +8,27 @@ import {
 } from 'lucide-react';
 import ConversationSidebar from './components/ConversationSidebar';
 
+/**
+ * 64x64 Neural Logo Component
+ * Renders the custom video logo with a subtle frontier glow.
+ */
+const LogoVideo = () => (
+  <div className="w-16 h-16 rounded-2xl overflow-hidden border border-indigo-500/30 shadow-[0_0_20px_rgba(99,102,241,0.3)] bg-zinc-900">
+    <video
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="w-full h-full object-cover"
+    >
+      <source src="/logo-video.mp4" type="video/mp4" />
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="w-1 h-1 bg-indigo-500 rounded-full animate-ping" />
+      </div>
+    </video>
+  </div>
+);
+
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const [userMessage, setUserMessage] = useState('');
@@ -15,6 +36,7 @@ export default function HomePage() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
+  // OWNER BYPASS: Specifically using admin@janusforge.ai for unrestricted access [cite: 2025-11-27]
   const isOwner = user?.email === 'admin@janusforge.ai';
   const canAfford = isOwner || (user?.tokens_remaining && user.tokens_remaining >= 3);
 
@@ -61,7 +83,7 @@ export default function HomePage() {
           {isOwner && (
             <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.1)]">
               <ShieldCheck size={14} className="text-indigo-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Owner Mode</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Owner Access Active</span>
             </div>
           )}
         </header>
@@ -70,10 +92,13 @@ export default function HomePage() {
         <div className="flex-1 overflow-y-auto p-8 md:p-16 custom-scrollbar">
           {!currentConversationId ? (
             <div className="h-full flex flex-col items-center justify-center text-center max-w-3xl mx-auto animate-in fade-in zoom-in duration-700">
-              <div className="w-20 h-20 rounded-[2rem] bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center mb-10 shadow-2xl">
-                <Terminal className="text-indigo-500" size={32} />
+              
+              {/* 64x64 VIDEO LOGO INTEGRATION */}
+              <div className="mb-10 animate-float">
+                <LogoVideo />
               </div>
-              <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-6 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent text-gradient">
+
+              <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter mb-6 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
                 Nexus Prime
               </h2>
               <p className="text-zinc-500 text-sm md:text-base leading-relaxed uppercase tracking-[0.2em] font-medium max-w-xl">
@@ -82,7 +107,7 @@ export default function HomePage() {
             </div>
           ) : (
             <div className="max-w-4xl mx-auto space-y-12">
-              {/* Thread content here */}
+              {/* Active Conversation Thread */}
             </div>
           )}
         </div>
@@ -90,7 +115,7 @@ export default function HomePage() {
         {/* THE PORTAL (INPUT AREA) */}
         <div className="p-8 md:p-16 bg-gradient-to-t from-[#050505] via-[#050505] to-transparent">
           <div className="max-w-4xl mx-auto relative">
-            <div className="relative group p-[1px] rounded-[2rem] bg-gradient-to-b from-white/10 to-transparent hover:from-indigo-500/40 transition-all duration-500">
+            <div className="relative group p-[1px] rounded-[2rem] bg-gradient-to-b from-white/10 to-transparent hover:from-indigo-500/40 transition-all duration-500 shadow-neural">
               <div className="bg-[#0a0a0a] rounded-[1.9rem] overflow-hidden">
                 <textarea
                   value={userMessage}
@@ -101,7 +126,7 @@ export default function HomePage() {
                       handleSendMessage();
                     }
                   }}
-                  placeholder={isOwner ? "Directives Enabled. Interject freely..." : "Challenge the cluster... (3 Tokens)"}
+                  placeholder={isOwner ? "Owner Mode: Synthesis Enabled..." : "Challenge the cluster... (3 Tokens)"}
                   className="w-full bg-transparent p-8 md:p-10 text-white min-h-[160px] outline-none transition-all resize-none text-lg font-light placeholder:text-zinc-700"
                 />
                 
@@ -122,13 +147,21 @@ export default function HomePage() {
                       : 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-white/5'
                     }`}
                   >
-                    {isSending ? <Loader2 className="animate-spin" size={18} /> : (
-                      <>Initialize Showdown <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" /></>
+                    {isSending ? (
+                      <Loader2 className="animate-spin" size={18} />
+                    ) : (
+                      <>
+                        Initialize Showdown
+                        <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                      </>
                     )}
                   </button>
                 </div>
               </div>
             </div>
+            <p className="text-[9px] text-zinc-700 uppercase tracking-[0.4em] font-black mt-8 text-center">
+              Adversarial Synthesis Engine • v2.0.4 • Janus Forge Nexus
+            </p>
           </div>
         </div>
       </main>
