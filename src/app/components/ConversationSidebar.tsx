@@ -1,11 +1,11 @@
 "use client";
 
 import { useAuth } from '@/components/auth/AuthProvider';
-import { History, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { History, ShieldCheck, ChevronLeft, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface SidebarProps {
-  onSelectConversation: (id: string) => void;
+  onSelectConversation: (id: string | null) => void;
   currentConversationId: string | null;
   isOpen: boolean;
   onToggle: () => void;
@@ -20,7 +20,7 @@ export default function ConversationSidebar({
   const { user } = useAuth();
   const [history, setHistory] = useState<any[]>([]);
   
-  // OWNER IDENTIFICATION: admin@janusforge.ai
+  // OWNER IDENTIFICATION: admin@janusforge.ai [cite: 2025-11-27]
   const isOwner = user?.email === 'admin@janusforge.ai'; 
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function ConversationSidebar({
       bg-[#050505]/80 backdrop-blur-3xl border-r border-white/10 
       flex flex-col transition-transform duration-300
     `}>
-      {/* MATCHED HEADER SCALE */}
+      {/* HEADER: Matched to Frontier Model Cluster Online scale */}
       <div className="p-10 border-b border-white/5 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <History size={18} className="text-indigo-500" />
@@ -52,6 +52,20 @@ export default function ConversationSidebar({
         </button>
       </div>
 
+      {/* ➕ NEW CONVERSATION BUTTON */}
+      <div className="p-6">
+        <button 
+          onClick={() => onSelectConversation(null)}
+          className="w-full flex items-center justify-center gap-3 py-5 rounded-2xl bg-indigo-600/10 border border-indigo-500/30 hover:bg-indigo-600/20 hover:border-indigo-500/60 transition-all group"
+        >
+          <Plus size={18} className="text-indigo-400 group-hover:scale-110 transition-transform" />
+          <span className="text-xs font-black uppercase tracking-[0.3em] text-indigo-400">
+            New Synthesis
+          </span>
+        </button>
+      </div>
+
+      {/* HISTORY LIST */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-4">
         {history.map((item) => (
           <button
@@ -69,6 +83,7 @@ export default function ConversationSidebar({
         ))}
       </div>
 
+      {/* OWNER STATUS FOOTER */}
       {isOwner && (
         <div className="p-10 border-t border-white/5 bg-indigo-500/5">
           <div className="flex items-center gap-4">
