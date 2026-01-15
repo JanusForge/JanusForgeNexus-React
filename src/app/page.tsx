@@ -5,7 +5,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { Loader2, ShieldCheck, Zap, Terminal, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConversationSidebar from './components/ConversationSidebar';
-import CouncilBuilder from './components/NexusPrime/CouncilBuilder';
+import CouncilBuilder from '@/components/NexusPrime/CouncilBuilder';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
