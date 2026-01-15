@@ -67,10 +67,10 @@ export default function NexusPrimeEngine() {
             
             <div className="text-center space-y-8">
               {/* Massive prominent Title */}
-              <h2 className="text-[12rem] md:text-[16rem] font-black italic uppercase tracking-tighter bg-gradient-to-b from-white via-white to-zinc-900 bg-clip-text text-transparent leading-[0.75] drop-shadow-2xl">
+              <h2 className="text-[20rem] md:text-[30rem] font-black italic uppercase tracking-tighter bg-gradient-to-b from-white via-white to-zinc-900 bg-clip-text text-transparent leading-[0.75] drop-shadow-2xl">
                 Nexus Prime
               </h2>
-              <p className="text-zinc-600 text-sm md:text-lg uppercase tracking-[0.8em] font-bold opacity-60 italic">
+              <p className="text-zinc-600 text-md md:text-lg uppercase tracking-[0.8em] font-bold opacity-60 italic">
                 Synchronize Intelligence Across The Frontier
               </p>
             </div>
