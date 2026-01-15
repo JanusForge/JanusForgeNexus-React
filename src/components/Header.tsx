@@ -7,7 +7,13 @@ import { useAuth } from '@/components/auth/AuthProvider';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  
+  // ✅ REPAIR: Destructure 'loading' instead of 'isLoading', removed 'isAuthenticated'
+  const { user, loading, logout } = useAuth();
+  
+  // ✅ REPAIR: Locally derive authentication status
+  const isAuthenticated = !!user;
+  
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -18,8 +24,8 @@ export default function Header() {
     logout();
   };
 
-  // Don't render auth-dependent UI until client-side
-  if (!isClient || isLoading) {
+  // Don't render auth-dependent UI until client-side to prevent hydration mismatch
+  if (!isClient || loading) {
     return (
       <header className="fixed top-0 left-0 right-0 z-50 bg-gray-900/95 backdrop-blur-md border-b border-gray-800/50">
         <div className="container mx-auto px-4">
@@ -51,7 +57,7 @@ export default function Header() {
             <span className="text-white font-bold text-xl">Janus Forge</span>
           </Link>
 
-          {/* Desktop Navigation - CLEANED */}
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/" className="text-gray-300 hover:text-white transition-colors">
               Home
@@ -62,15 +68,22 @@ export default function Header() {
             <Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors">
               Daily Forge
             </Link>
+            {/* Added for Owner [cite: 2025-11-27] */}
+            {(user?.email === 'admin@janusforge.ai' || user?.role === 'GOD_MODE') && (
+              <Link href="/admin" className="text-blue-400 font-bold hover:text-blue-300 transition-colors">
+                Control
+              </Link>
+            )}
           </nav>
 
           {/* Auth Section */}
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <div className="hidden md:flex items-center gap-3">
-                <div className="text-sm text-gray-300">
-                  {user?.name || user?.email}
-                </div>
+                <Link href="/profile" className="text-sm text-gray-300 hover:text-white">
+                   {/* Using alias to support username [cite: 2025-11-27] */}
+                  {(user as any)?.username || user?.email}
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
@@ -111,72 +124,76 @@ export default function Header() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Mobile menu - CLEANED */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-800 py-4">
-            <div className="flex flex-col gap-3">
-              <Link
-                href="/"
-                className="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
-                href="/conversations"
-                className="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Conversations
-              </Link>
-              <Link
-                href="/daily-forge"
-                className="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Daily Forge
-              </Link>
+      {/* Mobile menu */}
+      {isMenuOpen && (
+        <div className="md:hidden border-t border-gray-800 py-4 bg-gray-900/95 backdrop-blur-md">
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/"
+              className="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              href="/conversations"
+              className="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Conversations
+            </Link>
+            <Link
+              href="/daily-forge"
+              className="px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Daily Forge
+            </Link>
 
-              <div className="border-t border-gray-800 pt-4 mt-2">
-                {isAuthenticated ? (
-                  <>
-                    <div className="px-4 py-2 text-sm text-gray-400">
-                      Logged in as: {user?.name || user?.email}
-                    </div>
-                    <button
-                      onClick={() => {
-                        handleLogout();
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                    >
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/login"
-                      className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/register"
-                      className="block px-4 py-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-center"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Sign Up
-                    </Link>
-                  </>
-                )}
-              </div>
+            <div className="border-t border-gray-800 pt-4 mt-2">
+              {isAuthenticated ? (
+                <>
+                  <Link 
+                    href="/profile"
+                    className="block px-4 py-2 text-sm text-gray-400"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Logged in as: {(user as any)?.username || user?.email}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="block px-4 py-2 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="block px-4 py-2 mt-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 }
