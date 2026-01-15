@@ -122,7 +122,7 @@ export default function LoginPage() {
                 <label className="block text-gray-500 text-[10px] font-black uppercase tracking-widest">
                   Security Key
                 </label>
-                <Link href="/forgot-password" size={10} className="text-[10px] font-black uppercase text-blue-500 hover:text-blue-400">
+                <Link href="/forgot-password" className="text-[10px] font-black uppercase text-blue-500 hover:text-blue-400">
                   Recovery
                 </Link>
               </div>
