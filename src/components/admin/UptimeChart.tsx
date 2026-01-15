@@ -1,6 +1,6 @@
 "use client";
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { format } from 'date-fns';
 
 interface HealthLog {
@@ -38,32 +38,32 @@ export function UptimeChart({ data }: { data: HealthLog[] }) {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
-          <XAxis 
-            dataKey="time" 
-            stroke="#4b5563" 
-            fontSize={10} 
-            tickLine={false} 
+          <XAxis
+            dataKey="time"
+            stroke="#4b5563"
+            fontSize={10}
+            tickLine={false}
             axisLine={false}
           />
-          <YAxis 
-            stroke="#4b5563" 
-            fontSize={10} 
-            tickLine={false} 
+          <YAxis
+            stroke="#4b5563"
+            fontSize={10}
+            tickLine={false}
             axisLine={false}
             unit="ms"
           />
-          <Tooltip 
+          <Tooltip
             contentStyle={{ backgroundColor: '#09090b', border: '1px solid #27272a', borderRadius: '12px' }}
             itemStyle={{ color: '#3b82f6', fontSize: '12px', fontWeight: 'bold' }}
             labelStyle={{ color: '#71717a', fontSize: '10px', marginBottom: '4px' }}
           />
-          <Area 
-            type="monotone" 
-            dataKey="latency" 
-            stroke="#3b82f6" 
+          <Area
+            type="monotone"
+            dataKey="latency"
+            stroke="#3b82f6"
             strokeWidth={3}
-            fillOpacity={1} 
-            fill="url(#colorLatency)" 
+            fillOpacity={1}
+            fill="url(#colorLatency)"
             animationDuration={2000}
           />
         </AreaChart>
