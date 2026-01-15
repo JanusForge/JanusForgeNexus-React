@@ -5,6 +5,7 @@ import './globals.css';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import Header from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import BroadcastToast from '@/components/ui/BroadcastToast'; // ✅ New Import
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -51,11 +52,14 @@ export default function RootLayout({
           <div className="flex flex-col min-h-screen">
             {/* Main Header navigation */}
             <Header />
-            
+
             {/* The main content area grows to push the footer down */}
             <main className="flex-grow pt-16">
               {children}
             </main>
+
+            {/* Cinematic Broadcast Alerts */}
+            <BroadcastToast />
 
             {/* Professional Footer for the entire site */}
             <Footer />
