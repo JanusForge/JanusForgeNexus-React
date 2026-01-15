@@ -50,10 +50,10 @@ export default function ProfilePage() {
           <div className="bg-zinc-900/30 border border-white/5 rounded-[2.5rem] p-8 hover:border-white/10 transition-colors group">
             <div className="flex items-center gap-6 mb-8">
               <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-600 rounded-3xl flex items-center justify-center text-3xl font-black shadow-xl shadow-purple-500/20 group-hover:scale-105 transition-transform">
-                {user.username?.[0]?.toUpperCase() || 'A'}
+                {(user as any).username?.[0]?.toUpperCase() || 'A'}
               </div>
               <div>
-                <h2 className="text-2xl font-black tracking-tight">{user.username}</h2>
+                <h2 className="text-2xl font-black tracking-tight">{(user as any).username || 'Architect'}</h2>
                 <p className="text-zinc-500 text-xs font-mono">{user.email}</p>
               </div>
             </div>
