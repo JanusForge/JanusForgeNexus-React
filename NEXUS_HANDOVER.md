@@ -1,10 +1,25 @@
 Here is your **Nexus Prime Handover Report** formatted as a high-fidelity React-style Markdown file. You can save this as `NEXUS_HANDOVER.md` in your project root or as a `README.md` within your `docs` folder.
 
+
+src/
+├── app/                  # SHELL LAYER: Only defines the URLs (Routes)
+│   ├── page.tsx          # Main Entry: Calls <NexusPrimeEngine />
+│   └── layout.tsx        # Global Architecture (Sidebar, Header)
+├── components/           # UI LAYER: Buttons, Inputs, Toasts
+│   └── ui/               # BroadcastToast.tsx, etc.
+└── features/             # LOGIC LAYER: The "Darn Good" Layouts
+    └── nexus-prime/      # EVERYTHING related to the 5-AI Council
+        ├── MainEngine.tsx    # The cinematic textarea + Enter key logic
+        ├── CouncilBuilder.tsx # The 5-token selection logic
+        └── api.ts            # Frontend socket/fetch calls for Nexus
+
+
 ---
 
 # 🌌 Nexus Prime: Handover Report
 
 **Date:** January 14, 2026
+
 
 **Status:** `PRODUCTION_READY`
 
