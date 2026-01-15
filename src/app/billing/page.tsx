@@ -9,11 +9,14 @@ import { useSearchParams } from 'next/navigation';
 const BACKEND_URL = 'https://janusforgenexus-backend.onrender.com';
 
 function BillingContent() {
-  const { user, isAuthenticated } = useAuth();
+  // ✅ REPAIR: Removed isAuthenticated from destructuring, added loading
+  const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isRedirecting, setIsRedirecting] = useState<string | null>(null);
 
+  // ✅ REPAIR: Derive authentication status locally
+  const isAuthenticated = !!user;
   const isCanceled = searchParams.get('canceled') === 'true';
 
   const handlePurchase = async (pkg: any) => {
@@ -37,7 +40,7 @@ function BillingContent() {
 
       const data = await response.json();
       if (data.url) {
-        router.push(data.url); // ← FIXED: use router instead of window.location
+        router.push(data.url);
       } else {
         throw new Error(data.error || 'Checkout failed');
       }
@@ -48,6 +51,15 @@ function BillingContent() {
       setIsRedirecting(null);
     }
   };
+
+  // 🔄 REPAIR: Prevent UI flickering or incorrect "0 Tokens" display during session sync
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="animate-spin text-purple-500" size={32} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white py-24">
@@ -65,7 +77,7 @@ function BillingContent() {
         )}
 
         <div className="text-center mb-20">
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent uppercase">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent uppercase italic">
             Add More Fuel
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto font-medium">
@@ -75,7 +87,13 @@ function BillingContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {TOKEN_PACKAGES.map((pkg) => (
-            <div key={pkg.id} className="bg-white/[0.03] border border-white/10 rounded-3xl p-8 hover:border-purple-500/50 transition-all group">
+            <div key={pkg.id} className="bg-white/[0.03] border border-white/10 rounded-3xl p-8 hover:border-purple-500/50 transition-all group relative overflow-hidden">
+              {/* Highlight for the Master Owner [cite: 2025-11-27] */}
+              {user?.email === 'admin@janusforge.ai' && (
+                 <div className="absolute top-0 right-0 bg-purple-500 text-white text-[8px] px-3 py-1 font-black uppercase tracking-tighter italic">
+                   Master Bypass Active
+                 </div>
+              )}
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">{pkg.name}</h3>
                 <p className="text-gray-500 text-sm mb-6">{pkg.description}</p>
@@ -90,7 +108,7 @@ function BillingContent() {
               <button
                 onClick={() => handlePurchase(pkg)}
                 disabled={isRedirecting === pkg.id}
-                className="w-full py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-70 rounded-xl font-black text-lg transition-all flex items-center justify-center gap-2"
+                className="w-full py-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-70 rounded-xl font-black text-lg transition-all flex items-center justify-center gap-2 shadow-xl shadow-purple-500/10"
               >
                 {isRedirecting === pkg.id ? (
                   <Loader2 className="animate-spin" size={20} />
@@ -103,9 +121,12 @@ function BillingContent() {
         </div>
 
         <div className="text-center mt-16">
-          <p className="text-gray-400">
-            Current tokens: <span className="text-white font-bold">{user?.tokens_remaining?.toLocaleString() || 0}</span>
-          </p>
+          <div className="inline-block p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+            <p className="text-gray-400 uppercase text-[10px] tracking-[0.3em] mb-2 font-bold">Current Reserve</p>
+            <p className="text-4xl font-mono text-white font-black">
+              {user?.tokens_remaining?.toLocaleString() || 0} <span className="text-purple-500 italic">🪙</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
