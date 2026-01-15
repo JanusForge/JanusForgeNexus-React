@@ -81,7 +81,7 @@ export default function DailyForgePage() {
       conversationId: current?.conversationId,
       userId: user?.id,
       content: message,
-      name: user?.name || user?.email
+      name: user?.username || user?.email
     });
     setMessage('');
     setSending(false);
