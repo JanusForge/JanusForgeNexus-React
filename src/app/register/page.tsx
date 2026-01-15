@@ -179,3 +179,6 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+
+// Keep it clean
