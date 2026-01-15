@@ -4,7 +4,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, loading } = useAuth();
+  const isAuthenticated = !!user; // Deriving authentication status
   const router = useRouter();
 
   // Redirect if not authenticated or not GOD_MODE
