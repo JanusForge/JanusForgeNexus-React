@@ -2,15 +2,19 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Menu, X, Zap, User, LogOut, Coins, ShieldAlert, Radio, BellRing } from 'lucide-react';
+import { Menu, X, Zap, User, LogOut, Coins, ShieldAlert, Radio } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 export default function Navbar() {
-  const { user, isAuthenticated, logout } = useAuth();
+  // ✅ REPAIR: Removed isAuthenticated from destructuring
+  const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
+
+  // ✅ REPAIR: Locally derive authentication status
+  const isAuthenticated = !!user;
 
   // Protocol 0: Check for owner email or God Mode role
   const isAdmin = isAuthenticated && (user?.email === 'admin@janusforge.ai' || user?.role === 'GOD_MODE');
@@ -21,7 +25,6 @@ export default function Navbar() {
 
     socket.on('broadcast:incoming', (data: { message: string }) => {
       setSystemAlert(data.message);
-      // Auto-dismiss after 15 seconds
       setTimeout(() => setSystemAlert(null), 15000);
     });
 
@@ -47,27 +50,27 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center group-hover:rotate-6 transition-transform">
                 <span className="text-white font-black text-xl">JF</span>
               </div>
-              <span className="text-white font-black text-xl hidden sm:block italic uppercase">Janus Forge</span>
+              <span className="text-white font-black text-xl hidden sm:block italic uppercase tracking-tighter">Janus Forge</span>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/" className="text-gray-300 hover:text-white transition-colors font-medium text-sm">
+              <Link href="/" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
                 Home
               </Link>
-              <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors font-medium text-sm">
+              <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
                 Pricing
               </Link>
-              <Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors font-medium text-sm">
+              <Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
                 Daily Forge
               </Link>
               {isAdmin && (
-                <Link 
-                  href="/admin/nexus-watch" 
+                <Link
+                  href="/admin"
                   className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors font-bold uppercase text-[10px] tracking-widest border border-amber-500/20 px-3 py-1 rounded-md bg-amber-500/5"
                 >
                   <ShieldAlert size={14} />
@@ -78,14 +81,13 @@ export default function Navbar() {
 
             {/* Right Side - Auth & Tokens */}
             <div className="flex items-center gap-6">
-              {/* Token Balance */}
+              {/* Token Balance - Infinite for Owner */}
               {isAuthenticated && (
                 <div className="flex items-center gap-3 bg-purple-500/10 px-4 py-2 rounded-full border border-purple-500/20">
-                  <Coins size={18} className="text-purple-400" />
-                  <span className="text-white font-mono font-bold">
+                  <Coins size={16} className="text-purple-400" />
+                  <span className="text-white font-mono font-bold text-sm">
                     {user?.email === 'admin@janusforge.ai' ? '∞' : (user?.tokens_remaining || 0).toLocaleString()}
                   </span>
-                  <span className="text-gray-500 text-[10px] uppercase font-bold tracking-tighter">tokens</span>
                 </div>
               )}
 
@@ -93,24 +95,26 @@ export default function Navbar() {
               {isAuthenticated ? (
                 <div className="flex items-center gap-4">
                   <Link href="/profile" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
-                    <User size={20} />
-                    <span className="hidden sm:inline text-sm">{user?.username || 'Profile'}</span>
+                    <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center">
+                        <User size={16} />
+                    </div>
+                    <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest">{(user as any)?.username || 'Profile'}</span>
                   </Link>
                   <button
                     onClick={logout}
-                    className="flex items-center gap-2 text-gray-400 hover:text-red-400 transition-colors"
+                    className="p-2 text-gray-400 hover:text-red-400 transition-colors"
                   >
                     <LogOut size={20} />
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <Link href="/login" className="text-gray-400 hover:text-white text-sm font-medium">
+                  <Link href="/login" className="text-gray-400 hover:text-white text-[10px] font-black uppercase tracking-widest">
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="px-6 py-2 bg-white text-black rounded-full font-black text-xs uppercase hover:bg-zinc-200 transition-all"
+                    className="px-6 py-2 bg-white text-black rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-lg shadow-white/5"
                   >
                     Join Forge
                   </Link>
@@ -129,20 +133,20 @@ export default function Navbar() {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-gray-800 animate-in fade-in slide-in-from-top-4">
-              <div className="flex flex-col gap-4">
-                <Link href="/" className="text-gray-300 hover:text-white transition-colors font-medium px-4">Home</Link>
-                <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors font-medium px-4">Pricing</Link>
-                <Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors font-medium px-4">Daily Forge</Link>
+            <div className="md:hidden py-6 border-t border-gray-800 animate-in fade-in slide-in-from-top-4">
+              <div className="flex flex-col gap-5 px-4">
+                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Home</Link>
+                <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Pricing</Link>
+                <Link href="/daily-forge" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Daily Forge</Link>
                 {isAdmin && (
-                  <Link href="/admin/nexus-watch" className="text-amber-500 font-bold px-4 flex items-center gap-2">
-                    <ShieldAlert size={16} /> Nexus Watch
+                  <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-amber-500 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <ShieldAlert size={14} /> Nexus Watch
                   </Link>
                 )}
                 {isAuthenticated && (
                   <>
-                    <Link href="/profile" className="text-gray-300 hover:text-white transition-colors font-medium px-4">Profile</Link>
-                    <button onClick={logout} className="text-left text-red-400 font-medium px-4">Logout</button>
+                    <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Profile</Link>
+                    <button onClick={logout} className="text-left text-red-500 text-xs font-black uppercase tracking-widest">Logout</button>
                   </>
                 )}
               </div>
