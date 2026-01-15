@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * 🔑 login
    * Authenticates with Render backend and establishes the Nexus link.
    */
-  const login = async (email, password): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
