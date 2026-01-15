@@ -3,12 +3,14 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, ShieldCheck, UserPlus, AlertCircle, Zap } from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthProvider'; // Added for session sync
 
 export const dynamic = 'force-dynamic';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 function RegisterForm() {
+  const { updateUserData } = useAuth(); // Destructure update function
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,16 +20,13 @@ function RegisterForm() {
   const searchParams = useSearchParams();
 
   const referralCode = searchParams.get('ref') || '';
-  // Capture redirect URL (where user came from)
-  const redirectTo = searchParams.get('redirect') || '/';
-
-  console.log("DEBUG: Detected Ref Code from URL:", referralCode);
-  console.log("DEBUG: Redirect after register:", redirectTo);
+  const redirectTo = searchParams.get('redirect') || '/nexus'; // Default to Nexus for onboarding
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setStatus('loading');
+    
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
@@ -50,17 +49,18 @@ function RegisterForm() {
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
       }
-      
+
+      // ✅ SUCCESS: Sync the session to AuthProvider immediately
+      if (data.user) {
+        updateUserData(data.user);
+      }
+
       setStatus('success');
 
-      // Get redirect from URL params
-      const params = new URLSearchParams(window.location.search);
-      const redirect = params.get('redirect') || '/'; // default to home
-
+      // Short delay for the success animation
       setTimeout(() => {
-        router.push(decodeURIComponent(redirect));
+        router.push(decodeURIComponent(redirectTo));
       }, 2000);
-      
 
     } catch (err: any) {
       setError(err.message || 'Initialization failed. Please try again.');
