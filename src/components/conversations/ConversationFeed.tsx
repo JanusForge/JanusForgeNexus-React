@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { MessageSquare, Clock, Users, Heart, MessageCircle } from 'lucide-react';
+import { MessageSquare, Clock, Users, Heart, MessageCircle, Loader2 } from 'lucide-react';
 
 interface Conversation {
   id: string;
@@ -14,16 +14,19 @@ interface Conversation {
 }
 
 export default function ConversationFeed() {
-  const { user, isAuthenticated } = useAuth();
+  // ✅ REPAIR: Destructure 'loading' instead of 'isAuthenticated'
+  const { user, loading: authLoading } = useAuth();
+  
+  // ✅ REPAIR: Locally derive authentication status
+  const isAuthenticated = !!user;
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
     const fetchConversations = async () => {
-      if (!isAuthenticated || !user) {
-        setLoading(false);
-        return;
-      }
+      // Don't fetch until auth state is determined
+      if (authLoading) return;
 
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/conversations`);
@@ -34,12 +37,12 @@ export default function ConversationFeed() {
       } catch (err) {
         console.error("Failed to load feed:", err);
       } finally {
-        setLoading(false);
+        setDataLoading(false);
       }
     };
 
     fetchConversations();
-  }, [isAuthenticated, user]);
+  }, [authLoading, user]);
 
   const handleNewConversation = () => {
     if (!user) return;
@@ -57,57 +60,66 @@ export default function ConversationFeed() {
     setConversations(prev => [newConv, ...prev]);
   };
 
-  if (loading) {
+  // 🔄 REPAIR: Sync loading states
+  if (authLoading || dataLoading) {
     return (
-      <div className="text-center py-12 text-gray-500">
-        Loading public syntheses...
+      <div className="flex flex-col items-center justify-center py-24 space-y-4">
+        <Loader2 className="animate-spin text-purple-500" size={32} />
+        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-500">Retrieving Syntheses...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-black">Public Syntheses</h2>
+    <div className="max-w-4xl mx-auto px-4">
+      <div className="flex justify-between items-center mb-12">
+        <div>
+          <h2 className="text-3xl font-black uppercase italic tracking-tighter text-white">Public Syntheses</h2>
+          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mt-1">Open Council Archives</p>
+        </div>
         {isAuthenticated && (
           <button
             onClick={handleNewConversation}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-bold flex items-center gap-2"
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl font-black uppercase text-[10px] tracking-widest flex items-center gap-3 transition-all shadow-xl shadow-purple-600/20"
           >
-            <MessageSquare size={18} />
+            <MessageSquare size={16} fill="white" />
             Start New Debate
           </button>
         )}
       </div>
 
       {conversations.length === 0 ? (
-        <div className="text-center py-20 text-gray-500">
-          <MessageSquare size={64} className="mx-auto mb-4 opacity-50" />
-          <p>No public conversations yet.</p>
-          {isAuthenticated && <p className="text-sm mt-2">Be the first to start one!</p>}
+        <div className="text-center py-20 bg-zinc-900/20 border border-white/5 rounded-[3rem]">
+          <div className="p-6 bg-zinc-900/50 inline-block rounded-3xl mb-6">
+            <MessageSquare size={48} className="text-zinc-800" />
+          </div>
+          <p className="text-zinc-500 uppercase font-black text-xs tracking-widest">The archives are empty.</p>
+          {isAuthenticated && (
+            <p className="text-purple-500/60 font-bold text-[10px] uppercase mt-2 italic">Be the architect of the first synthesis.</p>
+          )}
         </div>
       ) : (
         <div className="space-y-6">
           {conversations.map((conv) => (
-            <div key={conv.id} className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 hover:border-purple-500/50 transition-all">
-              <h3 className="text-xl font-bold mb-2">{conv.title}</h3>
-              <p className="text-gray-400 mb-4 line-clamp-2">{conv.preview}</p>
-              <div className="flex items-center gap-6 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <Users size={16} />
-                  {conv.participants} participants
+            <div key={conv.id} className="group bg-zinc-900/30 border border-white/5 rounded-[2.5rem] p-8 hover:border-purple-500/30 transition-all cursor-pointer">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-black text-white group-hover:text-purple-400 transition-colors italic">{conv.title}</h3>
+                <span className="text-[10px] font-mono text-zinc-600">{new Date(conv.timestamp).toLocaleDateString()}</span>
+              </div>
+              <p className="text-zinc-500 text-sm mb-8 leading-relaxed line-clamp-2">{conv.preview}</p>
+              
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex items-center gap-2 bg-white/5 px-4 py-2 rounded-full">
+                  <Users size={14} className="text-zinc-400" />
+                  <span className="text-[10px] font-black uppercase text-zinc-300">{conv.participants} Participants</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Heart size={16} />
-                  {conv.likes}
+                  <Heart size={14} className="text-zinc-600 group-hover:text-red-500 transition-colors" />
+                  <span className="text-[10px] font-black text-zinc-500">{conv.likes}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MessageCircle size={16} />
-                  {conv.replies}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={16} />
-                  {new Date(conv.timestamp).toLocaleDateString()}
+                  <MessageCircle size={14} className="text-zinc-600 group-hover:text-blue-500 transition-colors" />
+                  <span className="text-[10px] font-black text-zinc-500">{conv.replies}</span>
                 </div>
               </div>
             </div>
