@@ -65,7 +65,7 @@ export default function NexusPrimeEngine() {
             <LogoVideo />
             
             <div className="text-center space-y-6">
-              <h2 className="text-9xl md:text-[11rem] font-black italic uppercase tracking-tighter bg-gradient-to-b from-white to-zinc-800 bg-clip-text text-transparent leading-[0.8]">
+              <h2 className="text-9xl md:text-[20rem] font-black italic uppercase tracking-tighter bg-gradient-to-b from-white to-zinc-800 bg-clip-text text-transparent leading-[0.8]">
                 Nexus Prime
               </h2>
               <p className="text-zinc-600 text-xs md:text-sm uppercase tracking-[0.6em] font-bold opacity-60">
