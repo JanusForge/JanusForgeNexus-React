@@ -2,12 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
+// ✅ REPAIR: Added 'role' to the User interface to satisfy TypeScript
 interface User {
   id: string;
   email: string;
   name: string;
   tokens_remaining: number;
   tier: string;
+  role: string; 
 }
 
 interface AuthContextType {
@@ -29,12 +31,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
-        
+
         // 🛡️ Master Authority Integrity Check [cite: 2025-11-27]
         if (parsedUser.email === 'admin@janusforge.ai') {
           parsedUser.tokens_remaining = 999789;
+          parsedUser.role = 'GOD_MODE'; // Ensure master role is always active
         }
-        
+
         setUser(parsedUser);
       } catch (e) {
         console.error("Auth Restore Failed:", e);
@@ -51,12 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser((prev) => {
       if (!prev) return null;
       const updated = { ...prev, ...newData };
-      
-      // Preserve Master Balance even during updates
+
+      // Preserve Master Balance and Role even during updates
       if (updated.email === 'admin@janusforge.ai') {
         updated.tokens_remaining = 999789;
+        updated.role = 'GOD_MODE';
       }
-      
+
       localStorage.setItem('janus_user', JSON.stringify(updated));
       return updated;
     });
