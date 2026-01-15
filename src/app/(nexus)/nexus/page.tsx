@@ -5,8 +5,9 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { Loader2, ShieldCheck, Zap, Cpu } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import ConversationSidebar from '@/components/nexus/ConversationSidebar';
+import CouncilBuilder from '@/components/NexusPrime/CouncilBuilder';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:10000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 const LogoVideo = () => (
   <div className="w-64 h-64 md:w-96 md:h-96 rounded-[4rem] overflow-hidden border border-indigo-500/30 shadow-[0_0_80px_rgba(99,102,241,0.2)] bg-black/60 backdrop-blur-3xl flex items-center justify-center relative group">
@@ -18,63 +19,79 @@ const LogoVideo = () => (
 );
 
 export default function NexusPage() {
-  const { user } = useAuth();
+  const { user, updateUserData } = useAuth();
   const [userMessage, setUserMessage] = useState('');
   const [messages, setMessages] = useState<any[]>([]);
   const [isSending, setIsSending] = useState(false);
-  const [isAiThinking, setIsAiThinking] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
+  // 🛡️ Master Authority Continuity [cite: 2025-11-27]
   const isOwner = user?.email === 'admin@janusforge.ai';
-  const canAfford = isOwner || (user?.tokens_remaining && user.tokens_remaining >= 3);
+  const userBalance = user?.tokens_remaining ?? 0;
 
-  // 1. SOCKET SYNC
+  // 1. SOCKET SYNC (Firebreak Namespace)
   useEffect(() => {
-    socketRef.current = io(API_BASE_URL, { withCredentials: true });
+    socketRef.current = io(`${API_BASE_URL}/nexus-prime`, { withCredentials: true });
 
     socketRef.current.on('post:incoming', (newPost) => {
       setMessages((prev) => [...prev, newPost]);
-      setIsAiThinking(newPost.sender === 'user'); 
     });
 
-    socketRef.current.on('synthesis:complete', () => setIsAiThinking(false));
+    socketRef.current.on('synthesis:complete', (data) => {
+      setIsSending(false);
+      // Update UI balance if provided by backend
+      if (data.final_balance_display) {
+        updateUserData({ tokens_remaining: data.final_balance_display });
+      }
+    });
 
     return () => { socketRef.current?.disconnect(); };
-  }, []);
+  }, [updateUserData]);
 
   // 2. JOIN NEURAL LINK
   useEffect(() => {
     if (currentConversationId && socketRef.current) {
-      socketRef.current.emit('join:room', currentConversationId);
+      socketRef.current.emit('synthesis:join', currentConversationId);
       fetch(`${API_BASE_URL}/api/nexus/posts/${currentConversationId}`)
         .then(res => res.json())
-        .then(data => setMessages(data));
-    } else {
-      setMessages([]);
+        .then(data => setMessages(data))
+        .catch(() => setMessages([]));
     }
   }, [currentConversationId]);
 
-  const handleInitializeShowdown = async () => {
-    if (!userMessage.trim() || isSending || !canAfford) return;
+  /**
+   * 🚀 IGNITION HANDLER
+   * Triggered by the CouncilBuilder component
+   */
+  const handleCouncilIgnition = async (selectedModels: string[]) => {
+    if (!userMessage.trim() || isSending) return;
     setIsSending(true);
-    setIsAiThinking(true);
+    setMessages([]); // Clear for new synthesis
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/nexus/synthesis`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.id, content: userMessage }),
+        body: JSON.stringify({ 
+          userId: user?.id, 
+          prompt: userMessage,
+          selectedModels 
+        }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentConversationId(data.conversationId);
-        setUserMessage('');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ignition failed");
+
+      setCurrentConversationId(data.conversationId);
+      
+      // Update tokens visually immediately
+      if (!isOwner) {
+        updateUserData({ tokens_remaining: data.tokens_remaining });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Synthesis Error:", error);
-    } finally {
+      alert(error.message);
       setIsSending(false);
     }
   };
@@ -103,61 +120,46 @@ export default function NexusPage() {
           )}
         </header>
 
-        {/* Dynamic Viewport */}
         <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-          {!currentConversationId ? (
-            <div className="h-full flex flex-col items-center justify-center text-center max-w-5xl mx-auto">
-              <div className="mb-20 animate-in fade-in zoom-in duration-1000"><LogoVideo /></div>
-              <h2 className="text-8xl md:text-[12rem] font-black italic uppercase tracking-tighter mb-8 bg-gradient-to-b from-white via-zinc-200 to-zinc-800 bg-clip-text text-transparent leading-[0.8]">
-                Nexus<br/>Prime
-              </h2>
-              <p className="text-zinc-600 text-sm md:text-xl uppercase tracking-[0.6em] font-light max-w-2xl leading-loose">
-                Autonomous Intelligence Synthesis
-              </p>
+          {!currentConversationId && !isSending ? (
+            <div className="h-full flex flex-col items-center justify-center text-center max-w-5xl mx-auto space-y-12">
+              <div className="animate-in fade-in zoom-in duration-1000"><LogoVideo /></div>
+              
+              <textarea
+                value={userMessage}
+                onChange={(e) => setUserMessage(e.target.value)}
+                placeholder="Enter Strategic Objective..."
+                className="w-full max-w-3xl bg-zinc-900/50 border border-white/10 rounded-[2rem] p-8 text-2xl font-light outline-none focus:border-indigo-500/50 transition-all resize-none text-center"
+              />
+
+              <CouncilBuilder 
+                userBalance={userBalance} 
+                onIgnite={handleCouncilIgnition} 
+              />
             </div>
           ) : (
             <div className="max-w-4xl mx-auto space-y-16 pb-40">
+              {isSending && messages.length === 0 && (
+                <div className="flex flex-col items-center justify-center space-y-4 pt-20">
+                  <Loader2 className="animate-spin text-indigo-500" size={48} />
+                  <p className="text-zinc-500 uppercase tracking-[0.4em] text-xs">Council deliberating...</p>
+                </div>
+              )}
               {messages.map((msg, idx) => (
-                <div key={msg.id || idx} className={`group animate-in slide-in-from-bottom-12 duration-700
-                  ${msg.sender === 'user' ? 'ml-auto max-w-[80%]' : 'mr-auto w-full'}`}>
+                <div key={msg.id || idx} className="group animate-in slide-in-from-bottom-12 duration-700 mr-auto w-full">
                   <div className="flex items-center gap-4 mb-4 opacity-40 group-hover:opacity-100 transition-opacity">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-zinc-900 border border-white/10">
-                      {msg.sender === 'user' ? <Zap size={14} className="text-amber-500" /> : <Cpu size={14} className="text-indigo-400" />}
+                      <Cpu size={14} className="text-indigo-400" />
                     </div>
                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400">{msg.name}</span>
                   </div>
-                  <div className={`p-10 rounded-[2.5rem] border text-xl font-light leading-relaxed
-                    ${msg.sender === 'user' ? 'bg-white/5 border-white/10 text-white' : 'bg-zinc-900/50 border-indigo-500/20 text-zinc-300 shadow-[0_20px_50px_rgba(0,0,0,0.5)]'}`}>
+                  <div className="p-10 rounded-[2.5rem] border text-xl font-light leading-relaxed bg-zinc-900/50 border-indigo-500/20 text-zinc-300 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                     {msg.content}
                   </div>
                 </div>
               ))}
             </div>
           )}
-        </div>
-
-        {/* Input Matrix */}
-        <div className="p-12 bg-gradient-to-t from-black via-black to-transparent">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-[#080808] rounded-[3rem] border border-white/10 p-2 shadow-2xl focus-within:border-indigo-500/50 transition-all">
-              <textarea
-                value={userMessage}
-                onChange={(e) => setUserMessage(e.target.value)}
-                placeholder={isOwner ? "Directive: Influence the Cluster..." : "Enter Directive..."}
-                className="w-full bg-transparent px-10 pt-10 pb-4 text-white min-h-[160px] outline-none resize-none text-2xl font-light placeholder:text-zinc-800"
-              />
-              <div className="flex justify-between items-center px-8 pb-8">
-                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-700">Neural Link Active</span>
-                <button 
-                  onClick={handleInitializeShowdown}
-                  disabled={isSending || !userMessage.trim() || !canAfford}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-20 text-white px-12 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.5em] transition-all shadow-lg shadow-indigo-600/20"
-                >
-                  {isSending ? <Loader2 className="animate-spin" /> : "Initialize Synthesis"}
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
     </>
