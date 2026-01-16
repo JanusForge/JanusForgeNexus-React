@@ -40,7 +40,7 @@ export default function NexusPrimeEngine() {
         <header className="p-6 w-full flex justify-between items-center sticky top-0 bg-black/90 backdrop-blur-2xl z-30 border-b border-white/5">
           <div className="flex items-center gap-3">
              <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-             <h1 className="text-[9px] font-black uppercase tracking-[0.7em] text-zinc-500 italic">
+             <h1 className="text-[12px] font-black uppercase tracking-[0.7em] text-zinc-500 italic">
                Nexus Prime Cluster <span className="text-indigo-400 ml-3">Online</span>
              </h1>
           </div>
@@ -59,11 +59,11 @@ export default function NexusPrimeEngine() {
             
             {/* "Nexus Prime" is now roughly half the visual weight of the video logo */}
             <h2 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter bg-gradient-to-b from-white to-zinc-600 bg-clip-text text-transparent leading-none mb-4">
-              Nexus Prime
+              Nexus  Prime
             </h2>
             
             {/* ✅ UPDATED: Scaled to fit perfectly under the width of the title above */}
-            <p className="text-zinc-500 text-xs md:text-sm uppercase tracking-[1em] font-bold opacity-50 italic">
+            <p className="text-zinc-500 text-xs md:text-md uppercase tracking-[1em] font-bold opacity-50 italic">
               Synchronize Intelligence Across The Frontier
             </p>
           </div>
