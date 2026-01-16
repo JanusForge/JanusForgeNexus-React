@@ -20,13 +20,18 @@ const LogoVideo = () => (
 export default function NexusPrimeEngine() {
   const { user } = useAuth();
   const [userMessage, setUserMessage] = useState('');
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   
   const isOwner = user?.email === 'admin@janusforge.ai' || user?.role === 'GOD_MODE';
   const userBalance = user?.tokens_remaining ?? 0;
 
   return (
     <div className="flex h-screen w-full bg-[#020202]">
-      <ConversationSidebar />
+      {/* ✅ FIXED: Added missing props to resolve Vercel Type Error */}
+      <ConversationSidebar 
+        onSelectConversation={(id) => setCurrentConversationId(id)}
+        currentConversationId={currentConversationId}
+      />
 
       <main className="flex-1 flex flex-col relative z-10 bg-black overflow-y-auto custom-scrollbar">
         {/* Cinematic Header */}
@@ -50,13 +55,13 @@ export default function NexusPrimeEngine() {
           <div className="flex flex-col items-center mb-40 w-full">
             <LogoVideo />
             
-            {/* 🚨 FORCE SIZE: Using arbitrary values to bypass CSS restrictions */}
-            <h2 className="text-[120px] md:text-[220px] lg:text-[280px] font-black italic uppercase tracking-[-0.05em] bg-gradient-to-b from-white via-white to-zinc-900 bg-clip-text text-transparent leading-[0.7] drop-shadow-[0_20px_50px_rgba(0,0,0,1)] text-center">
+            {/* 🚨 GOLIATH SCALE: Direct pixel override for maximum prominence */}
+            <h2 className="text-[140px] md:text-[240px] lg:text-[320px] font-black italic uppercase tracking-[-0.05em] bg-gradient-to-b from-white via-white to-zinc-900 bg-clip-text text-transparent leading-[0.7] drop-shadow-[0_20px_60px_rgba(0,0,0,1)] text-center">
               Nexus Prime
             </h2>
             
-            {/* Sub-title scaled up for visibility */}
-            <p className="mt-12 text-zinc-600 text-lg md:text-2xl lg:text-3xl uppercase tracking-[1.2em] font-bold opacity-70 italic text-center">
+            {/* Expanded subtitle for visual weight */}
+            <p className="mt-14 text-zinc-600 text-xl md:text-3xl lg:text-4xl uppercase tracking-[1.4em] font-bold opacity-70 italic text-center leading-relaxed">
               Synchronize Intelligence Across The Frontier
             </p>
           </div>
@@ -68,7 +73,7 @@ export default function NexusPrimeEngine() {
                 value={userMessage}
                 onChange={(e) => setUserMessage(e.target.value)}
                 placeholder="Initiate Strategic Objective..."
-                className="w-full bg-transparent p-20 text-white min-h-[350px] outline-none resize-none text-4xl font-light placeholder:text-zinc-800 text-center"
+                className="w-full bg-transparent p-20 text-white min-h-[400px] outline-none resize-none text-4xl font-light placeholder:text-zinc-800 text-center"
               />
               <div className="p-12 border-t border-white/5 bg-black/40 flex justify-between items-center">
                 <div className="flex items-center gap-6 text-zinc-600">
@@ -80,11 +85,11 @@ export default function NexusPrimeEngine() {
           </div>
 
           {/* SECTION 3: THE MARKETPLACE */}
-          <div className="w-full max-w-7xl animate-in fade-in duration-1000">
+          <div className="w-full max-w-7xl">
              <div className="w-full h-px bg-indigo-500/20 mb-32" />
              <CouncilBuilder 
                 userBalance={isOwner ? 999999 : userBalance} 
-                onIgnite={(models) => console.log(models)} 
+                onIgnite={(models) => console.log("Ignition with:", models)} 
              />
           </div>
 
