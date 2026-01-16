@@ -32,7 +32,7 @@ export default function NexusPrimeEngine() {
 
   const isOwner = user?.email === 'admin@janusforge.ai';
 
-  // ✅ 1. NEURAL RECONSTRUCTION (Loads History)
+  // ✅ NEURAL RECONSTRUCTION
   useEffect(() => {
     const loadArchivedSynthesis = async () => {
       if (!currentConversationId || isSynthesizing) return;
@@ -49,7 +49,7 @@ export default function NexusPrimeEngine() {
     loadArchivedSynthesis();
   }, [currentConversationId]);
 
-  // ✅ 2. STRATEGIC IGNITION (Adversarial Sequence)
+  // ✅ STRATEGIC IGNITION
   const handleIgnition = async (modelsToUse: string[] = selectedModels) => {
     if (!userMessage.trim() || isSynthesizing || modelsToUse.length < 2) return;
     
@@ -65,7 +65,7 @@ export default function NexusPrimeEngine() {
           prompt: userMessage,
           models: modelsToUse,
           userId: user?.id,
-          parentConversationId: currentConversationId // 🧠 Memory link for back-and-forth
+          parentConversationId: currentConversationId 
         }),
       });
       
@@ -81,24 +81,16 @@ export default function NexusPrimeEngine() {
     }
   };
 
-  // ✅ 3. KEYBOARD PROTOCOL (The "Enter" Fix)
+  // ✅ KEYBOARD PROTOCOL (Enter Fix)
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleIgnition(selectedModels); // Uses the current cluster selection
+      handleIgnition(selectedModels);
     }
-  };
-
-  const handleReset = () => {
-    setUserMessage('');
-    setSynthesisResults([]);
-    setCurrentConversationId(null);
-    setShareUrl(null);
   };
 
   return (
     <div className="flex h-screen w-full bg-[#020202]">
-      {/* SIDEBAR */}
       <ConversationSidebar 
         onSelectConversation={setCurrentConversationId} 
         currentConversationId={currentConversationId}
@@ -119,7 +111,6 @@ export default function NexusPrimeEngine() {
           <LogoVideo />
           <h2 className="text-7xl font-black italic uppercase tracking-tighter bg-gradient-to-b from-white to-zinc-600 bg-clip-text text-transparent mb-8">Nexus Prime</h2>
 
-          {/* TEXTAREA WITH KEYBOARD BINDING */}
           <div className="w-full max-w-4xl mb-12 no-print">
             <div className="relative bg-zinc-900/40 border border-white/5 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl shadow-xl">
               <textarea
@@ -133,7 +124,6 @@ export default function NexusPrimeEngine() {
             </div>
           </div>
 
-          {/* ADVERSARIAL RESULTS */}
           {synthesisResults.length > 0 && (
             <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
               {synthesisResults.map((res, idx) => (
@@ -148,7 +138,6 @@ export default function NexusPrimeEngine() {
             </div>
           )}
 
-          {/* COUNCIL BUILDER SECTION */}
           <div className="w-full max-w-5xl pb-20 no-print">
              <div className="w-full h-px bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent mb-12" />
              <CouncilBuilder 
