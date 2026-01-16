@@ -8,12 +8,10 @@ import { io } from 'socket.io-client';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 export default function Navbar() {
-  // ✅ REPAIR: Removed isAuthenticated from destructuring
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
 
-  // ✅ REPAIR: Locally derive authentication status
   const isAuthenticated = !!user;
 
   // Protocol 0: Check for owner email or God Mode role
@@ -49,12 +47,15 @@ export default function Navbar() {
       <nav className="bg-gray-900/95 backdrop-blur-lg border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+            {/* Logo Section */}
             <Link href="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center group-hover:rotate-6 transition-transform">
                 <span className="text-white font-black text-xl">JF</span>
               </div>
-              <span className="text-white font-black text-xl hidden sm:block italic uppercase tracking-tighter">Janus Forge Nexus<>®<</span>
+              {/* ✅ FIXED: Corrected JSX syntax for legal name */}
+              <span className="text-white font-black text-xl hidden sm:block italic uppercase tracking-tighter">
+                Janus Forge Nexus ®
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -81,7 +82,6 @@ export default function Navbar() {
 
             {/* Right Side - Auth & Tokens */}
             <div className="flex items-center gap-6">
-              {/* Token Balance - Infinite for Owner */}
               {isAuthenticated && (
                 <div className="flex items-center gap-3 bg-purple-500/10 px-4 py-2 rounded-full border border-purple-500/20">
                   <Coins size={16} className="text-purple-400" />
@@ -91,7 +91,6 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* Auth Buttons */}
               {isAuthenticated ? (
                 <div className="flex items-center gap-4">
                   <Link href="/profile" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
