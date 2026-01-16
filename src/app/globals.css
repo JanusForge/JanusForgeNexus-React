@@ -17,3 +17,47 @@
   @keyframes grow { from { width: 0%; } to { width: 100%; } }
   .animate-grow { animation: grow 2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 }
+
+/* 🏛️ JANUS FORGE PRINT PROTOCOL */
+@media print {
+  /* Hide the sidebar, reset button, and model selection UI */
+  aside, 
+  .no-print, 
+  button, 
+  .council-builder-ui {
+    display: none !important;
+  }
+
+  /* Force the background to white and text to black for readability */
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Target the main synthesis stage */
+  #synthesis-stage {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Add a high-authority header to the top of the printed page */
+  #synthesis-stage::before {
+    content: "JANUS FORGE NEXUS ® | STRATEGIC SYNTHESIS REPORT";
+    display: block;
+    text-align: center;
+    font-size: 16pt;
+    font-weight: 900;
+    margin-bottom: 20px;
+    border-bottom: 3px solid black;
+    padding-bottom: 10px;
+  }
+
+  /* Keep AI cards from splitting awkwardly across pages */
+  .ai-card {
+    break-inside: avoid;
+    border: 1px solid #000 !important;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+}
