@@ -66,9 +66,10 @@ export default function Navbar() {
               <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
                 Pricing
               </Link>
-              <Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
+              {/*<Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
                 Daily Forge
               </Link>
+              */}
               {isAdmin && (
                 <Link
                   href="/admin"
