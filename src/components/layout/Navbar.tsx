@@ -54,8 +54,8 @@ export default function Navbar() {
               </div>
               {/* ✅ FIXED: Corrected JSX syntax for legal name */}
               <span className="text-white font-black text-xl hidden sm:block italic uppercase tracking-tighter">
-                Janus Forge Nexus ®
-              </span>
+  Janus Forge Nexus<sup className="text-[10px] ml-1">®</sup>
+</span>
             </Link>
 
             {/* Desktop Navigation */}
@@ -138,8 +138,8 @@ export default function Navbar() {
       <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Home</Link>
       <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Pricing</Link>
       
-      {/* 🌑 SHADOWED: Daily Forge hidden on Mobile 
-      <Link href="/daily-forge" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Daily Forge</Link>
+      {/* 🌑 SHADOWED: Daily Forge hidden on Mobile */} 
+      {/* <Link href="/daily-forge" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Daily Forge</Link>
       */}
 
       {isAdmin && (
