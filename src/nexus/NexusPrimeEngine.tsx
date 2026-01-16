@@ -11,7 +11,7 @@ import CouncilBuilder from './components/CouncilBuilder';
  * Scaled to be the anchor without dominating the entire viewport.
  */
 const LogoVideo = () => (
-  <div className="w-56 h-56 md:w-72 md:h-72 rounded-[3.5rem] overflow-hidden border border-indigo-500/20 shadow-[0_0_60px_rgba(99,102,241,0.15)] bg-black/60 backdrop-blur-3xl flex items-center justify-center relative z-20 group mb-8">
+  <div className="w-56 h-28 md:w-36 md:h-36 rounded-[3.5rem] overflow-hidden border border-indigo-500/20 shadow-[0_0_60px_rgba(99,102,241,0.15)] bg-black/60 backdrop-blur-3xl flex items-center justify-center relative z-20 group mb-8">
     <div className="absolute inset-0 bg-indigo-500/5 group-hover:bg-indigo-500/10 transition-colors duration-1000" />
     <video autoPlay loop muted playsInline className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-1000">
       <source src="/janus-logo-video.mp4" type="video/mp4" />
