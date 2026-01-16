@@ -62,8 +62,8 @@ export default function NexusPrimeEngine() {
               Nexus Prime
             </h2>
             
-            {/* Smaller, elegant secondary line */}
-            <p className="text-zinc-500 text-[10px] md:text-xs uppercase tracking-[0.8em] font-bold opacity-50 italic">
+            {/* ✅ UPDATED: Scaled to fit perfectly under the width of the title above */}
+            <p className="text-zinc-500 text-xs md:text-sm uppercase tracking-[1em] font-bold opacity-50 italic">
               Synchronize Intelligence Across The Frontier
             </p>
           </div>
