@@ -54,7 +54,7 @@ export default function Navbar() {
               <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center group-hover:rotate-6 transition-transform">
                 <span className="text-white font-black text-xl">JF</span>
               </div>
-              <span className="text-white font-black text-xl hidden sm:block italic uppercase tracking-tighter">Janus Forge</span>
+              <span className="text-white font-black text-xl hidden sm:block italic uppercase tracking-tighter">Janus Forge Nexus<>®</span>
             </Link>
 
             {/* Desktop Navigation */}
