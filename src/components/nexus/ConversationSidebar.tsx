@@ -43,17 +43,22 @@ export default function ConversationSidebar({ onSelectConversation, currentConve
       </div>
 
       {/* 🔐 Footer Identity */}
-      <div className="p-6 border-t border-white/5 bg-black/20">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center font-black text-xs">
-            JF
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[10pt] font-black uppercase tracking-tighter text-zinc-300">Janus Forge</span>
-            <span className="text-[8pt] font-bold text-zinc-600 uppercase">System Identity</span>
-          </div>
-        </div>
-      </div>
+<div className="p-6 border-t border-white/5 bg-black/20">
+  <div className="flex items-center gap-4">
+    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center font-black text-xs">
+      JF
+    </div>
+    <div className="flex flex-col">
+      {/* ✅ UPDATED: Added Nexus® to reflect the full legal name */}
+      <span className="text-[10pt] font-black uppercase tracking-tighter text-zinc-300">
+        Janus Forge Nexus®
+      </span>
+      <span className="text-[8pt] font-bold text-zinc-600 uppercase">
+        System Identity
+      </span>
+    </div>
+  </div>
+</div>
     </aside>
   );
 }
