@@ -10,7 +10,7 @@ import CouncilBuilder from './components/CouncilBuilder';
  * 🎬 MASTER LOGO: Massive presence
  */
 const LogoVideo = () => (
-  <div className="w-[400px] h-[400px] md:w-[650px] md:h-[650px] rounded-[6rem] overflow-hidden border border-indigo-500/30 shadow-[0_0_150px_rgba(99,102,241,0.4)] bg-black/60 backdrop-blur-3xl flex items-center justify-center relative z-20 group mb-12">
+  <div className="w-[400px] h-[400px] md:w-[200px] md:h-[200px] rounded-[6rem] overflow-hidden border border-indigo-500/30 shadow-[0_0_150px_rgba(99,102,241,0.4)] bg-black/60 backdrop-blur-3xl flex items-center justify-center relative z-20 group mb-12">
     <video autoPlay loop muted playsInline className="w-full h-full object-cover">
       <source src="/janus-logo-video.mp4" type="video/mp4" />
     </video>
