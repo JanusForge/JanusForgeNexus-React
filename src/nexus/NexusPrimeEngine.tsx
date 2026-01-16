@@ -11,7 +11,7 @@ import CouncilBuilder from './components/CouncilBuilder';
  */
 const LogoVideo = () => (
   <div className="w-[400px] h-[400px] md:w-[200px] md:h-[200px] rounded-[6rem] overflow-hidden border border-indigo-500/30 shadow-[0_0_150px_rgba(99,102,241,0.4)] bg-black/60 backdrop-blur-3xl flex items-center justify-center relative z-20 group mb-12">
-    <video autoPlay loop muted playsInline className="w-medium h-medium object-cover">
+    <video autoPlay loop muted playsInline className="w-half h-half object-cover">
       <source src="/janus-logo-video.mp4" type="video/mp4" />
     </video>
   </div>
@@ -55,8 +55,9 @@ export default function NexusPrimeEngine() {
           <div className="flex flex-col items-center mb-40 w-full">
             <LogoVideo />
             
-            {/* 🚨 GOLIATH SCALE: Direct pixel override for maximum prominence */}
-            <h2 className="text-[140px] md:text-[240px] lg:text-[320px] font-black italic uppercase tracking-[-0.05em] bg-gradient-to-b from-white via-white to-zinc-900 bg-clip-text text-transparent leading-[0.7] drop-shadow-[0_20px_60px_rgba(0,0,0,1)] text-center">
+            {/* 🚨 GOLIATH SCALE: Direct pixel override for maximum 
+prominence */}
+            <h2 className="text-[140px] md:text-[240px] lg:text-[240px] font-black italic uppercase tracking-[-0.05em] bg-gradient-to-b from-white via-white to-zinc-900 bg-clip-text text-transparent leading-[0.7] drop-shadow-[0_20px_60px_rgba(0,0,0,1)] text-center">
               Nexus Prime
             </h2>
             
