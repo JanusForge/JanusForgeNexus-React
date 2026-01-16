@@ -1,0 +1,1 @@
+PathPurposesrc/nexus/NexusPrimeEngine.tsxThe Core Dashboard / Main UI logic.src/components/nexus/ConversationSidebar.tsxThe Neural History & Action Sidebar.src/utils/exportProtocol.tsThe PDF Generation logic (Fixed the build error).src/app/globals.cssGlobal Styles + Print Protocol.src/app/page.tsxThe landing entry point that imports the Engine.
