@@ -1,105 +1,59 @@
 "use client";
 
-import { useAuth } from '@/components/auth/AuthProvider';
-import { History, ShieldCheck, Plus, Terminal } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
-import { io } from 'socket.io-client';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:10000';
+import React from 'react';
+import { Plus, History, MessageSquare, Zap } from 'lucide-react';
 
 interface SidebarProps {
-  onSelectConversation: (id: string | null) => void;
+  onSelectConversation: (id: string) => void;
   currentConversationId: string | null;
 }
 
-export default function ConversationSidebar({ 
-  onSelectConversation, 
-  currentConversationId 
-}: SidebarProps) {
-  const { user } = useAuth();
-  const [history, setHistory] = useState<any[]>([]);
-  const isOwner = user?.email === 'admin@janusforge.ai';
-
-  const fetchHistory = useCallback(async () => {
-    if (!user) return;
-    // Hits the new isolated Nexus endpoint we created in Step 1
-    const res = await fetch(`${API_BASE_URL}/api/nexus/history?userId=${user.id}`);
-    if (res.ok) setHistory(await res.json());
-  }, [user]);
-
-  useEffect(() => {
-    fetchHistory();
-
-    const socket = io(API_BASE_URL);
-    // Real-time update when a new Title is synthesized by the cluster
-    socket.on('sidebar:update', () => fetchHistory());
-
-    return () => { socket.disconnect(); };
-  }, [fetchHistory]);
-
+export default function ConversationSidebar({ onSelectConversation, currentConversationId }: SidebarProps) {
   return (
-    <aside className="w-80 h-screen bg-[#050505] border-r border-white/5 flex flex-col relative z-20">
-      {/* Sidebar Header */}
-      <div className="p-8 border-b border-white/5 flex items-center gap-4">
-        <History size={16} className="text-indigo-500" />
-        <span className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-500">
+    <aside className="w-80 h-screen bg-[#050505] border-r border-white/5 flex flex-col z-40">
+      {/* 🟢 NEURAL HISTORY TITLE: Scaled up for better visibility */}
+      <div className="p-8 pb-4 flex items-center gap-3">
+        <History size={20} className="text-indigo-500" />
+        <h2 className="text-[14pt] font-black uppercase tracking-[0.3em] text-zinc-400 italic">
           Neural History
-        </span>
+        </h2>
       </div>
 
-      {/* New Synthesis Trigger */}
-      <div className="p-6">
+      <div className="px-4 mb-8">
         <button 
-          onClick={() => onSelectConversation(null)}
-          className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-white/5 border border-white/10 hover:bg-indigo-600/10 hover:border-indigo-500/30 transition-all group"
+          onClick={() => window.location.reload()} // Quick reset for new synthesis
+          className="w-full bg-zinc-900/50 hover:bg-zinc-800 border border-white/5 hover:border-indigo-500/30 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all group"
         >
-          <Plus size={14} className="text-zinc-400 group-hover:text-indigo-400" />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 group-hover:text-indigo-400">
+          <Plus size={18} className="text-zinc-500 group-hover:text-indigo-400" />
+          <span className="text-[11pt] font-black uppercase tracking-widest text-zinc-500 group-hover:text-zinc-200">
             New Synthesis
           </span>
         </button>
       </div>
 
-      {/* History List */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-2">
-        {history.length === 0 && (
-          <div className="py-10 text-center">
-            <Terminal size={20} className="mx-auto text-zinc-800 mb-4" />
-            <p className="text-[10px] uppercase tracking-widest text-zinc-700">No active links</p>
-          </div>
-        )}
-        {history.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onSelectConversation(item.id)}
-            className={`w-full text-left p-4 rounded-xl border transition-all
-              ${currentConversationId === item.id 
-                ? 'bg-indigo-600/10 border-indigo-500/40 shadow-[0_0_20px_rgba(99,102,241,0.05)]' 
-                : 'bg-transparent border-transparent hover:bg-white/5 hover:border-white/5'}`}
-          >
-            <p className={`text-[11px] font-bold uppercase tracking-wider truncate
-              ${currentConversationId === item.id ? 'text-indigo-400' : 'text-zinc-400'}`}>
-              {item.title || 'SYNTHESIZING...'}
-            </p>
-            <p className="text-[8px] font-mono text-zinc-600 mt-1 uppercase tracking-tighter">
-              {new Date(item.created_at).toLocaleDateString()}
-            </p>
-          </button>
-        ))}
+      {/* 📂 Scrollable History List */}
+      <div className="flex-1 overflow-y-auto px-4 space-y-2 custom-scrollbar">
+        {/* If no history exists yet */}
+        <div className="py-20 flex flex-col items-center justify-center text-center px-6 opacity-20">
+          <Zap size={32} className="mb-4 text-zinc-700" />
+          <p className="text-[10pt] font-bold uppercase tracking-widest text-zinc-500">
+            No Active Links
+          </p>
+        </div>
       </div>
 
-      {/* Admin Identity Footer */}
-      {isOwner && (
-        <div className="p-8 border-t border-white/5 bg-indigo-500/5">
-          <div className="flex items-center gap-3">
-            <ShieldCheck size={14} className="text-indigo-400" />
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-400">Master Authority</p>
-              <p className="text-[9px] text-zinc-600 truncate mt-0.5">{user?.email}</p>
-            </div>
+      {/* 🔐 Footer Identity */}
+      <div className="p-6 border-t border-white/5 bg-black/20">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center font-black text-xs">
+            JF
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10pt] font-black uppercase tracking-tighter text-zinc-300">Janus Forge</span>
+            <span className="text-[8pt] font-bold text-zinc-600 uppercase">System Identity</span>
           </div>
         </div>
-      )}
+      </div>
     </aside>
   );
 }
