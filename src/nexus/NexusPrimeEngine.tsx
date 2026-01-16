@@ -46,9 +46,9 @@ export default function NexusPrimeEngine() {
         <header className="p-6 w-full flex justify-between items-center sticky top-0 bg-black/90 backdrop-blur-2xl z-30 border-b border-white/5">
           <div className="flex items-center gap-3">
              <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
-             <h1 className="text-[10pt] font-black uppercase tracking-[0.5em] text-zinc-500 italic">
+             <h2 className="text-[14pt] font-black uppercase tracking-[0.5em] text-zinc-500 italic">
                Nexus Prime Cluster <span className="text-indigo-400 ml-3">Online</span>
-             </h1>
+             </h2>
           </div>
           {isOwner && (
             <div className="px-6 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/30">
