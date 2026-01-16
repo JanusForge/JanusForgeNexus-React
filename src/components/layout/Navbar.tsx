@@ -132,17 +132,22 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className="md:hidden py-6 border-t border-gray-800 animate-in fade-in slide-in-from-top-4">
-              <div className="flex flex-col gap-5 px-4">
-                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Home</Link>
-                <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Pricing</Link>
-                <Link href="/daily-forge" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Daily Forge</Link>
-                {isAdmin && (
-                  <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-amber-500 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                    <ShieldAlert size={14} /> Nexus Watch
-                  </Link>
-                )}
+{mobileMenuOpen && (
+  <div className="md:hidden py-6 border-t border-gray-800 animate-in fade-in slide-in-from-top-4">
+    <div className="flex flex-col gap-5 px-4">
+      <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Home</Link>
+      <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Pricing</Link>
+      
+      {/* 🌑 SHADOWED: Daily Forge hidden on Mobile 
+      <Link href="/daily-forge" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Daily Forge</Link>
+      */}
+
+      {isAdmin && (
+        <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-amber-500 text-xs font-black uppercase tracking-widest flex items-center gap-2">
+          <ShieldAlert size={14} /> Nexus Watch
+        </Link>
+      )}
+      {/* ...rest of mobile menu... */}
                 {isAuthenticated && (
                   <>
                     <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Profile</Link>
