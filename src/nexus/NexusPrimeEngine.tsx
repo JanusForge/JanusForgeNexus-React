@@ -63,7 +63,7 @@ export default function NexusPrimeEngine() {
             </h2>
             
             {/* ✅ UPDATED: Scaled to fit perfectly under the width of the title above */}
-            <p className="text-zinc-500 text-xs md:text-md uppercase tracking-[1em] font-bold opacity-50 italic">
+            <p className="text-zinc-500 text-sm md:text-base uppercase tracking-[1em] font-bold opacity-50 italic">
               Synchronize Intelligence Across The Frontier
             </p>
           </div>
