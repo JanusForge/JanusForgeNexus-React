@@ -85,7 +85,7 @@ export default function NexusPrimeEngine() {
           loop 
           muted 
           playsInline 
-          className="max-w-full max-h-full object-contain opacity-50 contrast-150 saturate-125"
+          className="max-w-full max-h-full object-contain opacity-25 contrast-150 saturate-125"
         >
           <source src="/janus-logo-video.mp4" type="video/mp4" />
         </video>
@@ -111,10 +111,10 @@ export default function NexusPrimeEngine() {
           {chatThread.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 md:py-40 animate-pulse">
                <h3 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-white italic drop-shadow-[0_0_40px_rgba(255,255,255,0.1)] text-center leading-[0.85]">
-                 NEURAL<br/>FORGE
+                 NEXUS  PRIME
                </h3>
                <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[1em] text-indigo-500 mt-8 bg-black/60 px-6 py-2 backdrop-blur-md rounded-full border border-white/5 shadow-2xl">
-                 Awaiting Protocol
+                 Join the Conversation
                </p>
             </div>
           )}
@@ -149,7 +149,7 @@ export default function NexusPrimeEngine() {
             value={userMessage} 
             onChange={(e) => setUserMessage(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder="Command the Council..." 
+            placeholder="Join the conversation or start your own..." 
             className="flex-1 bg-transparent outline-none resize-none h-12 md:h-16 py-3 md:py-5 px-4 md:px-10 text-sm md:text-2xl text-white font-medium placeholder:text-zinc-800"
           />
           <button 
