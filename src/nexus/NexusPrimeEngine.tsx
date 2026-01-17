@@ -5,7 +5,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { Send, Loader2, Lock, Globe, Bookmark, Share2, Settings2, X, Clock, Zap, ShieldCheck, AlertCircle } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 
-// 🛡️ Define the extended user type for the build
+// 🛡️ Extended user type for build compatibility
 interface SovereignUser {
   id: string;
   username: string;
@@ -14,7 +14,6 @@ interface SovereignUser {
 }
 
 export default function NexusPrimeEngine() {
-  // Use 'any' or the custom interface to bypass strict property checks
   const { user } = useAuth() as { user: SovereignUser | null }; 
   
   const [userMessage, setUserMessage] = useState('');
@@ -29,9 +28,7 @@ export default function NexusPrimeEngine() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      // ✅ Updated to use the SovereignUser properties
       if (!user?.access_expiry) return;
-      
       const expiryTime = new Date(user.access_expiry).getTime();
       const diff = expiryTime - new Date().getTime();
       
@@ -149,7 +146,13 @@ export default function NexusPrimeEngine() {
                   </button>
                 ))}
               </div>
-              <CouncilBuilder userBalance={isExpired ? 0 : 1} selectedModels={selectedModels} setSelectedModels={setSelectedModels} onIgnite={() => setIsTrayOpen(false)} />
+              {/* ✅ FIXED: Added async to onIgnite prop */}
+              <CouncilBuilder 
+                userBalance={isExpired ? 0 : 1} 
+                selectedModels={selectedModels} 
+                setSelectedModels={setSelectedModels} 
+                onIgnite={async () => setIsTrayOpen(false)} 
+              />
             </div>
           </div>
 
