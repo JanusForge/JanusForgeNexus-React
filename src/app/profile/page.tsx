@@ -1,9 +1,9 @@
 "use client";
 import { useAuth } from '@/components/auth/AuthProvider';
-import { ShieldCheck, Clock, Calendar, Zap, AlertCircle } from 'lucide-react';
+import { ShieldCheck, Clock, Calendar, Zap, AlertCircle, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-// 🛡️ Define the extended user type for TypeScript validation
+// 🛡️ Explicitly define the SovereignUser interface for strict type safety
 interface SovereignUser {
   id: string;
   username: string;
@@ -14,15 +14,19 @@ interface SovereignUser {
 }
 
 export default function ProfilePage() {
-  // ✅ Cast useAuth to include our SovereignUser properties
+  // ✅ Cast the auth hook to our specific SovereignUser type
   const { user, loading } = useAuth() as { user: SovereignUser | null, loading: boolean };
   const [timeLeft, setTimeLeft] = useState<string>("");
 
   // --- ⏳ REAL-TIME COUNTDOWN LOGIC ---
   useEffect(() => {
+    // Primary guard to prevent effect execution without data
     if (!user?.access_expiry) return;
 
     const calculateTime = () => {
+      // Secondary guard inside scope to satisfy TypeScript's strict null check
+      if (!user || !user.access_expiry) return;
+
       const expiry = new Date(user.access_expiry).getTime();
       const now = new Date().getTime();
       const diff = expiry - now;
@@ -40,13 +44,18 @@ export default function ProfilePage() {
     };
 
     calculateTime();
-    const timer = setInterval(calculateTime, 60000); // Update every minute
+    const timer = setInterval(calculateTime, 60000); 
     return () => clearInterval(timer);
   }, [user]);
 
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white italic uppercase tracking-widest text-xs">Synchronizing Neural Profile...</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-black flex items-center justify-center text-white italic uppercase tracking-widest text-xs">
+      Synchronizing Neural Profile...
+    </div>
+  );
 
-  const isActive = user?.access_expiry && new Date(user.access_expiry) > new Date();
+  // Logic to determine if sovereignty is active
+  const isActive = !!(user?.access_expiry && new Date(user.access_expiry) > new Date());
 
   return (
     <div className="min-h-screen bg-black pt-32 pb-24 text-white">
@@ -59,7 +68,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <h1 className="text-4xl font-black uppercase tracking-tighter italic">
-              {user?.username || 'Sovereign User'}
+              {user?.username || 'Architect'}
             </h1>
             <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest">
               ID: {user?.id?.slice(-8)} • {user?.email}
@@ -70,7 +79,7 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* ⚡ STATUS CARD */}
-          <div className={`p-8 rounded-[2rem] border transition-all ${
+          <div className={`p-8 rounded-[2rem] border transition-all duration-500 ${
             isActive 
             ? 'bg-indigo-500/10 border-indigo-500/20 shadow-[0_0_50px_rgba(79,70,229,0.1)]' 
             : 'bg-zinc-950 border-white/5 opacity-60'
@@ -80,26 +89,22 @@ export default function ProfilePage() {
                 <Clock size={20} />
               </div>
               <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                isActive ? 'bg-indigo-500 text-white shadow-lg' : 'bg-zinc-800 text-zinc-500'
+                isActive ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'bg-zinc-800 text-zinc-500'
               }`}>
                 {isActive ? 'Sovereign Active' : 'Spectator'}
               </div>
             </div>
             
-            <div className="mb-2 text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">Time Remaining</div>
+            <div className="mb-2 text-zinc-500 text-[10px] font-black uppercase tracking-[0.2em]">Temporal Command Remaining</div>
             <div className="text-5xl font-black italic tracking-tighter mb-4 text-white">
               {isActive ? timeLeft : "0h 0m"}
             </div>
             
-            {isActive ? (
-              <p className="text-indigo-400/60 text-xs font-medium italic">
-                Full command of the Janus Forge Council is currently enabled.
-              </p>
-            ) : (
-              <p className="text-zinc-600 text-xs font-medium italic">
-                Access expired. Reactivate via the Sovereignty Portal to command.
-              </p>
-            )}
+            <p className={`text-xs font-medium italic ${isActive ? 'text-indigo-400/60' : 'text-zinc-600'}`}>
+              {isActive 
+                ? "Full command of the Janus Forge Council is currently enabled." 
+                : "Access expired. Reactivate via the Sovereignty Portal to command."}
+            </p>
           </div>
 
           {/* 📜 ACCOUNT DETAILS */}
@@ -130,7 +135,7 @@ export default function ProfilePage() {
 
             <button 
               onClick={() => window.location.href = '/pricing'}
-              className="w-full mt-10 py-4 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all duration-300"
+              className="w-full mt-10 py-4 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all duration-300 shadow-lg"
             >
               Extend Sovereignty
             </button>
