@@ -5,7 +5,6 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { Send, Loader2, Lock, Globe, Bookmark, Share2, Settings2, X, Clock, Zap, ShieldCheck, AlertCircle } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 
-// 🛡️ Extended user type for build compatibility
 interface SovereignUser {
   id: string;
   username: string;
@@ -47,7 +46,9 @@ export default function NexusPrimeEngine() {
   }, [user?.access_expiry]);
 
   useEffect(() => { 
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); 
+    if (chatThread.length > 0) {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); 
+    }
   }, [chatThread, isSynthesizing]);
 
   const handleTestRefuel = async (hours: number) => {
@@ -66,7 +67,7 @@ export default function NexusPrimeEngine() {
     if (isExpired) { setIsTrayOpen(true); setRefuelRequired(true); return; }
 
     const originalMsg = userMessage;
-    setChatThread(prev => [...prev, { id: Date.now(), type: 'user', content: originalMsg, sender: user?.username }]);
+    setChatThread(prev => [...prev, { id: Date.now(), type: 'user', content: originalMsg, sender: user?.username || 'Sovereign' }]);
     setIsSynthesizing(true);
     setUserMessage('');
 
@@ -94,21 +95,43 @@ export default function NexusPrimeEngine() {
   };
 
   return (
-    <div className="min-h-screen bg-[#030303] text-zinc-100 overflow-x-hidden selection:bg-indigo-500/30">
-      {isTrayOpen && <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60]" onClick={() => setIsTrayOpen(false)} />}
+    <div className="min-h-screen w-full bg-[#030303] text-zinc-100 overflow-x-hidden relative">
       
-      <nav className="fixed top-0 w-full h-16 bg-black/40 backdrop-blur-xl border-b border-white/5 z-50 px-6 flex items-center justify-between">
+      {/* 🌑 BACKDROP - Lowered Z-Index to ensure it doesn't block interactions */}
+      {isTrayOpen && (
+        <div 
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-[55] transition-opacity duration-300" 
+            onClick={() => setIsTrayOpen(false)} 
+        />
+      )}
+      
+      {/* 🏙️ NAVBAR - Forced Z-Index 100 */}
+      <nav className="fixed top-0 w-full h-16 bg-black/40 backdrop-blur-xl border-b border-white/5 z-[100] px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Zap className="text-indigo-500 fill-indigo-500" size={18} />
           <span className="text-xs font-black uppercase italic tracking-tighter">Janus Forge Nexus<sup>®</sup></span>
         </div>
-        <button onClick={() => setIsTrayOpen(true)} className={`px-4 py-1.5 rounded-full border text-[10px] font-black tracking-widest transition-all ${isExpired ? 'border-red-500/50 bg-red-500/10 text-red-500 animate-pulse' : 'border-white/10 text-indigo-400 bg-white/5'}`}>
+        <button 
+            onClick={() => setIsTrayOpen(true)} 
+            className={`px-4 py-1.5 rounded-full border text-[10px] font-black tracking-widest transition-all ${
+                isExpired ? 'border-red-500/50 bg-red-500/10 text-red-500 animate-pulse' : 'border-white/10 text-indigo-400 bg-white/5'
+            }`}
+        >
           <Clock size={12} className="inline mr-2 mb-0.5"/>{timeLeft || "Access Required"}
         </button>
       </nav>
 
-      <main className="pt-24 pb-44 px-4 flex flex-col items-center">
-        <div className="w-full max-w-3xl space-y-8">
+      <main className="relative pt-24 pb-44 px-4 flex flex-col items-center min-h-screen z-[10]">
+        <div className="w-full max-w-3xl space-y-8 min-h-[50vh]">
+          {chatThread.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 opacity-40">
+                <div className="w-12 h-12 rounded-2xl border border-white/10 flex items-center justify-center">
+                    <Zap size={24} className="text-indigo-500" />
+                </div>
+                <p className="text-[10px] uppercase font-black tracking-[0.4em]">Awaiting Adversarial Ignition</p>
+            </div>
+          )}
+
           {chatThread.map((msg, i) => (
             <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`p-6 rounded-3xl border backdrop-blur-3xl shadow-xl transition-all ${msg.type === 'user' ? 'bg-indigo-600/10 border-indigo-500/20' : 'bg-white/5 border-white/10'}`}>
@@ -121,8 +144,10 @@ export default function NexusPrimeEngine() {
           <div ref={chatEndRef} />
         </div>
 
-        <div className="fixed bottom-0 md:bottom-10 w-full max-w-2xl z-[70]">
-          <div className={`transition-all duration-500 ${isTrayOpen ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
+        {/* ⌨️ INTERACTION & PURCHASE HUB - Forced Z-Index Above Backdrop */}
+        <div className="fixed bottom-0 md:bottom-10 w-full max-w-2xl z-[70] left-1/2 -translate-x-1/2">
+          
+          <div className={`transition-all duration-500 ${isTrayOpen ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-20 opacity-0 pointer-events-none'}`}>
             <div className="mx-4 mb-4 bg-zinc-900 border border-white/10 rounded-[2.5rem] p-8 shadow-2xl backdrop-blur-3xl">
               <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
                 <div className="flex items-center gap-2">
@@ -146,22 +171,16 @@ export default function NexusPrimeEngine() {
                   </button>
                 ))}
               </div>
-              {/* ✅ FIXED: Added async to onIgnite prop */}
-              <CouncilBuilder 
-                userBalance={isExpired ? 0 : 1} 
-                selectedModels={selectedModels} 
-                setSelectedModels={setSelectedModels} 
-                onIgnite={async () => setIsTrayOpen(false)} 
-              />
+              <CouncilBuilder userBalance={isExpired ? 0 : 1} selectedModels={selectedModels} setSelectedModels={setSelectedModels} onIgnite={async () => setIsTrayOpen(false)} />
             </div>
           </div>
 
-          <div className="bg-zinc-900/95 border-t md:border border-white/10 md:rounded-[3rem] p-5 flex items-center gap-4 shadow-2xl mx-4 md:mx-0">
+          <div className="bg-zinc-900/95 border border-white/10 md:rounded-[3rem] p-5 flex items-center gap-4 shadow-2xl mx-4 md:mx-0">
             <textarea 
               value={userMessage} 
               onChange={(e) => setUserMessage(e.target.value)} 
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-              placeholder={isExpired ? "Sovereignty Access Window Closed..." : "Challenge the Council..."} 
+              placeholder={isExpired ? "Access Window Closed..." : "Challenge the Council..."} 
               className="flex-1 bg-transparent outline-none resize-none h-12 py-3 text-sm text-white placeholder:text-zinc-600 px-2"
             />
             <button 
