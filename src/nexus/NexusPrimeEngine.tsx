@@ -45,6 +45,17 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(timer);
   }, [user?.access_expiry, user?.role]);
 
+  const handleTestRefuel = async (hours: number) => {
+    try {
+      const res = await fetch('https://janusforgenexus-backend.onrender.com/api/auth/test-refuel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.id, hours })
+      });
+      if (res.ok) window.location.reload(); 
+    } catch (err) { console.error(err); }
+  };
+
   const handleIgnition = async () => {
     if (!userMessage.trim() || isSynthesizing) return;
     if (isExpired && user?.role !== 'GOD_MODE' && user?.role !== 'ADMIN') {
@@ -76,10 +87,9 @@ export default function NexusPrimeEngine() {
   };
 
   return (
-    /* 1. Root Container: Clean and simple to prevent double scrollbars */
-    <div className="w-full min-h-screen bg-black text-white flex flex-col items-center">
+    <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden">
 
-      {/* 🏙️ STATUS INTERFACE (Fixed so it doesn't scroll away) */}
+      {/* 🏙️ STATUS INTERFACE (Fixed) */}
       <div className="fixed top-0 right-0 py-4 px-6 md:px-10 z-[100]">
         <button
           onClick={() => setIsTrayOpen(true)}
@@ -90,62 +100,23 @@ export default function NexusPrimeEngine() {
         </button>
       </div>
 
-      {/* 🌊 MAIN CONTENT FLOW */}
-      <main className="w-full max-w-4xl px-4 md:px-8 flex flex-col items-center pt-24 pb-48">
+      {/* 🌊 MAIN FLOW */}
+      <main className="w-full max-w-4xl px-4 md:px-8 flex flex-col items-center pt-24 pb-32">
         
-        {/* 🎬 THE LOGO VIDEO: Now part of the flow, positioned above the title */}
-        <div className="w-full max-w-md aspect-video mb-8 overflow-hidden rounded-2xl">
-           <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-contain contrast-125 saturate-100"
-          >
+        {/* 🎬 VIDEO HEADER */}
+        <div className="w-full max-w-md aspect-video mb-8 overflow-hidden rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+           <video autoPlay loop muted playsInline className="w-full h-full object-contain contrast-125">
             <source src="/janus-logo-video.mp4" type="video/mp4" />
           </video>
         </div>
 
-        {/* 📋 THE HERO / TITLE SECTION */}
-        {chatThread.length === 0 && (
-          <div className="flex flex-col items-center justify-center space-y-8 mb-12 animate-pulse">
-             <h3 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-white italic text-center leading-[0.85] drop-shadow-2xl">
-               NEXUS PRIME
-             </h3>
-             <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[1em] text-indigo-500 bg-black/60 px-6 py-2 backdrop-blur-md rounded-full border border-white/5">
-               Join the Conversation
-             </p>
-          </div>
-        )}
+        {/* 📋 TITLE */}
+        <h3 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-white italic text-center leading-none mb-12 drop-shadow-2xl">
+           NEXUS PRIME
+        </h3>
 
-        {/* 💬 CHAT STREAM */}
-        <div className="w-full space-y-10 md:space-y-14">
-          {chatThread.map((msg, i) => (
-            <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} group`}>
-              <div className={`max-w-[94%] md:max-w-[85%] p-6 md:p-10 rounded-3xl md:rounded-[3rem] border backdrop-blur-3xl shadow-2xl transition-all duration-700 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 ${
-                msg.type === 'user'
-                  ? 'bg-indigo-600/5 border-indigo-500/20'
-                  : 'bg-zinc-900/40 border-white/5 hover:border-white/20'
-              }`}>
-                <div className="flex items-center gap-4 mb-4 md:mb-6">
-                    <span className={`text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] ${msg.type === 'user' ? 'text-indigo-400' : 'text-amber-500'}`}>
-                        {msg.sender}
-                    </span>
-                    <div className={`h-[1px] flex-1 ${msg.type === 'user' ? 'bg-indigo-600/20' : 'bg-white/10'}`} />
-                </div>
-                <p className="text-base md:text-xl leading-relaxed text-zinc-200 whitespace-pre-wrap font-medium">
-                  {msg.content}
-                </p>
-              </div>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
-      </main>
-
-      {/* ⌨️ NEURAL INPUT HUB (Sticky to bottom of viewport) */}
-      <footer className="fixed bottom-0 w-full p-6 md:p-12 z-50 bg-gradient-to-t from-black via-black/90 to-transparent flex justify-center">
-        <div className="w-full max-w-3xl bg-zinc-950/80 border border-white/5 rounded-[2.5rem] md:rounded-[4rem] p-3 md:p-5 flex items-center gap-3 md:gap-6 shadow-[0_-20px_80px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
+        {/* ⌨️ INTEGRATED INPUT HUB (Now positioned under Title) */}
+        <div className="w-full max-w-3xl bg-zinc-950/80 border border-white/5 rounded-[2.5rem] md:rounded-[4rem] p-3 md:p-5 flex items-center gap-3 md:gap-6 shadow-2xl backdrop-blur-3xl mb-16">
           <textarea
             value={userMessage}
             onChange={(e) => setUserMessage(e.target.value)}
@@ -156,14 +127,65 @@ export default function NexusPrimeEngine() {
           <button
             onClick={handleIgnition}
             disabled={isSynthesizing || !userMessage.trim()}
-            className={`w-12 h-12 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all shadow-2xl shrink-0 group ${
+            className={`w-12 h-12 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all shadow-2xl shrink-0 ${
               isExpired && user?.role !== 'GOD_MODE' ? 'bg-amber-600 text-black' : 'bg-indigo-600 text-white hover:bg-indigo-500'
-            } disabled:opacity-20 active:scale-90`}
+            } active:scale-90`}
           >
-            {isSynthesizing ? <Loader2 className="animate-spin" size={24}/> : <Send size={28} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"/>}
+            {isSynthesizing ? <Loader2 className="animate-spin" size={24}/> : <Send size={28} />}
           </button>
         </div>
-      </footer>
+
+        {/* 💬 DYNAMIC CHAT STREAM */}
+        <div className="w-full space-y-10">
+          {chatThread.map((msg, i) => (
+            <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4`}>
+              <div className={`max-w-[90%] md:max-w-[80%] p-6 md:p-10 rounded-3xl border backdrop-blur-3xl shadow-2xl ${
+                msg.type === 'user' ? 'bg-indigo-600/5 border-indigo-500/20' : 'bg-zinc-900/40 border-white/5'
+              }`}>
+                <span className={`text-[10px] font-black uppercase tracking-widest mb-4 block ${msg.type === 'user' ? 'text-indigo-400' : 'text-amber-500'}`}>
+                    {msg.sender}
+                </span>
+                <p className="text-base md:text-xl leading-relaxed text-zinc-100 whitespace-pre-wrap font-medium">{msg.content}</p>
+              </div>
+            </div>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
+      </main>
+
+      {/* 🌑 SOVEREIGNTY PORTAL (The Refuel Tray) */}
+      {isTrayOpen && (
+        <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
+           <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2.5rem] p-10 shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-10">
+                <div className="flex items-center gap-3">
+                    <ShieldCheck className="text-indigo-400" size={20}/>
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Sovereignty Portal</h3>
+                </div>
+                <X onClick={() => setIsTrayOpen(false)} size={20} className="cursor-pointer opacity-50 hover:opacity-100"/>
+              </div>
+
+              {/* 🎫 REFUEL PACKS */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                {[{l:'24H PASS', p:'$5', h:24}, {l:'7D SPRINT', p:'$20', h:168}, {l:'30D FORGE', p:'$75', h:720}].map((pass, i) => (
+                  <button key={i} onClick={() => handleTestRefuel(pass.h)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left group">
+                    <div className="text-[9px] font-black text-zinc-500 group-hover:text-indigo-400 mb-1">{pass.l}</div>
+                    <div className="text-2xl font-black text-white">{pass.p}</div>
+                  </button>
+                ))}
+              </div>
+
+              {/* ⚙️ COUNCIL BUILDER */}
+              <CouncilBuilder 
+                userBalance={isExpired && user?.role !== 'GOD_MODE' ? 0 : 1} 
+                selectedModels={selectedModels} 
+                setSelectedModels={setSelectedModels} 
+                onIgnite={async () => setIsTrayOpen(false)} 
+              />
+           </div>
+        </div>
+      )}
+
     </div>
   );
 }
