@@ -266,7 +266,12 @@ export default function NexusPrimeEngine() {
                 ))}
               </div>
               <div className="pt-8 border-t border-white/5">
-                <CouncilBuilder selectedModels={selectedModels} setSelectedModels={setSelectedModels} />
+                <CouncilBuilder 
+                  selectedModels={selectedModels} 
+                  setSelectedModels={setSelectedModels} 
+                  userBalance={0} 
+                  onIgnite={handleIgnition}
+                />
               </div>
            </div>
         </div>
