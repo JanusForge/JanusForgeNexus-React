@@ -89,102 +89,118 @@ export default function NexusPrimeEngine() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#020202] text-zinc-100 selection:bg-indigo-500/30 overflow-hidden relative">
+    // 🛡️ High Z-index on the container to blast through any global overlays
+    <div className="fixed inset-0 w-full h-full bg-[#020202] text-zinc-100 z-[9999] flex flex-col overflow-hidden">
       
-      {/* 🏙️ TOP NAV - FIXED & ON TOP */}
-      <nav className="fixed top-0 left-0 w-full h-16 bg-black/80 backdrop-blur-md border-b border-white/10 z-[100] px-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Zap className="text-indigo-500 fill-indigo-500" size={16} />
-          <span className="text-[10px] font-black uppercase tracking-tighter">Janus Forge Nexus<sup>®</sup></span>
+      {/* 🏙️ INTEGRATED HEADER */}
+      <header className="shrink-0 h-20 border-b border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between px-8">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center">
+                <Zap size={14} className="text-white fill-white" />
+            </div>
+            <h1 className="text-sm font-black uppercase tracking-tighter italic">Janus Forge Nexus<sup>®</sup></h1>
+          </div>
+          <p className="text-[9px] uppercase tracking-[0.3em] text-indigo-400 font-bold mt-1">Nexus Prime Protocol</p>
         </div>
+
         <button 
             onClick={() => setIsTrayOpen(true)} 
-            className={`px-3 py-1 rounded-full border text-[9px] font-bold tracking-widest transition-all ${
-                isExpired ? 'border-red-500 text-red-500' : 'border-indigo-500/50 text-indigo-400'
+            className={`px-4 py-2 rounded-full border text-[10px] font-black transition-all flex items-center gap-3 ${
+                isExpired ? 'border-red-500 bg-red-500/10 text-red-500 animate-pulse' : 'border-indigo-500/40 text-indigo-400 bg-indigo-500/5'
             }`}
         >
-          <Clock size={10} className="inline mr-1.5 mb-0.5"/>{timeLeft || "ACCESS DENIED"}
+          <Clock size={12}/>
+          <span>{timeLeft || "ACCESS DENIED"}</span>
         </button>
-      </nav>
+      </header>
 
-      {/* 🌊 MAIN SCROLL AREA */}
-      <main className="absolute inset-0 pt-20 pb-32 px-4 overflow-y-auto z-10 custom-scrollbar">
-        <div className="w-full max-w-2xl mx-auto space-y-6">
-          {chatThread.length === 0 && !isSynthesizing && (
-            <div className="py-20 text-center opacity-20">
-               <p className="text-[9px] font-black uppercase tracking-[0.5em]">System Ready // Awaiting Input</p>
+      {/* 🌊 SCROLLABLE STREAM AREA */}
+      <main className="flex-1 overflow-y-auto px-4 py-12 custom-scrollbar">
+        <div className="max-w-3xl mx-auto space-y-12">
+          
+          {chatThread.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 space-y-4 opacity-30">
+               <h2 className="text-2xl font-black uppercase tracking-widest text-white italic">Nexus Prime</h2>
+               <p className="text-[9px] font-black uppercase tracking-[0.5em]">Awaiting Adversarial Ignition</p>
             </div>
           )}
 
           {chatThread.map((msg, i) => (
             <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] p-5 rounded-2xl border ${msg.type === 'user' ? 'bg-indigo-600/5 border-indigo-500/20' : 'bg-white/5 border-white/10'}`}>
-                <span className="text-[8px] font-black uppercase tracking-widest text-indigo-500 mb-2 block">{msg.sender}</span>
-                <p className="text-sm leading-relaxed text-zinc-300">{msg.content}</p>
+              <div className={`max-w-[85%] p-8 rounded-3xl border shadow-2xl transition-all ${
+                msg.type === 'user' 
+                  ? 'bg-indigo-600/5 border-indigo-500/30 rounded-tr-none' 
+                  : 'bg-white/5 border-white/10 rounded-tl-none'
+              }`}>
+                <span className={`text-[9px] font-black uppercase tracking-widest mb-4 block ${msg.type === 'user' ? 'text-indigo-400' : 'text-amber-500'}`}>
+                    {msg.sender} {msg.type === 'ai' && 'PROTOCOL'}
+                </span>
+                <p className="text-base leading-relaxed text-zinc-200 font-medium whitespace-pre-wrap">{msg.content}</p>
               </div>
             </div>
           ))}
 
           {isSynthesizing && (
-            <div className="flex items-center gap-2 text-zinc-500 text-[9px] uppercase font-black tracking-widest animate-pulse">
-               <Loader2 className="animate-spin" size={12} /> Council Deliberating...
+            <div className="flex items-center gap-3 text-indigo-500 text-[10px] uppercase font-black tracking-widest animate-pulse px-4">
+               <Loader2 className="animate-spin" size={14} /> Council Synthesis in Progress...
             </div>
           )}
           <div ref={chatEndRef} />
         </div>
       </main>
 
-      {/* 🌑 TRAY BACKDROP */}
+      {/* 🌑 PORTAL BACKDROP */}
       {isTrayOpen && (
-        <div className="fixed inset-0 bg-black/90 z-[110] transition-opacity" onClick={() => setIsTrayOpen(false)} />
+        <div className="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
+           <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2.5rem] p-10 shadow-[0_0_100px_rgba(79,70,229,0.1)]" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-10">
+                <div className="flex items-center gap-3">
+                    <ShieldCheck className="text-indigo-400" size={20}/>
+                    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Sovereignty Portal</h3>
+                </div>
+                <X onClick={() => setIsTrayOpen(false)} size={20} className="cursor-pointer opacity-50 hover:opacity-100"/>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                {[{l:'24H PASS', p:'$5', h:24}, {l:'7D SPRINT', p:'$20', h:168}, {l:'30D FORGE', p:'$75', h:720}].map((pass, i) => (
+                  <button key={i} onClick={() => handleTestRefuel(pass.h)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left group">
+                    <div className="text-[9px] font-black text-zinc-500 group-hover:text-indigo-400 mb-1">{pass.l}</div>
+                    <div className="text-2xl font-black text-white">{pass.p}</div>
+                  </button>
+                ))}
+              </div>
+
+              <CouncilBuilder 
+                userBalance={isExpired ? 0 : 1} 
+                selectedModels={selectedModels} 
+                setSelectedModels={setSelectedModels} 
+                onIgnite={async () => setIsTrayOpen(false)} 
+              />
+           </div>
+        </div>
       )}
 
-      {/* ⌨️ INTERACTION BAR & TRAY PORTAL */}
-      <div className="fixed bottom-0 left-0 w-full z-[120] px-4 pb-4 md:pb-8 flex flex-col items-center">
-        
-        {/* THE TRAY */}
-        <div className={`w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2rem] p-6 mb-4 shadow-2xl transition-all duration-500 ${isTrayOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'}`}>
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-[9px] font-black uppercase text-indigo-400 flex items-center gap-2">
-              <ShieldCheck size={14}/> Sovereignty Portal
-            </h3>
-            <X onClick={() => setIsTrayOpen(false)} size={16} className="cursor-pointer opacity-50 hover:opacity-100"/>
+      {/* ⌨️ INPUT HUB */}
+      <footer className="shrink-0 p-6 md:p-10 bg-gradient-to-t from-black to-transparent">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-zinc-900/90 border border-white/10 rounded-[2.5rem] p-3 flex items-center gap-4 shadow-2xl">
+            <textarea 
+              value={userMessage} 
+              onChange={(e) => setUserMessage(e.target.value)} 
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
+              placeholder={isExpired ? "Access Window Closed..." : "Challenge the Council..."} 
+              className="flex-1 bg-transparent outline-none resize-none h-14 py-4 px-4 text-base text-white placeholder:text-zinc-700"
+            />
+            <button 
+              onClick={handleIgnition} 
+              className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-all ${isExpired ? 'bg-amber-500 text-black shadow-amber-500/20' : 'bg-indigo-600 text-white shadow-indigo-600/20'} shadow-xl`}
+            >
+              {isExpired ? <Zap size={24} fill="currentColor" /> : <Send size={24}/>}
+            </button>
           </div>
-
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {[{l:'24H', p:'$5', h:24}, {l:'7D', p:'$20', h:168}, {l:'30D', p:'$75', h:720}].map((pass, i) => (
-              <button key={i} onClick={() => handleTestRefuel(pass.h)} className="bg-white/5 border border-white/5 p-4 rounded-xl hover:border-indigo-500 text-center transition-colors">
-                <div className="text-lg font-black">{pass.p}</div>
-                <div className="text-[8px] uppercase opacity-40">{pass.l} PASS</div>
-              </button>
-            ))}
-          </div>
-
-          {/* This renders the existing CouncilBuilder Cluster */}
-          <CouncilBuilder 
-            userBalance={isExpired ? 0 : 1} 
-            selectedModels={selectedModels} 
-            setSelectedModels={setSelectedModels} 
-            onIgnite={async () => setIsTrayOpen(false)} 
-          />
         </div>
-
-        {/* INPUT BAR */}
-        <div className="w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-full p-2 flex items-center gap-3 shadow-2xl">
-          <textarea 
-            value={userMessage} 
-            onChange={(e) => setUserMessage(e.target.value)} 
-            placeholder={isExpired ? "Access Window Closed..." : "Challenge the Council..."} 
-            className="flex-1 bg-transparent outline-none resize-none h-10 py-2.5 px-4 text-sm text-white"
-          />
-          <button 
-            onClick={handleIgnition} 
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isExpired ? 'bg-amber-500 text-black' : 'bg-indigo-600 text-white'}`}
-          >
-            {isExpired ? <Zap size={18} fill="currentColor" /> : <Send size={18}/>}
-          </button>
-        </div>
-      </div>
+      </footer>
     </div>
   );
 }
