@@ -2,30 +2,42 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Menu, X, User, LogOut, ShieldAlert, Radio, ShieldCheck, Clock } from 'lucide-react';
+import { Menu, X, User, LogOut, ShieldAlert, Radio, ShieldCheck, Clock, Zap } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
+// 🛡️ Explicitly define the SovereignUser type for the Navbar
+interface SovereignUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  access_expiry?: string | Date;
+}
+
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  // ✅ Cast useAuth to our specific SovereignUser interface
+  const { user, logout } = useAuth() as { user: SovereignUser | null, logout: () => void };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
 
   const isAuthenticated = !!user;
-  const isAdmin = isAuthenticated && (user?.email === 'admin@janusforge.ai' || user?.role === 'GOD_MODE');
+  const isAdmin = isAuthenticated && (user?.email === 'admin@janusforge.ai' || user?.role === 'GOD_MODE' || user?.role === 'ADMIN');
 
   // --- ⏳ SOVEREIGNTY LOGIC ---
-  const isSovereign = user?.role === 'SOVEREIGN' || user?.role === 'ADMIN';
-  const hasAccess = user?.access_expiry && new Date(user.access_expiry) > new Date();
+  // The !! double bang ensures we return a strict boolean for TypeScript
+  const hasAccess = !!(user?.access_expiry && new Date(user.access_expiry) > new Date());
 
   // Listen for Global Broadcasts
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
+
     socket.on('broadcast:incoming', (data: { message: string }) => {
       setSystemAlert(data.message);
       setTimeout(() => setSystemAlert(null), 15000);
     });
+
     return () => { socket.disconnect(); };
   }, []);
 
@@ -82,10 +94,10 @@ export default function Navbar() {
             {/* Right Side - Auth & Status */}
             <div className="flex items-center gap-6">
               {isAuthenticated && (
-                <div className={`flex items-center gap-3 px-4 py-2 rounded-full border transition-all ${
+                <div className={`flex items-center gap-3 px-4 py-2 rounded-full border transition-all duration-500 ${
                   hasAccess 
-                  ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' 
-                  : 'bg-zinc-900 border-white/5 text-zinc-500'
+                  ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.1)]' 
+                  : 'bg-zinc-900/50 border-white/5 text-zinc-500'
                 }`}>
                   <Clock size={14} className={hasAccess ? 'animate-pulse' : ''} />
                   <span className="font-black text-[10px] uppercase tracking-widest">
