@@ -3,8 +3,19 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { ShieldCheck, Clock, Calendar, Zap, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
+// 🛡️ Define the extended user type for TypeScript validation
+interface SovereignUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  access_expiry?: string | Date;
+  tokens_remaining?: number;
+}
+
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  // ✅ Cast useAuth to include our SovereignUser properties
+  const { user, loading } = useAuth() as { user: SovereignUser | null, loading: boolean };
   const [timeLeft, setTimeLeft] = useState<string>("");
 
   // --- ⏳ REAL-TIME COUNTDOWN LOGIC ---
@@ -33,7 +44,7 @@ export default function ProfilePage() {
     return () => clearInterval(timer);
   }, [user]);
 
-  if (loading) return <div className="min-h-screen bg-black" />;
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white italic uppercase tracking-widest text-xs">Synchronizing Neural Profile...</div>;
 
   const isActive = user?.access_expiry && new Date(user.access_expiry) > new Date();
 
@@ -61,7 +72,7 @@ export default function ProfilePage() {
           {/* ⚡ STATUS CARD */}
           <div className={`p-8 rounded-[2rem] border transition-all ${
             isActive 
-            ? 'bg-indigo-500/10 border-indigo-500/20' 
+            ? 'bg-indigo-500/10 border-indigo-500/20 shadow-[0_0_50px_rgba(79,70,229,0.1)]' 
             : 'bg-zinc-950 border-white/5 opacity-60'
           }`}>
             <div className="flex justify-between items-start mb-8">
@@ -69,7 +80,7 @@ export default function ProfilePage() {
                 <Clock size={20} />
               </div>
               <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                isActive ? 'bg-indigo-500 text-white' : 'bg-zinc-800 text-zinc-500'
+                isActive ? 'bg-indigo-500 text-white shadow-lg' : 'bg-zinc-800 text-zinc-500'
               }`}>
                 {isActive ? 'Sovereign Active' : 'Spectator'}
               </div>
@@ -81,18 +92,18 @@ export default function ProfilePage() {
             </div>
             
             {isActive ? (
-              <p className="text-indigo-400/60 text-xs font-medium">
+              <p className="text-indigo-400/60 text-xs font-medium italic">
                 Full command of the Janus Forge Council is currently enabled.
               </p>
             ) : (
-              <p className="text-zinc-600 text-xs font-medium">
+              <p className="text-zinc-600 text-xs font-medium italic">
                 Access expired. Reactivate via the Sovereignty Portal to command.
               </p>
             )}
           </div>
 
           {/* 📜 ACCOUNT DETAILS */}
-          <div className="p-8 rounded-[2rem] bg-zinc-950 border border-white/5">
+          <div className="p-8 rounded-[2rem] bg-zinc-950 border border-white/5 shadow-2xl">
             <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 mb-6">Nexus Statistics</h3>
             
             <div className="space-y-6">
@@ -101,7 +112,7 @@ export default function ProfilePage() {
                   <Calendar size={16} className="text-zinc-600" />
                   <span className="text-sm font-bold text-zinc-400 uppercase italic">Expiry Date</span>
                 </div>
-                <span className="text-sm font-black">
+                <span className="text-sm font-black text-zinc-100">
                   {user?.access_expiry ? new Date(user.access_expiry).toLocaleDateString() : 'N/A'}
                 </span>
               </div>
@@ -111,7 +122,7 @@ export default function ProfilePage() {
                   <Zap size={16} className="text-zinc-600" />
                   <span className="text-sm font-bold text-zinc-400 uppercase italic">Authority Tier</span>
                 </div>
-                <span className="text-sm font-black text-indigo-400 uppercase">
+                <span className="text-sm font-black text-indigo-400 uppercase italic">
                   {user?.role || 'User'}
                 </span>
               </div>
@@ -119,7 +130,7 @@ export default function ProfilePage() {
 
             <button 
               onClick={() => window.location.href = '/pricing'}
-              className="w-full mt-10 py-4 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+              className="w-full mt-10 py-4 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all duration-300"
             >
               Extend Sovereignty
             </button>
@@ -128,10 +139,10 @@ export default function ProfilePage() {
 
         {/* 🚨 SYSTEM NOTE */}
         {!isActive && (
-          <div className="mt-8 p-6 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-center gap-4">
+          <div className="mt-8 p-6 bg-amber-500/5 border border-amber-500/10 rounded-2xl flex items-center gap-4 animate-pulse">
             <AlertCircle className="text-amber-500" size={20} />
-            <p className="text-amber-200/60 text-xs font-medium leading-relaxed">
-              Your account is currently in <span className="text-amber-500 font-black italic">SPECTATOR MODE</span>. 
+            <p className="text-amber-200/60 text-xs font-medium leading-relaxed italic">
+              Your account is currently in <span className="text-amber-500 font-black">SPECTATOR MODE</span>. 
               You can view the AI's output but cannot initiate new neural forging sessions until a pass is acquired.
             </p>
           </div>
