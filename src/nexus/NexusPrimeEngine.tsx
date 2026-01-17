@@ -76,56 +76,63 @@ export default function NexusPrimeEngine() {
   };
 
   return (
-    <div className="w-full min-h-screen relative flex flex-col bg-transparent overflow-hidden">
+    <div className="w-full min-h-screen relative flex flex-col bg-black overflow-hidden">
       
-      {/* 🎬 CONTAINED VIDEO LAYER (Z-0) */}
-      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none flex items-center justify-center p-6 md:p-20">
+      {/* 🎬 DYNAMIC LOGO CORE (Z-0) */}
+      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none flex items-center justify-center p-8 md:p-32">
         <video 
           autoPlay 
           loop 
           muted 
           playsInline 
-          className="max-w-full max-h-full object-contain opacity-40 contrast-125 saturate-150"
+          className="max-w-full max-h-full object-contain opacity-50 contrast-150 saturate-125"
         >
           <source src="/janus-logo-video.mp4" type="video/mp4" />
         </video>
-        {/* Cinematic Radial Overlay */}
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80" />
+        {/* Deep Atmospheric Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-black via-transparent to-black/80" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,black_90%)]" />
       </div>
 
-      {/* 🏙️ STATUS BAR (Z-50) */}
+      {/* 🏙️ STATUS INTERFACE (Z-50) */}
       <div className="relative w-full py-4 px-6 md:px-10 flex justify-end z-50">
         <button 
           onClick={() => setIsTrayOpen(true)} 
-          className="px-4 py-2 rounded-full border border-indigo-500/30 text-indigo-400 bg-black/60 backdrop-blur-md text-[9px] md:text-[10px] font-black tracking-widest flex items-center gap-2 shadow-2xl"
+          className="px-5 py-2 rounded-full border border-indigo-500/20 text-indigo-400 bg-black/40 backdrop-blur-xl text-[10px] font-black tracking-[0.3em] flex items-center gap-2 shadow-[0_0_30px_rgba(79,70,229,0.1)] transition-all hover:border-indigo-500/50"
         >
-          <Clock size={12}/> {timeLeft}
+          <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
+          {timeLeft}
         </button>
       </div>
 
-      {/* 🌊 SCROLLABLE CONTENT (Z-10) */}
-      <main className="relative flex-1 px-4 md:px-8 py-4 z-10 overflow-y-auto custom-scrollbar">
-        <div className="max-w-4xl mx-auto space-y-8 md:space-y-12 pb-44">
+      {/* 🌊 TRANSMISSION STREAM (Z-10) */}
+      <main className="relative flex-1 px-4 md:px-8 py-2 z-10 overflow-y-auto custom-scrollbar">
+        <div className="max-w-4xl mx-auto space-y-10 md:space-y-14 pb-48">
           {chatThread.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 md:py-32">
-               <h3 className="text-4xl md:text-7xl font-black uppercase tracking-[0.1em] text-white italic drop-shadow-[0_0_25px_rgba(255,255,255,0.2)] text-center leading-tight">
-                 AWAITING<br/>IGNITION
+            <div className="flex flex-col items-center justify-center py-24 md:py-40 animate-pulse">
+               <h3 className="text-5xl md:text-8xl font-black uppercase tracking-tighter text-white italic drop-shadow-[0_0_40px_rgba(255,255,255,0.1)] text-center leading-[0.85]">
+                 NEURAL<br/>FORGE
                </h3>
-               <p className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] text-indigo-500 mt-4 bg-black/50 px-5 py-1.5 backdrop-blur-md rounded-full border border-white/5">
-                 The Council is Silent
+               <p className="text-[10px] md:text-[11px] font-black uppercase tracking-[1em] text-indigo-500 mt-8 bg-black/60 px-6 py-2 backdrop-blur-md rounded-full border border-white/5 shadow-2xl">
+                 Awaiting Protocol
                </p>
             </div>
           )}
 
           {chatThread.map((msg, i) => (
-            <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
-              <div className={`max-w-[92%] md:max-w-[85%] p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border backdrop-blur-3xl shadow-2xl transition-all ${
-                msg.type === 'user' ? 'bg-indigo-600/5 border-indigo-500/20' : 'bg-black/60 border-white/10'
+            <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} group`}>
+              <div className={`max-w-[94%] md:max-w-[85%] p-6 md:p-10 rounded-3xl md:rounded-[3rem] border backdrop-blur-3xl shadow-2xl transition-all duration-700 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 ${
+                msg.type === 'user' 
+                  ? 'bg-indigo-600/5 border-indigo-500/20 shadow-indigo-500/5' 
+                  : 'bg-black/40 border-white/5 hover:border-white/20'
               }`}>
-                <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-3 md:mb-4 block ${msg.type === 'user' ? 'text-indigo-400' : 'text-amber-500'}`}>
-                    {msg.sender}
-                </span>
-                <p className="text-sm md:text-lg leading-relaxed text-zinc-100 whitespace-pre-wrap font-medium">
+                <div className="flex items-center gap-4 mb-4 md:mb-6">
+                    <span className={`text-[9px] md:text-[11px] font-black uppercase tracking-[0.4em] ${msg.type === 'user' ? 'text-indigo-500' : 'text-amber-500'}`}>
+                        {msg.sender}
+                    </span>
+                    <div className={`h-[1px] flex-1 ${msg.type === 'user' ? 'bg-indigo-500/20' : 'bg-white/10'}`} />
+                </div>
+                <p className="text-base md:text-xl leading-relaxed text-zinc-200 whitespace-pre-wrap font-medium selection:bg-indigo-500/30">
                   {msg.content}
                 </p>
               </div>
@@ -135,23 +142,24 @@ export default function NexusPrimeEngine() {
         </div>
       </main>
 
-      {/* ⌨️ STICKY INPUT (Z-50) */}
-      <footer className="sticky bottom-0 w-full p-4 md:p-10 z-50 bg-gradient-to-t from-black via-black/80 to-transparent">
-        <div className="max-w-3xl mx-auto bg-black/90 border border-white/10 rounded-[2rem] md:rounded-[3.5rem] p-2 md:p-4 flex items-center gap-2 md:gap-5 shadow-2xl backdrop-blur-2xl">
+      {/* ⌨️ NEURAL INPUT HUB (Z-50) */}
+      <footer className="sticky bottom-0 w-full p-6 md:p-12 z-50 bg-gradient-to-t from-black via-black/90 to-transparent">
+        <div className="max-w-3xl mx-auto bg-zinc-950/80 border border-white/5 rounded-[2.5rem] md:rounded-[4rem] p-3 md:p-5 flex items-center gap-3 md:gap-6 shadow-[0_-20px_80px_rgba(0,0,0,0.8)] backdrop-blur-3xl">
           <textarea 
             value={userMessage} 
             onChange={(e) => setUserMessage(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder="Challenge the Council..." 
-            className="flex-1 bg-transparent outline-none resize-none h-12 md:h-14 py-3 md:py-4 px-4 md:px-8 text-sm md:text-xl text-white font-medium placeholder:text-zinc-700"
+            placeholder="Command the Council..." 
+            className="flex-1 bg-transparent outline-none resize-none h-12 md:h-16 py-3 md:py-5 px-4 md:px-10 text-sm md:text-2xl text-white font-medium placeholder:text-zinc-800"
           />
           <button 
             onClick={handleIgnition} 
-            className={`w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all shadow-xl shrink-0 ${
-              isExpired && user?.role !== 'GOD_MODE' ? 'bg-amber-500 text-black' : 'bg-indigo-600 text-white'
-            }`}
+            disabled={isSynthesizing || !userMessage.trim()}
+            className={`w-12 h-12 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all shadow-2xl shrink-0 group ${
+              isExpired && user?.role !== 'GOD_MODE' ? 'bg-amber-600 text-black' : 'bg-indigo-600 text-white hover:bg-indigo-500'
+            } disabled:opacity-20 active:scale-90`}
           >
-            {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} className="md:w-6 md:h-6"/>}
+            {isSynthesizing ? <Loader2 className="animate-spin" size={24}/> : <Send size={28} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"/>}
           </button>
         </div>
       </footer>
