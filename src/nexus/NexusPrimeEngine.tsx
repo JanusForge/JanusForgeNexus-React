@@ -78,40 +78,40 @@ export default function NexusPrimeEngine() {
   return (
     <div className="w-full min-h-screen relative flex flex-col bg-transparent overflow-hidden">
       
-      {/* 🎬 RESPONSIVE VIDEO LAYER (Z-0) */}
-      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none flex items-center justify-center p-4 md:p-10">
+      {/* 🎬 CONTAINED VIDEO LAYER (Z-0) */}
+      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none flex items-center justify-center p-6 md:p-20">
         <video 
           autoPlay 
           loop 
           muted 
           playsInline 
-          className="max-w-full max-h-full object-contain opacity-40 contrast-125"
+          className="max-w-full max-h-full object-contain opacity-40 contrast-125 saturate-150"
         >
           <source src="/janus-logo-video.mp4" type="video/mp4" />
         </video>
-        {/* Subtle Ambient Glow */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
+        {/* Cinematic Radial Overlay */}
+        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/20 to-black/80" />
       </div>
 
       {/* 🏙️ STATUS BAR (Z-50) */}
-      <div className="relative w-full py-4 md:py-6 px-4 md:px-10 flex justify-end z-50">
+      <div className="relative w-full py-4 px-6 md:px-10 flex justify-end z-50">
         <button 
           onClick={() => setIsTrayOpen(true)} 
-          className="px-4 py-2 rounded-full border border-indigo-500/30 text-indigo-400 bg-black/60 backdrop-blur-md text-[9px] md:text-[10px] font-black tracking-widest flex items-center gap-3 shadow-2xl"
+          className="px-4 py-2 rounded-full border border-indigo-500/30 text-indigo-400 bg-black/60 backdrop-blur-md text-[9px] md:text-[10px] font-black tracking-widest flex items-center gap-2 shadow-2xl"
         >
           <Clock size={12}/> {timeLeft}
         </button>
       </div>
 
       {/* 🌊 SCROLLABLE CONTENT (Z-10) */}
-      <main className="relative flex-1 px-4 md:px-6 py-4 md:py-8 z-10 overflow-y-auto custom-scrollbar">
+      <main className="relative flex-1 px-4 md:px-8 py-4 z-10 overflow-y-auto custom-scrollbar">
         <div className="max-w-4xl mx-auto space-y-8 md:space-y-12 pb-44">
           {chatThread.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 md:py-40">
-               <h3 className="text-4xl md:text-7xl font-black uppercase tracking-[0.1em] text-white italic drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] text-center leading-tight">
+            <div className="flex flex-col items-center justify-center py-20 md:py-32">
+               <h3 className="text-4xl md:text-7xl font-black uppercase tracking-[0.1em] text-white italic drop-shadow-[0_0_25px_rgba(255,255,255,0.2)] text-center leading-tight">
                  AWAITING<br/>IGNITION
                </h3>
-               <p className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] text-indigo-500 mt-4 md:mt-6 bg-black/40 px-4 py-1 backdrop-blur-sm rounded">
+               <p className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.6em] text-indigo-500 mt-4 bg-black/50 px-5 py-1.5 backdrop-blur-md rounded-full border border-white/5">
                  The Council is Silent
                </p>
             </div>
@@ -119,8 +119,8 @@ export default function NexusPrimeEngine() {
 
           {chatThread.map((msg, i) => (
             <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4 duration-500`}>
-              <div className={`max-w-[90%] md:max-w-[85%] p-5 md:p-8 rounded-2xl md:rounded-3xl border backdrop-blur-2xl shadow-2xl ${
-                msg.type === 'user' ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-black/70 border-white/10'
+              <div className={`max-w-[92%] md:max-w-[85%] p-5 md:p-8 rounded-2xl md:rounded-[2.5rem] border backdrop-blur-3xl shadow-2xl transition-all ${
+                msg.type === 'user' ? 'bg-indigo-600/5 border-indigo-500/20' : 'bg-black/60 border-white/10'
               }`}>
                 <span className={`text-[8px] md:text-[10px] font-black uppercase tracking-widest mb-3 md:mb-4 block ${msg.type === 'user' ? 'text-indigo-400' : 'text-amber-500'}`}>
                     {msg.sender}
@@ -135,23 +135,23 @@ export default function NexusPrimeEngine() {
         </div>
       </main>
 
-      {/* ⌨️ RESPONSIVE INPUT (Z-50) */}
-      <footer className="sticky bottom-0 w-full p-4 md:p-8 z-50">
-        <div className="max-w-3xl mx-auto bg-black/80 border border-white/10 rounded-[2rem] md:rounded-[3.5rem] p-2 md:p-4 flex items-center gap-2 md:gap-4 shadow-2xl backdrop-blur-2xl">
+      {/* ⌨️ STICKY INPUT (Z-50) */}
+      <footer className="sticky bottom-0 w-full p-4 md:p-10 z-50 bg-gradient-to-t from-black via-black/80 to-transparent">
+        <div className="max-w-3xl mx-auto bg-black/90 border border-white/10 rounded-[2rem] md:rounded-[3.5rem] p-2 md:p-4 flex items-center gap-2 md:gap-5 shadow-2xl backdrop-blur-2xl">
           <textarea 
             value={userMessage} 
             onChange={(e) => setUserMessage(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
             placeholder="Challenge the Council..." 
-            className="flex-1 bg-transparent outline-none resize-none h-12 md:h-14 py-3 md:py-4 px-4 md:px-6 text-sm md:text-xl text-white font-medium placeholder:text-zinc-700"
+            className="flex-1 bg-transparent outline-none resize-none h-12 md:h-14 py-3 md:py-4 px-4 md:px-8 text-sm md:text-xl text-white font-medium placeholder:text-zinc-700"
           />
           <button 
             onClick={handleIgnition} 
-            className={`w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center transition-all shadow-xl shrink-0 ${
+            className={`w-10 h-10 md:w-16 md:h-16 rounded-full flex items-center justify-center transition-all shadow-xl shrink-0 ${
               isExpired && user?.role !== 'GOD_MODE' ? 'bg-amber-500 text-black' : 'bg-indigo-600 text-white'
             }`}
           >
-            {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20}/>}
+            {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} className="md:w-6 md:h-6"/>}
           </button>
         </div>
       </footer>
