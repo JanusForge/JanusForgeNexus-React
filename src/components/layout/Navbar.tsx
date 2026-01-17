@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Menu, X, Zap, User, LogOut, Coins, ShieldAlert, Radio } from 'lucide-react';
+import { Menu, X, User, LogOut, ShieldAlert, Radio, ShieldCheck, Clock } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -13,19 +13,19 @@ export default function Navbar() {
   const [systemAlert, setSystemAlert] = useState<string | null>(null);
 
   const isAuthenticated = !!user;
-
-  // Protocol 0: Check for owner email or God Mode role
   const isAdmin = isAuthenticated && (user?.email === 'admin@janusforge.ai' || user?.role === 'GOD_MODE');
+
+  // --- ⏳ SOVEREIGNTY LOGIC ---
+  const isSovereign = user?.role === 'SOVEREIGN' || user?.role === 'ADMIN';
+  const hasAccess = user?.access_expiry && new Date(user.access_expiry) > new Date();
 
   // Listen for Global Broadcasts
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
-
     socket.on('broadcast:incoming', (data: { message: string }) => {
       setSystemAlert(data.message);
       setTimeout(() => setSystemAlert(null), 15000);
     });
-
     return () => { socket.disconnect(); };
   }, []);
 
@@ -44,36 +44,34 @@ export default function Navbar() {
         </div>
       )}
 
-      <nav className="bg-gray-900/95 backdrop-blur-lg border-b border-gray-800">
+      <nav className="bg-black/95 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
+            
             {/* Logo Section */}
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center group-hover:rotate-6 transition-transform">
-                <span className="text-white font-black text-xl">JF</span>
+              <div className="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-500 shadow-lg shadow-indigo-500/20">
+                <ShieldCheck size={22} />
               </div>
-              {/* ✅ FIXED: Corrected JSX syntax for legal name */}
-              <span className="text-white font-black text-xl hidden sm:block italic uppercase tracking-tighter">
-  Janus Forge Nexus<sup className="text-[10px] ml-1">®</sup>
-</span>
+              <span className="text-white font-black text-xl italic uppercase tracking-tighter">
+                Janus Forge Nexus<sup className="text-[10px] ml-1">®</sup>
+              </span>
             </Link>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              <Link href="/" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
+              <Link href="/" className="text-zinc-400 hover:text-white transition-colors font-black text-[10px] uppercase tracking-[0.2em]">
                 Home
               </Link>
-              <Link href="/pricing" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
-                Pricing
+              <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300 transition-colors font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+                <Zap size={12} />
+                Sovereignty
               </Link>
-              {/*<Link href="/daily-forge" className="text-gray-300 hover:text-white transition-colors font-medium text-xs uppercase tracking-widest">
-                Daily Forge
-              </Link>
-              */}
+              
               {isAdmin && (
                 <Link
                   href="/admin"
-                  className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors font-bold uppercase text-[10px] tracking-widest border border-amber-500/20 px-3 py-1 rounded-md bg-amber-500/5"
+                  className="flex items-center gap-2 text-amber-500 hover:text-amber-400 transition-colors font-black uppercase text-[10px] tracking-widest border border-amber-500/20 px-4 py-1.5 rounded-full bg-amber-500/5"
                 >
                   <ShieldAlert size={14} />
                   Nexus Watch
@@ -81,13 +79,17 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Right Side - Auth & Tokens */}
+            {/* Right Side - Auth & Status */}
             <div className="flex items-center gap-6">
               {isAuthenticated && (
-                <div className="flex items-center gap-3 bg-purple-500/10 px-4 py-2 rounded-full border border-purple-500/20">
-                  <Coins size={16} className="text-purple-400" />
-                  <span className="text-white font-mono font-bold text-sm">
-                    {user?.email === 'admin@janusforge.ai' ? '∞' : (user?.tokens_remaining || 0).toLocaleString()}
+                <div className={`flex items-center gap-3 px-4 py-2 rounded-full border transition-all ${
+                  hasAccess 
+                  ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' 
+                  : 'bg-zinc-900 border-white/5 text-zinc-500'
+                }`}>
+                  <Clock size={14} className={hasAccess ? 'animate-pulse' : ''} />
+                  <span className="font-black text-[10px] uppercase tracking-widest">
+                    {isAdmin ? 'Eternal Status' : hasAccess ? 'Sovereign Active' : 'Spectator Mode'}
                   </span>
                 </div>
               )}
@@ -95,26 +97,25 @@ export default function Navbar() {
               {isAuthenticated ? (
                 <div className="flex items-center gap-4">
                   <Link href="/profile" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center hover:border-indigo-500/50 transition-all">
                         <User size={16} />
                     </div>
-                    <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest">{(user as any)?.username || 'Profile'}</span>
                   </Link>
                   <button
                     onClick={logout}
-                    className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                    className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
                   >
-                    <LogOut size={20} />
+                    <LogOut size={18} />
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-4">
-                  <Link href="/login" className="text-gray-400 hover:text-white text-[10px] font-black uppercase tracking-widest">
+                  <Link href="/login" className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest">
                     Login
                   </Link>
                   <Link
                     href="/register"
-                    className="px-6 py-2 bg-white text-black rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-lg shadow-white/5"
+                    className="px-6 py-2.5 bg-white text-black rounded-full font-black text-[10px] uppercase tracking-[0.15em] hover:bg-indigo-500 hover:text-white transition-all shadow-xl shadow-indigo-500/10"
                   >
                     Join Forge
                   </Link>
@@ -124,35 +125,31 @@ export default function Navbar() {
               {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg hover:bg-gray-800 transition-colors"
+                className="md:hidden p-2 text-zinc-400"
               >
-                {mobileMenuOpen ? <X size={24} className="text-white" /> : <Menu size={24} className="text-white" />}
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>
           </div>
 
           {/* Mobile Menu */}
-{mobileMenuOpen && (
-  <div className="md:hidden py-6 border-t border-gray-800 animate-in fade-in slide-in-from-top-4">
-    <div className="flex flex-col gap-5 px-4">
-      <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Home</Link>
-      <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Pricing</Link>
-      
-      {/* 🌑 SHADOWED: Daily Forge hidden on Mobile */} 
-      {/* <Link href="/daily-forge" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Daily Forge</Link>
-      */}
-
-      {isAdmin && (
-        <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-amber-500 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-          <ShieldAlert size={14} /> Nexus Watch
-        </Link>
-      )}
-      {/* ...rest of mobile menu... */}
-                {isAuthenticated && (
+          {mobileMenuOpen && (
+            <div className="md:hidden py-8 border-t border-white/5 animate-in slide-in-from-top-4 duration-300">
+              <div className="flex flex-col gap-6 px-4">
+                <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-white text-[10px] font-black uppercase tracking-widest">Home</Link>
+                <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">Sovereignty Passes</Link>
+                {isAdmin && (
+                  <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-amber-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <ShieldAlert size={14} /> Nexus Watch
+                  </Link>
+                )}
+                {isAuthenticated ? (
                   <>
-                    <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-gray-300 text-xs font-black uppercase tracking-widest">Profile</Link>
-                    <button onClick={logout} className="text-left text-red-500 text-xs font-black uppercase tracking-widest">Logout</button>
+                    <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Profile</Link>
+                    <button onClick={logout} className="text-left text-red-500 text-[10px] font-black uppercase tracking-widest">Disconnect</button>
                   </>
+                ) : (
+                  <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="text-white text-[10px] font-black uppercase tracking-widest">Join Forge</Link>
                 )}
               </div>
             </div>
