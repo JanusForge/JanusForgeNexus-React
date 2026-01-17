@@ -5,9 +5,11 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { Send, Loader2, X, Clock, Zap, Star, Globe, ShieldCheck, Lock, Users, MessageSquare } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 
+// 🛡️ UPDATED: Added email to the interface
 interface SovereignUser {
   id: string;
   username: string;
+  email: string; // <--- Added this line
   role: string;
   access_expiry?: string | Date;
   is_sovereign?: boolean;
@@ -25,9 +27,10 @@ export default function NexusPrimeEngine() {
   const [showSuccess, setShowSuccess] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // 🎫 TIME-BASED ACCESS PROGRAM (Temporal Lock)
+  // 🎫 TIME-BASED ACCESS PROGRAM
   useEffect(() => {
     const timer = setInterval(() => {
+      // Line 31 will now pass because 'email' is in the interface above
       if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai') {
         setTimeLeft("ETERNAL ACCESS");
         setIsExpired(false);
@@ -53,7 +56,7 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(timer);
   }, [user]);
 
-  // 🎊 SUCCESS DETECTION (Handshake Complete)
+  // 🎊 SUCCESS DETECTION
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -86,7 +89,6 @@ export default function NexusPrimeEngine() {
   const handleIgnition = async () => {
     if (!userMessage.trim() || isSynthesizing) return;
 
-    // 🛡️ THE GATEKEEPER
     if (isExpired && user?.role !== 'GOD_MODE' && user?.role !== 'ADMIN') {
       setIsTrayOpen(true);
       return;
@@ -131,7 +133,6 @@ export default function NexusPrimeEngine() {
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden">
 
-      {/* 🎊 SUCCESS OVERLAY */}
       {showSuccess && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none p-4">
           <div className="bg-indigo-600 border border-white/20 px-8 py-5 rounded-[2rem] shadow-[0_0_80px_rgba(79,70,229,0.4)] animate-in zoom-in duration-500 flex items-center gap-5 pointer-events-auto">
@@ -147,7 +148,6 @@ export default function NexusPrimeEngine() {
         </div>
       )}
 
-      {/* 🏙️ STATUS INTERFACE */}
       <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/40 backdrop-blur-md border-b border-white/5">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
@@ -173,7 +173,6 @@ export default function NexusPrimeEngine() {
         </button>
       </header>
 
-      {/* 🌊 MASTER CONVERSATION FLOW */}
       <main className="w-full max-w-4xl px-4 md:px-8 flex flex-col items-center pt-32 pb-48">
         <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
            <video autoPlay loop muted playsInline className="w-full h-full object-contain">
@@ -216,7 +215,6 @@ export default function NexusPrimeEngine() {
         </div>
       </main>
 
-      {/* ⌨️ SOVEREIGN INPUT */}
       <footer className="fixed bottom-0 w-full p-8 md:p-12 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col items-center gap-4">
         {isExpired && (
           <div className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full mb-2">
@@ -247,7 +245,6 @@ export default function NexusPrimeEngine() {
         </div>
       </footer>
 
-      {/* 🌑 REFUEL PORTAL */}
       {isTrayOpen && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
             <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2.5rem] p-10" onClick={e => e.stopPropagation()}>
