@@ -8,6 +8,7 @@ import CouncilBuilder from './components/CouncilBuilder';
 interface SovereignUser {
   id: string;
   username: string;
+  role: string; // Critical for Admin bypass
   access_expiry?: string | Date;
   is_sovereign?: boolean;
 }
@@ -24,11 +25,24 @@ export default function NexusPrimeEngine() {
   const [isExpired, setIsExpired] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // 🛡️ ADMIN & TIME LOGIC
   useEffect(() => {
     const timer = setInterval(() => {
-      if (!user?.access_expiry) return;
-      const expiryTime = new Date(user.access_expiry).getTime();
-      const diff = expiryTime - new Date().getTime();
+      // 1. GOD_MODE BYPASS
+      if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN') {
+        setTimeLeft("ETERNAL ACCESS");
+        setIsExpired(false);
+        return;
+      }
+
+      // 2. Standard User Check
+      if (!user?.access_expiry) {
+        setTimeLeft("ACCESS REQUIRED");
+        setIsExpired(true);
+        return;
+      }
+
+      const diff = new Date(user.access_expiry).getTime() - new Date().getTime();
       
       if (diff <= 0) { 
         setTimeLeft("EXPIRED"); 
@@ -42,7 +56,7 @@ export default function NexusPrimeEngine() {
       }
     }, 1000);
     return () => clearInterval(timer);
-  }, [user?.access_expiry]);
+  }, [user?.access_expiry, user?.role]);
 
   const handleTestRefuel = async (hours: number) => {
     try {
@@ -57,7 +71,12 @@ export default function NexusPrimeEngine() {
 
   const handleIgnition = async () => {
     if (!userMessage.trim() || isSynthesizing) return;
-    if (isExpired) { setIsTrayOpen(true); return; }
+    
+    // Admin bypass for synthesis block
+    if (isExpired && user?.role !== 'GOD_MODE' && user?.role !== 'ADMIN') { 
+      setIsTrayOpen(true); 
+      return; 
+    }
 
     const originalMsg = userMessage;
     setChatThread(prev => [...prev, { id: Date.now(), type: 'user', content: originalMsg, sender: user?.username || 'Sovereign' }]);
@@ -71,7 +90,7 @@ export default function NexusPrimeEngine() {
         body: JSON.stringify({ prompt: originalMsg, models: selectedModels, userId: user?.id }),
       });
 
-      if (response.status === 403) {
+      if (response.status === 403 && user?.role !== 'GOD_MODE') {
         setChatThread(prev => prev.slice(0, -1));
         setUserMessage(originalMsg);
         setIsTrayOpen(true);
@@ -87,54 +106,54 @@ export default function NexusPrimeEngine() {
   };
 
   return (
-    // 🛡️ Removed 'fixed' and 'bg-black' to allow the main site's video/Navbar to work
-    <div className="w-full flex flex-col min-h-screen relative">
+    // 🎥 TRANSPARENCY FIX: Removed 'bg-black' and 'fixed inset-0'
+    <div className="w-full flex flex-col min-h-screen transparent">
       
-      {/* 🏙️ SUB-HEADER (Sits below your Main Navbar) */}
-      <div className="w-full py-6 border-b border-white/5 bg-white/5 backdrop-blur-sm px-8 flex items-center justify-between">
+      {/* 🏙️ PROTOCOL HEADER */}
+      <div className="w-full py-8 px-8 flex items-center justify-between">
         <div className="flex flex-col">
-          <h2 className="text-xl font-black uppercase tracking-tighter italic text-white">Nexus Prime</h2>
-          <p className="text-[9px] uppercase tracking-[0.4em] text-indigo-400 font-bold">Adversarial Protocol Active</p>
+          <h2 className="text-2xl font-black uppercase tracking-tighter italic text-white drop-shadow-md">Nexus Prime</h2>
+          <p className="text-[10px] uppercase tracking-[0.4em] text-indigo-400 font-bold">Adversarial Protocol Active</p>
         </div>
 
         <button 
             onClick={() => setIsTrayOpen(true)} 
-            className={`px-4 py-2 rounded-full border text-[10px] font-black transition-all flex items-center gap-3 ${
-                isExpired ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-indigo-500/40 text-indigo-400'
+            className={`px-5 py-2 rounded-full border text-[10px] font-black transition-all flex items-center gap-3 shadow-lg ${
+                isExpired ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-indigo-500/50 text-indigo-400 bg-black/40'
             }`}
         >
           <Clock size={12}/>
-          <span>{timeLeft || "ACCESS DENIED"}</span>
+          <span className="tracking-widest">{timeLeft}</span>
         </button>
       </div>
 
-      {/* 🌊 MAIN STREAM AREA */}
+      {/* 🌊 STREAM AREA */}
       <main className="flex-1 px-4 py-12">
-        <div className="max-w-3xl mx-auto space-y-12">
+        <div className="max-w-4xl mx-auto space-y-12">
           
           {chatThread.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 space-y-4 opacity-40">
-               <h3 className="text-4xl font-black uppercase tracking-[0.2em] text-white italic text-center leading-none">Awaiting Ignition</h3>
-               <p className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-500">The Council is Silent</p>
+            <div className="flex flex-col items-center justify-center py-32 space-y-6">
+               <h3 className="text-6xl font-black uppercase tracking-[0.2em] text-white italic text-center leading-none opacity-80 drop-shadow-2xl">AWAITING IGNITION</h3>
+               <p className="text-[11px] font-black uppercase tracking-[0.6em] text-indigo-500 opacity-60">The Council is Silent</p>
             </div>
           )}
 
           {chatThread.map((msg, i) => (
             <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] p-8 rounded-3xl border shadow-2xl transition-all ${
-                msg.type === 'user' ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-white/5 border-white/10'
+              <div className={`max-w-[80%] p-8 rounded-3xl border backdrop-blur-xl shadow-2xl transition-all ${
+                msg.type === 'user' ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-black/60 border-white/10'
               }`}>
-                <span className={`text-[9px] font-black uppercase tracking-widest mb-4 block ${msg.type === 'user' ? 'text-indigo-400' : 'text-amber-500'}`}>
+                <span className={`text-[10px] font-black uppercase tracking-widest mb-4 block ${msg.type === 'user' ? 'text-indigo-400' : 'text-amber-500'}`}>
                     {msg.sender}
                 </span>
-                <p className="text-base leading-relaxed text-zinc-200 font-medium whitespace-pre-wrap">{msg.content}</p>
+                <p className="text-base leading-relaxed text-zinc-100 font-medium whitespace-pre-wrap">{msg.content}</p>
               </div>
             </div>
           ))}
 
           {isSynthesizing && (
-            <div className="flex items-center gap-3 text-indigo-500 text-[10px] uppercase font-black tracking-widest animate-pulse">
-               <Loader2 className="animate-spin" size={14} /> Council Deliberating...
+            <div className="flex items-center gap-3 text-indigo-500 text-[10px] uppercase font-black tracking-widest animate-pulse drop-shadow-md">
+               <Loader2 className="animate-spin" size={14} /> COUNCIL SYNTHESIS IN PROGRESS...
             </div>
           )}
           <div ref={chatEndRef} />
@@ -172,26 +191,26 @@ export default function NexusPrimeEngine() {
         </div>
       )}
 
-      {/* ⌨️ FLOATING INPUT BAR */}
-      <footer className="sticky bottom-0 p-6 md:p-10 bg-gradient-to-t from-black to-transparent z-50">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-zinc-900/90 border border-white/10 rounded-[2.5rem] p-3 flex items-center gap-4 shadow-2xl backdrop-blur-md">
-            <textarea 
-              value={userMessage} 
-              onChange={(e) => setUserMessage(e.target.value)} 
-              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-              placeholder={isExpired ? "Sovereignty Access Window Closed..." : "Challenge the Council..."} 
-              className="flex-1 bg-transparent outline-none resize-none h-14 py-4 px-4 text-base text-white"
-            />
-            <button 
-              onClick={handleIgnition} 
-              className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-all ${isExpired ? 'bg-amber-500 text-black' : 'bg-indigo-600 text-white'}`}
-            >
-              {isExpired ? <Zap size={24} fill="currentColor" /> : <Send size={24}/>}
-            </button>
-          </div>
+      {/* ⌨️ INPUT HUB */}
+      <div className="sticky bottom-0 w-full p-8 z-50">
+        <div className="max-w-3xl mx-auto bg-black/80 border border-white/10 rounded-[3rem] p-4 flex items-center gap-4 shadow-2xl backdrop-blur-xl">
+          <textarea 
+            value={userMessage} 
+            onChange={(e) => setUserMessage(e.target.value)} 
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
+            placeholder={isExpired && user?.role !== 'GOD_MODE' ? "Sovereignty Access Window Closed..." : "Challenge the Council..."} 
+            className="flex-1 bg-transparent outline-none resize-none h-14 py-4 px-6 text-lg text-white font-medium"
+          />
+          <button 
+            onClick={handleIgnition} 
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                isExpired && user?.role !== 'GOD_MODE' ? 'bg-amber-500 text-black' : 'bg-indigo-600 text-white'
+            } shadow-xl hover:scale-105 active:scale-95`}
+          >
+            {isExpired && user?.role !== 'GOD_MODE' ? <Zap size={24} fill="currentColor" /> : <Send size={24}/>}
+          </button>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
