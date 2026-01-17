@@ -171,7 +171,7 @@ export default function NexusPrimeEngine() {
             {isExpired && (
               <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
                 <Lock size={10} className="text-amber-500"/>
-                <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Spectator Mode Only</span>
+                <span className="text-[11px] font-black text-amber-500 uppercase tracking-widest">Spectator Mode Only</span>
               </div>
             )}
             
@@ -205,7 +205,7 @@ export default function NexusPrimeEngine() {
             value={userMessage}
             onChange={(e) => setUserMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder={isExpired ? "Sovereignty Expired. Link locked..." : "Command the Council..."}
+            placeholder={isExpired ? "Please buy more time. Commenting is locked...." : "Command the Council..."}
             className="flex-1 bg-transparent outline-none resize-none h-12 md:h-14 py-3 px-6 text-sm text-white font-medium placeholder:text-zinc-800 disabled:cursor-not-allowed"
             disabled={isExpired && user?.role !== 'ADMIN'}
           />
