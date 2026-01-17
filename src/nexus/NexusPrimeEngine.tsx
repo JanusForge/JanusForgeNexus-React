@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Send, Loader2, X, Clock, Zap, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Send, Loader2, X, Clock, Zap, ShieldCheck } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 
 interface SovereignUser {
@@ -22,7 +22,6 @@ export default function NexusPrimeEngine() {
   const [isTrayOpen, setIsTrayOpen] = useState(false);
   const [timeLeft, setTimeLeft] = useState<string | null>(null);
   const [isExpired, setIsExpired] = useState(true);
-  const [refuelRequired, setRefuelRequired] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export default function NexusPrimeEngine() {
 
   const handleIgnition = async () => {
     if (!userMessage.trim() || isSynthesizing) return;
-    if (isExpired) { setIsTrayOpen(true); setRefuelRequired(true); return; }
+    if (isExpired) { setIsTrayOpen(true); return; }
 
     const originalMsg = userMessage;
     setChatThread(prev => [...prev, { id: Date.now(), type: 'user', content: originalMsg, sender: user?.username || 'Sovereign' }]);
@@ -76,7 +75,6 @@ export default function NexusPrimeEngine() {
         setChatThread(prev => prev.slice(0, -1));
         setUserMessage(originalMsg);
         setIsTrayOpen(true);
-        setRefuelRequired(true);
         return;
       }
 
@@ -89,52 +87,45 @@ export default function NexusPrimeEngine() {
   };
 
   return (
-    // 🛡️ High Z-index on the container to blast through any global overlays
-    <div className="fixed inset-0 w-full h-full bg-[#020202] text-zinc-100 z-[9999] flex flex-col overflow-hidden">
+    // 🛡️ Removed 'fixed' and 'bg-black' to allow the main site's video/Navbar to work
+    <div className="w-full flex flex-col min-h-screen relative">
       
-      {/* 🏙️ INTEGRATED HEADER */}
-      <header className="shrink-0 h-20 border-b border-white/10 bg-black/60 backdrop-blur-md flex items-center justify-between px-8">
+      {/* 🏙️ SUB-HEADER (Sits below your Main Navbar) */}
+      <div className="w-full py-6 border-b border-white/5 bg-white/5 backdrop-blur-sm px-8 flex items-center justify-between">
         <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center">
-                <Zap size={14} className="text-white fill-white" />
-            </div>
-            <h1 className="text-sm font-black uppercase tracking-tighter italic">Janus Forge Nexus<sup>®</sup></h1>
-          </div>
-          <p className="text-[9px] uppercase tracking-[0.3em] text-indigo-400 font-bold mt-1">Nexus Prime Protocol</p>
+          <h2 className="text-xl font-black uppercase tracking-tighter italic text-white">Nexus Prime</h2>
+          <p className="text-[9px] uppercase tracking-[0.4em] text-indigo-400 font-bold">Adversarial Protocol Active</p>
         </div>
 
         <button 
             onClick={() => setIsTrayOpen(true)} 
             className={`px-4 py-2 rounded-full border text-[10px] font-black transition-all flex items-center gap-3 ${
-                isExpired ? 'border-red-500 bg-red-500/10 text-red-500 animate-pulse' : 'border-indigo-500/40 text-indigo-400 bg-indigo-500/5'
+                isExpired ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-indigo-500/40 text-indigo-400'
             }`}
         >
           <Clock size={12}/>
           <span>{timeLeft || "ACCESS DENIED"}</span>
         </button>
-      </header>
+      </div>
 
-      {/* 🌊 SCROLLABLE STREAM AREA */}
-      <main className="flex-1 overflow-y-auto px-4 py-12 custom-scrollbar">
+      {/* 🌊 MAIN STREAM AREA */}
+      <main className="flex-1 px-4 py-12">
         <div className="max-w-3xl mx-auto space-y-12">
           
           {chatThread.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 space-y-4 opacity-30">
-               <h2 className="text-2xl font-black uppercase tracking-widest text-white italic">Nexus Prime</h2>
-               <p className="text-[9px] font-black uppercase tracking-[0.5em]">Awaiting Adversarial Ignition</p>
+            <div className="flex flex-col items-center justify-center py-24 space-y-4 opacity-40">
+               <h3 className="text-4xl font-black uppercase tracking-[0.2em] text-white italic text-center leading-none">Awaiting Ignition</h3>
+               <p className="text-[10px] font-black uppercase tracking-[0.5em] text-indigo-500">The Council is Silent</p>
             </div>
           )}
 
           {chatThread.map((msg, i) => (
             <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] p-8 rounded-3xl border shadow-2xl transition-all ${
-                msg.type === 'user' 
-                  ? 'bg-indigo-600/5 border-indigo-500/30 rounded-tr-none' 
-                  : 'bg-white/5 border-white/10 rounded-tl-none'
+                msg.type === 'user' ? 'bg-indigo-600/10 border-indigo-500/30' : 'bg-white/5 border-white/10'
               }`}>
                 <span className={`text-[9px] font-black uppercase tracking-widest mb-4 block ${msg.type === 'user' ? 'text-indigo-400' : 'text-amber-500'}`}>
-                    {msg.sender} {msg.type === 'ai' && 'PROTOCOL'}
+                    {msg.sender}
                 </span>
                 <p className="text-base leading-relaxed text-zinc-200 font-medium whitespace-pre-wrap">{msg.content}</p>
               </div>
@@ -142,8 +133,8 @@ export default function NexusPrimeEngine() {
           ))}
 
           {isSynthesizing && (
-            <div className="flex items-center gap-3 text-indigo-500 text-[10px] uppercase font-black tracking-widest animate-pulse px-4">
-               <Loader2 className="animate-spin" size={14} /> Council Synthesis in Progress...
+            <div className="flex items-center gap-3 text-indigo-500 text-[10px] uppercase font-black tracking-widest animate-pulse">
+               <Loader2 className="animate-spin" size={14} /> Council Deliberating...
             </div>
           )}
           <div ref={chatEndRef} />
@@ -152,8 +143,8 @@ export default function NexusPrimeEngine() {
 
       {/* 🌑 PORTAL BACKDROP */}
       {isTrayOpen && (
-        <div className="fixed inset-0 bg-black/95 z-[10000] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
-           <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2.5rem] p-10 shadow-[0_0_100px_rgba(79,70,229,0.1)]" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/95 z-[1000] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
+           <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2.5rem] p-10 shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-10">
                 <div className="flex items-center gap-3">
                     <ShieldCheck className="text-indigo-400" size={20}/>
@@ -164,8 +155,8 @@ export default function NexusPrimeEngine() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
                 {[{l:'24H PASS', p:'$5', h:24}, {l:'7D SPRINT', p:'$20', h:168}, {l:'30D FORGE', p:'$75', h:720}].map((pass, i) => (
-                  <button key={i} onClick={() => handleTestRefuel(pass.h)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left group">
-                    <div className="text-[9px] font-black text-zinc-500 group-hover:text-indigo-400 mb-1">{pass.l}</div>
+                  <button key={i} onClick={() => handleTestRefuel(pass.h)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left">
+                    <div className="text-[9px] font-black text-zinc-500 mb-1">{pass.l}</div>
                     <div className="text-2xl font-black text-white">{pass.p}</div>
                   </button>
                 ))}
@@ -181,20 +172,20 @@ export default function NexusPrimeEngine() {
         </div>
       )}
 
-      {/* ⌨️ INPUT HUB */}
-      <footer className="shrink-0 p-6 md:p-10 bg-gradient-to-t from-black to-transparent">
+      {/* ⌨️ FLOATING INPUT BAR */}
+      <footer className="sticky bottom-0 p-6 md:p-10 bg-gradient-to-t from-black to-transparent z-50">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-zinc-900/90 border border-white/10 rounded-[2.5rem] p-3 flex items-center gap-4 shadow-2xl">
+          <div className="bg-zinc-900/90 border border-white/10 rounded-[2.5rem] p-3 flex items-center gap-4 shadow-2xl backdrop-blur-md">
             <textarea 
               value={userMessage} 
               onChange={(e) => setUserMessage(e.target.value)} 
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-              placeholder={isExpired ? "Access Window Closed..." : "Challenge the Council..."} 
-              className="flex-1 bg-transparent outline-none resize-none h-14 py-4 px-4 text-base text-white placeholder:text-zinc-700"
+              placeholder={isExpired ? "Sovereignty Access Window Closed..." : "Challenge the Council..."} 
+              className="flex-1 bg-transparent outline-none resize-none h-14 py-4 px-4 text-base text-white"
             />
             <button 
               onClick={handleIgnition} 
-              className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-all ${isExpired ? 'bg-amber-500 text-black shadow-amber-500/20' : 'bg-indigo-600 text-white shadow-indigo-600/20'} shadow-xl`}
+              className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center transition-all ${isExpired ? 'bg-amber-500 text-black' : 'bg-indigo-600 text-white'}`}
             >
               {isExpired ? <Zap size={24} fill="currentColor" /> : <Send size={24}/>}
             </button>
