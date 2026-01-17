@@ -175,7 +175,7 @@ export default function NexusPrimeEngine() {
               </div>
             )}
             
-            <p className="text-zinc-600 text-xs max-w-sm font-medium italic">
+            <p className="text-zinc-600 text-sm max-w-sm font-medium italic">
               {isExpired 
                 ? "Please purchase time to chat in Nexus Prime." 
                 : "Thanks! You are now free to chat with the AIs or other Users."}
