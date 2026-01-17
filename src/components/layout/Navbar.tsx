@@ -77,7 +77,7 @@ export default function Navbar() {
               </Link>
               <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300 transition-colors font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
                 <Zap size={12} />
-                Sovereignty
+                Buy More Time
               </Link>
               
               {isAdmin && (
