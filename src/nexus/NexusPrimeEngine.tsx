@@ -85,7 +85,7 @@ export default function NexusPrimeEngine() {
           loop 
           muted 
           playsInline 
-          className="max-w-full max-h-full object-contain opacity-90 contrast-150 saturate-125"
+          className="max-w-full max-h-full object-contain opacity-75 contrast-150 saturate-100"
         >
           <source src="/janus-logo-video.mp4" type="video/mp4" />
         </video>
