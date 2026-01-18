@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -27,21 +28,34 @@ export default function Navbar() {
   const hasAccess = !!(user?.access_expiry && new Date(user.access_expiry) > new Date());
 
   useEffect(() => {
+    // Connect to the Neural Link
     const socket = io(API_BASE_URL, { withCredentials: true });
-    socket.on('broadcast:incoming', (data: { message: string }) => {
-      setSystemAlert(data.message);
-      setTimeout(() => setSystemAlert(null), 15000);
+
+    // 📡 SYNCED: Listen for the "Deep Pull" transmissions
+    socket.on('nexus:transmission', (data: any) => {
+      setSystemAlert("The Council is Synthesizing...");
+      setTimeout(() => setSystemAlert(null), 10000);
     });
+
+    // 🔓 SYNCED: Listen for the Stripe Webhook to unlock access in real-time
+    socket.on('nexus:access_granted', (data: { userId: string }) => {
+      if (data.userId === user?.id) {
+        // Soft reload to refresh the auth state and flip the badge
+        window.location.reload();
+      }
+    });
+
     return () => { socket.disconnect(); };
-  }, []);
+  }, [user?.id]);
 
   return (
     <div className="sticky top-0 z-50">
+      {/* --- Neural Pulse Alert --- */}
       {systemAlert && (
         <div className="bg-indigo-600 text-white py-2 px-4 flex items-center justify-center gap-3 animate-in slide-in-from-top duration-500">
           <Radio size={16} className="animate-pulse flex-shrink-0" />
           <span className="text-xs md:text-sm font-black uppercase tracking-widest text-center">
-            Nexus Alert: {systemAlert}
+            Nexus Pulse: {systemAlert}
           </span>
           <button onClick={() => setSystemAlert(null)} className="hover:rotate-90 transition-transform">
             <X size={16} />
@@ -53,6 +67,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
 
+            {/* --- Logo / Home --- */}
             <Link href="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-500 shadow-lg shadow-indigo-500/20">
                 <ShieldCheck size={22} />
@@ -62,6 +77,7 @@ export default function Navbar() {
               </span>
             </Link>
 
+            {/* --- Desktop Navigation --- */}
             <div className="hidden md:flex items-center gap-8">
               <Link href="/" className="text-zinc-400 hover:text-white transition-colors font-black text-[10px] uppercase tracking-[0.2em]">
                 Home
@@ -82,14 +98,15 @@ export default function Navbar() {
               )}
             </div>
 
+            {/* --- Auth & Access Status --- */}
             <div className="flex items-center gap-6">
               {isAuthenticated && (
                 <div className={`flex items-center gap-3 px-4 py-2 rounded-full border transition-all duration-500 ${
-                  hasAccess
+                  hasAccess || isAdmin
                   ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400 shadow-[0_0_20px_rgba(79,70,229,0.1)]'
                   : 'bg-zinc-900/50 border-white/5 text-zinc-500'
                 }`}>
-                  <Clock size={14} className={hasAccess ? 'animate-pulse' : ''} />
+                  <Clock size={14} className={(hasAccess || isAdmin) ? 'animate-pulse' : ''} />
                   <span className="font-black text-[10px] uppercase tracking-widest">
                     {isAdmin ? 'Eternal Status' : hasAccess ? 'Nexus Active' : 'Observer Mode'}
                   </span>
@@ -124,6 +141,7 @@ export default function Navbar() {
             </div>
           </div>
 
+          {/* --- Mobile Menu --- */}
           {mobileMenuOpen && (
             <div className="md:hidden py-8 border-t border-white/5 animate-in slide-in-from-top-4 duration-300">
               <div className="flex flex-col gap-6 px-4">
