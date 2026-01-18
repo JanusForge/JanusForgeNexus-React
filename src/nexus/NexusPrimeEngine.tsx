@@ -182,6 +182,11 @@ export default function NexusPrimeEngine() {
     }
   };
 
+  const getNexusDate = () => {
+  return new Date().toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York'
+    });
+  };
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center">
