@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useSearchParams, useRouter } from 'next/navigation'; // Added for payment detection
 import {
   Send, Loader2, X, Globe, ShieldCheck, Lock, Zap,
   ThumbsUp, Share2, Printer, Bookmark, ChevronRight
@@ -21,6 +22,8 @@ interface NexusUser {
 
 export default function NexusPrimeEngine() {
   const { user } = useAuth() as { user: NexusUser | null };
+  const searchParams = useSearchParams(); 
+  const router = useRouter(); 
   const [userMessage, setUserMessage] = useState('');
   const [chatThread, setChatThread] = useState<any[]>([]);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -32,13 +35,26 @@ export default function NexusPrimeEngine() {
   const [nexusTime, setNexusTime] = useState<string>("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // --- 0. PAYMENT SUCCESS HANDSHAKE ---
+  useEffect(() => {
+    if (searchParams.get('payment_success') === 'true') {
+      setShowSuccess(true);
+      // Auto-hide overlay and clean URL after 8 seconds
+      const timer = setTimeout(() => {
+        setShowSuccess(false);
+        // This removes the query params from the browser bar without reloading
+        router.replace(window.location.pathname);
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, router]);
+
   // --- 1. HYDRATION: Load Global Stream on Mount ---
   useEffect(() => {
     const fetchStream = async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
         const data = await res.json();
-        // If your backend returns the list of messages, we populate the thread
         if (data && data.messages) {
           setChatThread(data.messages);
         }
@@ -54,7 +70,6 @@ export default function NexusPrimeEngine() {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // Prevent duplicate messages (especially if local injection already happened)
         if (prev.find(m => m.id === entry.id)) return prev;
         return [...prev, entry];
       });
@@ -121,10 +136,13 @@ export default function NexusPrimeEngine() {
 
   const handleRefuel = async (priceId: string, hours: number) => {
     try {
+      // Determine tier string for backend mapping
+      const tier = hours === 24 ? '24H' : hours === 168 ? '7D' : '30D';
+      
       const response = await fetch(`${API_BASE_URL}/api/stripe/create-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, userId: user?.id, hours }),
+        body: JSON.stringify({ tier, userId: user?.id }),
       });
       const data = await response.json();
       if (data.url) window.location.href = data.url;
@@ -140,7 +158,6 @@ export default function NexusPrimeEngine() {
     const originalMsg = userMessage;
     const tempId = `msg-${Date.now()}`;
 
-    // IMMEDIATE LOCAL INJECTION
     setChatThread(prev => [...prev, {
       id: tempId,
       type: 'user',
@@ -152,13 +169,6 @@ export default function NexusPrimeEngine() {
     setIsSynthesizing(true);
     setUserMessage('');
 
-    const getNexusDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York'
-    });
-  };
-
-
     try {
       const response = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
         method: 'POST',
@@ -167,42 +177,63 @@ export default function NexusPrimeEngine() {
           prompt: originalMsg,
           models: selectedModels,
           userId: user?.id,
-          systemContext: `[TEMPORAL_ANCHOR: {getNexusDate()}]`
+          systemContext: `[TEMPORAL_ANCHOR: ${getNexusDate()}]`
         }),
       });
-      
-      const data = await response.json();
-      if (response.ok && data.results) {
-        // We let the socket handle the AI response broadcast
-        // If socket fails, the Hydration fetch on next refresh will catch it
-      }
-    } catch (e) { 
-      setIsSynthesizing(false); 
+      await response.json();
+    } catch (e) {
+      setIsSynthesizing(false);
       console.error("Ignition Error:", e);
     }
   };
 
   const getNexusDate = () => {
-  return new Date().toLocaleDateString('en-US', {
+    return new Date().toLocaleDateString('en-US', {
       month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York'
     });
   };
 
   return (
-    <div className="w-full min-h-screen bg-black text-white flex flex-col items-center">
+    <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden">
 
-      {/* SUCCESS OVERLAY */}
+      {/* --- FORGE REFUELED OVERLAY --- */}
       {showSuccess && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none p-4">
-          <div className="bg-indigo-600 border border-white/20 px-8 py-5 rounded-[2rem] shadow-[0_0_80px_rgba(79,70,229,0.4)] animate-in zoom-in duration-500 flex items-center gap-5 pointer-events-auto">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-600">
-              <ShieldCheck size={24} />
+        <div className="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center text-white px-4 transition-all animate-in fade-in duration-700 backdrop-blur-3xl">
+          <div className="relative w-48 h-48 mb-12">
+            <div className="absolute inset-0 bg-indigo-600 rounded-full blur-[60px] animate-pulse opacity-30"></div>
+            <div className="relative border border-indigo-500/40 w-full h-full rounded-full flex items-center justify-center bg-zinc-900/40 backdrop-blur-xl shadow-[inset_0_0_40px_rgba(79,70,229,0.2)]">
+              <div className="text-7xl animate-[bounce_2s_infinite]">⚡</div>
             </div>
-            <div>
-              <h4 className="text-lg font-black italic uppercase tracking-tighter text-white">Handshake Complete</h4>
-              <p className="text-indigo-100 text-[8px] font-black uppercase tracking-widest opacity-80">Nexus Access Restored</p>
+          </div>
+
+          <div className="text-center z-10">
+            <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent uppercase">
+              Forge Refueled
+            </h1>
+            <p className="text-indigo-500 uppercase tracking-[0.5em] text-[10px] font-bold mb-10">
+              Nexus Energy Synchronized
+            </p>
+
+            <div className="bg-zinc-900/80 border border-zinc-800 p-8 rounded-3xl max-w-md mx-auto shadow-2xl backdrop-blur-md">
+              <p className="text-zinc-400 text-xs leading-relaxed mb-8 uppercase tracking-widest font-bold">
+                The Pentarchy has acknowledged your contribution. Your vault is being synchronized.
+              </p>
+              <div className="relative w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                <div className="absolute top-0 left-0 bg-indigo-500 h-full animate-[loading_8s_linear] shadow-[0_0_15px_rgba(79,70,229,1)]"></div>
+              </div>
+              <div className="mt-4 flex justify-between text-[8px] uppercase tracking-widest text-zinc-600 font-bold">
+                <span>Initializing</span>
+                <span>Synchronizing</span>
+                <span>Ready</span>
+              </div>
             </div>
-            <X onClick={() => setShowSuccess(false)} size={18} className="ml-4 cursor-pointer opacity-50" />
+
+            <button
+              onClick={() => setShowSuccess(false)}
+              className="mt-12 px-10 py-4 bg-white text-black font-black rounded-full hover:bg-indigo-500 hover:text-white transition-all uppercase text-[10px] tracking-widest"
+            >
+              Enter the Nexus
+            </button>
           </div>
         </div>
       )}
@@ -218,7 +249,8 @@ export default function NexusPrimeEngine() {
         </button>
       </header>
 
-      <main className="w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48">
+      {/* MAIN CONTENT BLURRED IF SUCCESS IS SHOWN */}
+      <main className={`w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48 transition-all duration-1000 ${showSuccess ? 'blur-2xl opacity-20 scale-95' : 'blur-0 opacity-100 scale-100'}`}>
 
         {/* LOGO VIDEO */}
         <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
@@ -338,9 +370,14 @@ export default function NexusPrimeEngine() {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes loading {
+          0% { width: 0%; }
+          20% { width: 10%; }
+          100% { width: 100%; }
+        }
+      `}</style>
     </div>
   );
 }
-
-
-// Keep it real, Cassandra.
