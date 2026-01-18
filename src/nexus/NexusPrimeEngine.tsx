@@ -306,7 +306,7 @@ export default function NexusPrimeEngine() {
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">
             Observing Transmission Alpha • {getNexusDate()}
           </p>
-          <p className="text-[10px] font-black font-mono text-indigo-500 tracking-widest">
+          <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">
             {nexusTime} EST
           </p>
         </div>
