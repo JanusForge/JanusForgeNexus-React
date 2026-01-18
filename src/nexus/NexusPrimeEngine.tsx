@@ -5,17 +5,17 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { Send, Loader2, X, Clock, Zap, Star, Globe, ShieldCheck, Lock, Users, MessageSquare, ChevronRight } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 
-interface SovereignUser {
+interface NexusUser {
   id: string;
   username: string;
   email: string;
   role: string;
   access_expiry?: string | Date;
-  is_sovereign?: boolean;
+  is_nexus?: boolean;
 }
 
 export default function NexusPrimeEngine() {
-  const { user } = useAuth() as { user: SovereignUser | null };
+  const { user } = useAuth() as { user: NexusUser | null };
   const [userMessage, setUserMessage] = useState('');
   const [chatThread, setChatThread] = useState<any[]>([]);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -33,10 +33,10 @@ export default function NexusPrimeEngine() {
         setIsExpired(false);
         return;
       }
-      if (!user?.access_expiry) { 
-        setTimeLeft("ACCESS REQUIRED"); 
-        setIsExpired(true); 
-        return; 
+      if (!user?.access_expiry) {
+        setTimeLeft("ACCESS REQUIRED");
+        setIsExpired(true);
+        return;
       }
       const diff = new Date(user.access_expiry).getTime() - new Date().getTime();
       if (diff <= 0) {
@@ -88,7 +88,7 @@ export default function NexusPrimeEngine() {
       id: `msg-${Date.now()}`,
       type: 'user',
       content: originalMsg,
-      sender: user?.username || 'Architect',
+      sender: user?.username || 'Nexus',
       starred: false,
     }]);
 
@@ -116,7 +116,7 @@ export default function NexusPrimeEngine() {
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden">
-      
+
       {/* SUCCESS OVERLAY */}
       {showSuccess && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none p-4">
@@ -126,7 +126,7 @@ export default function NexusPrimeEngine() {
             </div>
             <div>
               <h4 className="text-lg font-black italic uppercase tracking-tighter text-white">Handshake Complete</h4>
-              <p className="text-indigo-100 text-[8px] font-black uppercase tracking-widest opacity-80">Sovereignty Restored</p>
+              <p className="text-indigo-100 text-[8px] font-black uppercase tracking-widest opacity-80">Nexus Access Restored</p>
             </div>
             <X onClick={() => setShowSuccess(false)} size={18} className="ml-4 cursor-pointer opacity-50" />
           </div>
@@ -165,20 +165,20 @@ export default function NexusPrimeEngine() {
           <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">
               NEXUS PRIME
           </h3>
-          
+
           {/* AFFIXED STATUS ELEMENTS */}
           <div className="mt-6 flex flex-col items-center gap-4">
             {isExpired && (
               <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
                 <Lock size={10} className="text-amber-500"/>
-                <span className="text-[11px] font-black text-amber-500 uppercase tracking-widest">Spectator Mode Only</span>
+                <span className="text-[11px] font-black text-amber-500 uppercase tracking-widest">Observer Mode Only</span>
               </div>
             )}
-            
+
             <p className="text-zinc-600 text-sm max-w-sm font-medium italic">
-              {isExpired 
-                ? "Please purchase time to chat in Nexus Prime." 
-                : "Thanks! You are now free to chat with the AIs or other Users."}
+              {isExpired
+                ? "Nexus Access required to contribute to the Forge. Join the transmission to engage the Council."
+                : "Nexus Link Synchronized. You are now free to synthesize with the Council and the community."}
             </p>
           </div>
         </div>
@@ -205,7 +205,7 @@ export default function NexusPrimeEngine() {
             value={userMessage}
             onChange={(e) => setUserMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder={isExpired ? "Please buy more time. Commenting is locked...." : "Start chatting. Enjoy!..."}
+            placeholder={isExpired ? "Temporal link offline. Restore Nexus Access to chat..." : "Command the Nexus. Enjoy!..."}
             className="flex-1 bg-transparent outline-none resize-none h-12 md:h-14 py-3 px-6 text-sm text-white font-medium placeholder:text-zinc-800 disabled:cursor-not-allowed"
             disabled={isExpired && user?.role !== 'ADMIN'}
           />
@@ -225,7 +225,7 @@ export default function NexusPrimeEngine() {
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
             <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2.5rem] p-10" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-10">
-                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400">Sovereignty Portal</h3>
+                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400">Nexus Access</h3>
                 <X onClick={() => setIsTrayOpen(false)} size={20} className="cursor-pointer opacity-50 hover:opacity-100"/>
               </div>
 
@@ -241,7 +241,7 @@ export default function NexusPrimeEngine() {
                   </button>
                 ))}
               </div>
-              
+
               <div className="pt-8 border-t border-white/5">
                 <CouncilBuilder selectedModels={selectedModels} setSelectedModels={setSelectedModels} userBalance={0} onIgnite={handleIgnition} />
               </div>

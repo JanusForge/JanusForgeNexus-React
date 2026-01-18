@@ -6,11 +6,10 @@ import { Loader2, AlertTriangle, ShieldCheck, Clock, Zap } from 'lucide-react';
 
 const BACKEND_URL = 'https://janusforgenexus-backend.onrender.com';
 
-// 🎫 NEW SOVEREIGNTY PASS CONFIG
-const SOVEREIGNTY_PASSES = [
+const NEXUS_PASSES = [
   {
     id: 'pass_24h',
-    name: '24H Sovereign Pass',
+    name: '24H Nexus Pass',
     description: 'Full command of the Council for one solar cycle.',
     price: 5,
     hours: 24,
@@ -48,11 +47,8 @@ function PricingContent() {
       router.push('/register');
       return;
     }
-
     setIsRedirecting(pkg.id);
-
     try {
-      // 🎯 UPDATED TO USE YOUR NEW TIME-BASED ENDPOINT
       const response = await fetch(`${BACKEND_URL}/api/stripe/create-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -62,100 +58,49 @@ function PricingContent() {
           hours: pkg.hours
         }),
       });
-
       const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error(data.error || 'Failed to initiate handshake');
-      }
+      if (data.url) window.location.href = data.url;
     } catch (err) {
       console.error('Checkout error:', err);
-      alert('Neural link failed. Try again.');
-    } finally {
-      setIsRedirecting(null);
-    }
+      alert('Neural link failed.');
+    } finally { setIsRedirecting(null); }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-500" size={32} />
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-indigo-500" size={32} /></div>;
 
   return (
     <div className="min-h-screen bg-black pt-32 pb-24">
-      <div className="container mx-auto px-4 max-w-6xl">
-        
-        {/* SAFETY ALERT */}
+      <div className="container mx-auto px-4 max-w-6xl text-center">
         {isCanceled && (
-          <div className="max-w-2xl mx-auto mb-12">
-            <div className="bg-amber-500/10 border border-amber-500/50 rounded-2xl p-4 flex items-center gap-4">
-              <AlertTriangle className="text-amber-500" size={20} />
-              <p className="text-amber-200 text-[10px] uppercase tracking-widest font-black">
-                Handshake Canceled. Sovereignty status unchanged.
-              </p>
-            </div>
+          <div className="max-w-2xl mx-auto mb-12 bg-amber-500/10 border border-amber-500/50 rounded-2xl p-4 flex items-center gap-4">
+            <AlertTriangle className="text-amber-500" size={20} />
+            <p className="text-amber-200 text-[10px] uppercase tracking-widest font-black">Handshake Canceled. Status unchanged.</p>
           </div>
         )}
 
-        {/* HEADER */}
-        <div className="text-center mb-24">
+        <div className="mb-24">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full mb-6">
              <ShieldCheck size={14} className="text-indigo-500" />
              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Authority Protocol</span>
           </div>
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 italic uppercase text-white">
-            Access <span className="text-indigo-600">Sovereignty</span>
-          </h1>
-          <p className="text-gray-500 max-w-xl mx-auto font-medium text-lg leading-relaxed">
-            Acquire time-based command of the Council. Viewers observe; Sovereigns command.
-          </p>
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 italic uppercase text-white">Nexus <span className="text-indigo-600">Access</span></h1>
+          <p className="text-gray-500 max-w-xl mx-auto font-medium text-lg italic">Observers watch; the Nexus commands. Activate your neural link below.</p>
         </div>
 
-        {/* PASS CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {SOVEREIGNTY_PASSES.map((pass) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+          {NEXUS_PASSES.map((pass) => (
             <div key={pass.id} className="group relative bg-zinc-950 border border-white/5 rounded-[2.5rem] p-10 hover:border-indigo-500/50 transition-all duration-500 flex flex-col">
-              <div className="flex justify-between items-start mb-12">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-all">
-                  <Clock size={24} />
-                </div>
-                <div className="text-2xl font-black text-white italic">${pass.price}</div>
+              <div className="flex justify-between items-start mb-12 text-white font-black italic">
+                <Clock size={24} className="text-indigo-500" />
+                <div className="text-2xl">${pass.price}</div>
               </div>
-
-              <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-4 italic">
-                {pass.name}
-              </h3>
-              <p className="text-zinc-500 text-sm mb-12 flex-1 leading-relaxed">
-                {pass.description}
-              </p>
-
-              <button
-                onClick={() => handleStripeCheckout(pass)}
-                disabled={!!isRedirecting}
-                className="w-full py-5 bg-white text-black font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                {isRedirecting === pass.id ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <>
-                    <Zap size={14} />
-                    Acquire Pass
-                  </>
-                )}
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-4 italic">{pass.name}</h3>
+              <p className="text-zinc-500 text-sm mb-12 flex-1 leading-relaxed italic">{pass.description}</p>
+              <button onClick={() => handleStripeCheckout(pass)} disabled={!!isRedirecting} className="w-full py-5 bg-white text-black font-black text-[11px] uppercase tracking-[0.2em] rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-xl flex items-center justify-center gap-3">
+                {isRedirecting === pass.id ? <Loader2 size={16} className="animate-spin" /> : <><Zap size={14} /> Acquire Pass</>}
               </button>
             </div>
           ))}
-        </div>
-
-        {/* PROTOCOL FOOTNOTE */}
-        <div className="mt-24 text-center">
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-zinc-700">
-            Time is cumulative • Status takes effect immediately upon confirmation
-          </p>
         </div>
       </div>
     </div>
@@ -163,9 +108,5 @@ function PricingContent() {
 }
 
 export default function PricingPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-black" />}>
-      <PricingContent />
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="min-h-screen bg-black" />}><PricingContent /></Suspense>;
 }
