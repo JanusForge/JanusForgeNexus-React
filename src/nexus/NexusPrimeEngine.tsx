@@ -1,4 +1,4 @@
-"use client";
+obserbin"use client";
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -245,7 +245,7 @@ export default function NexusPrimeEngine() {
             value={userMessage}
             onChange={(e) => setUserMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder={isExpired ? "Access Required..." : "Challenge the Council..."}
+            placeholder={isExpired ? "Access Required..." : "Join the Conversation..."}
             className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white placeholder:text-zinc-800"
             disabled={isExpired && user?.role !== 'ADMIN'}
           />
@@ -253,7 +253,7 @@ export default function NexusPrimeEngine() {
             {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}
           </button>
         </div>
-        <p className="mt-4 text-[8px] font-black uppercase tracking-[0.4em] text-zinc-800">Observing Transmission Alpha • Jan 17 2026</p>
+        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.4em] text-white-800">Observing Transmission Alpha • Jan 17 2026</p>
       </footer>
 
       {/* ACCESS TRAY */}
