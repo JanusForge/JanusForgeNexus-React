@@ -152,6 +152,13 @@ export default function NexusPrimeEngine() {
     setIsSynthesizing(true);
     setUserMessage('');
 
+    const getNexusDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York'
+    });
+  };
+
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
         method: 'POST',
@@ -160,7 +167,7 @@ export default function NexusPrimeEngine() {
           prompt: originalMsg,
           models: selectedModels,
           userId: user?.id,
-          systemContext: `[TEMPORAL_ANCHOR: January 17, 2026]`
+          systemContext: `[TEMPORAL_ANCHOR: {getNexusDate()}]`
         }),
       });
       
@@ -175,11 +182,6 @@ export default function NexusPrimeEngine() {
     }
   };
 
-  const getNexusDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York'
-    });
-  };
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center">
@@ -296,7 +298,7 @@ export default function NexusPrimeEngine() {
           </button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
-          <p className="text-[8px] font-black uppercase tracking-[0.4em] text-white/40">
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">
             Observing Transmission Alpha • {getNexusDate()}
           </p>
           <p className="text-[10px] font-black font-mono text-indigo-500 tracking-widest">
