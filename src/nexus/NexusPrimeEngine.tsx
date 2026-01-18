@@ -29,14 +29,32 @@ export default function NexusPrimeEngine() {
   const [timeLeft, setTimeLeft] = useState<string | null>("SYNCING...");
   const [isExpired, setIsExpired] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [nexusTime, setNexusTime] = useState<string>(""); // Live Clock State
+  const [nexusTime, setNexusTime] = useState<string>("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // --- 📡 REAL-TIME SYNC ---
+  // --- 1. HYDRATION: Load Global Stream on Mount ---
+  useEffect(() => {
+    const fetchStream = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
+        const data = await res.json();
+        // If your backend returns the list of messages, we populate the thread
+        if (data && data.messages) {
+          setChatThread(data.messages);
+        }
+      } catch (err) {
+        console.error("Transmission Hydration Failed:", err);
+      }
+    };
+    fetchStream();
+  }, []);
+
+  // --- 2. REAL-TIME SYNC: Socket Listener ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
+        // Prevent duplicate messages (especially if local injection already happened)
         if (prev.find(m => m.id === entry.id)) return prev;
         return [...prev, entry];
       });
@@ -45,23 +63,7 @@ export default function NexusPrimeEngine() {
     return () => { socket.disconnect(); };
   }, []);
 
-  // --- ⏱️ LIVE NEXUS CLOCK (-5 UTC) ---
-  useEffect(() => {
-    const clockTimer = setInterval(() => {
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-        timeZone: 'America/New_York'
-      });
-      setNexusTime(timeStr);
-    }, 1000);
-    return () => clearInterval(clockTimer);
-  }, []);
-
-  // --- ⏳ ACCESS TIMER ---
+  // --- 3. ACCESS TIMER: Auth Checks ---
   useEffect(() => {
     const timer = setInterval(() => {
       if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai') {
@@ -88,6 +90,17 @@ export default function NexusPrimeEngine() {
     }, 1000);
     return () => clearInterval(timer);
   }, [user]);
+
+  // --- 4. LIVE NEXUS CLOCK (-5 UTC) ---
+  useEffect(() => {
+    const clockTimer = setInterval(() => {
+      setNexusTime(new Date().toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: true, timeZone: 'America/New_York'
+      }));
+    }, 1000);
+    return () => clearInterval(clockTimer);
+  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -125,6 +138,17 @@ export default function NexusPrimeEngine() {
       return;
     }
     const originalMsg = userMessage;
+    const tempId = `msg-${Date.now()}`;
+
+    // IMMEDIATE LOCAL INJECTION
+    setChatThread(prev => [...prev, {
+      id: tempId,
+      type: 'user',
+      content: originalMsg,
+      sender: user?.username || 'Nexus User',
+      isAnchored: false,
+    }]);
+
     setIsSynthesizing(true);
     setUserMessage('');
 
@@ -139,31 +163,21 @@ export default function NexusPrimeEngine() {
           systemContext: `[TEMPORAL_ANCHOR: January 17, 2026]`
         }),
       });
+      
       const data = await response.json();
       if (response.ok && data.results) {
-        setTimeout(() => {
-          setChatThread(prev => {
-            if (prev.some(m => m.content === data.results[0].response)) return prev;
-            const aiEntries = data.results.map((r: any) => ({
-              id: `ai-${Math.random()}`,
-              type: 'ai',
-              content: r.response,
-              sender: r.model,
-            }));
-            setIsSynthesizing(false);
-            return [...prev, ...aiEntries];
-          });
-        }, 2000);
+        // We let the socket handle the AI response broadcast
+        // If socket fails, the Hydration fetch on next refresh will catch it
       }
-    } catch (e) { setIsSynthesizing(false); }
+    } catch (e) { 
+      setIsSynthesizing(false); 
+      console.error("Ignition Error:", e);
+    }
   };
 
   const getNexusDate = () => {
     return new Date().toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'America/New_York'
+      month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York'
     });
   };
 
