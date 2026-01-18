@@ -139,6 +139,15 @@ export default function NexusPrimeEngine() {
     } catch (e) { setIsSynthesizing(false); }
   };
 
+  const getNexusDate = () => {
+  return new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'America/New_York' // This enforces the -5 UTC (Eastern Time)
+  });
+};
+
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center">
       
@@ -253,7 +262,9 @@ export default function NexusPrimeEngine() {
             {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}
           </button>
         </div>
-        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.4em] text-white-800">Observing Transmission Alpha • Jan 17 2026</p>
+        <p className="mt-4 text-[8px] font-black uppercase tracking-[0.4em] text-white-800">
+          Observing Transmission Alpha • {getNexusDate()}
+        </p>
       </footer>
 
       {/* ACCESS TRAY */}
