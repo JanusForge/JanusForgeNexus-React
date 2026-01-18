@@ -33,10 +33,9 @@ export default function NexusPrimeEngine() {
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
 
-    // Listen for live entries from the Council or other users
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // Prevent duplicate messages if the sender is also the receiver
+        // Prevent duplicate messages
         if (prev.find(m => m.id === entry.id)) return prev;
         return [...prev, entry];
       });
@@ -46,6 +45,7 @@ export default function NexusPrimeEngine() {
     return () => { socket.disconnect(); };
   }, []);
 
+  // --- ⏳ TEMPORAL ACCESS TIMER ---
   useEffect(() => {
     const timer = setInterval(() => {
       if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai') {
@@ -73,6 +73,7 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(timer);
   }, [user]);
 
+  // --- ✨ SUCCESS HANDSHAKE OVERLAY ---
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -83,6 +84,10 @@ export default function NexusPrimeEngine() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatThread]);
 
   const toggleAnchor = (id: string) => {
     setChatThread(prev => prev.map(msg => 
@@ -110,10 +115,7 @@ export default function NexusPrimeEngine() {
     }
 
     const originalMsg = userMessage;
-    const msgId = `msg-${Date.now()}`;
-    const anchorDate = new Date().toLocaleDateString('en-US', { 
-      year: 'numeric', month: 'long', day: 'numeric' 
-    });
+    const anchorDate = "January 17, 2026";
 
     setIsSynthesizing(true);
     setUserMessage('');
@@ -129,17 +131,36 @@ export default function NexusPrimeEngine() {
           systemContext: `[TEMPORAL_ANCHOR: ${anchorDate}] Process this discourse within the established reality of this date.`
         }),
       });
+
       const data = await response.json();
-      // Logic assumes the backend broadcasts 'nexus:transmission' to everyone, 
-      // including the sender, so we don't manually push to local state here 
-      // to avoid double-rendering once the socket picks it up.
+
+      // SAFETY FALLBACK: If socket fails to broadcast within 3 seconds, manually push.
+      if (response.ok && data.results) {
+        setTimeout(() => {
+          setChatThread(prev => {
+            const alreadyInThread = prev.some(m => m.content === data.results[0].response);
+            if (alreadyInThread) return prev;
+            
+            const aiEntries = data.results.map((r: any) => ({
+              id: `ai-${Math.random()}`,
+              type: 'ai',
+              content: r.response,
+              sender: 'Council',
+            }));
+            setIsSynthesizing(false);
+            return [...prev, ...aiEntries];
+          });
+        }, 3000);
+      }
     } catch (e) {
+      console.error("Ignition Error:", e);
       setIsSynthesizing(false);
     }
   };
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden">
+      
       {showSuccess && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none p-4">
           <div className="bg-indigo-600 border border-white/20 px-8 py-5 rounded-[2rem] shadow-[0_0_80px_rgba(79,70,229,0.4)] animate-in zoom-in duration-500 flex items-center gap-5 pointer-events-auto">
@@ -195,11 +216,12 @@ export default function NexusPrimeEngine() {
             <p className="text-zinc-600 text-sm max-w-sm font-medium italic">
               {isExpired
                 ? "Nexus Access required to contribute to the Forge. Join the transmission to engage the Council."
-                : "Nexus Link Synchronized. You are now free to synthesize with the Council and the community."}
+                : "Nexus Link Synchronized. You are now free to synthesize with the Council."}
             </p>
           </div>
         </div>
 
+        {/* CHAT THREAD */}
         <div className="w-full space-y-12">
           {chatThread.map((msg) => (
             <div key={msg.id} className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
@@ -229,14 +251,15 @@ export default function NexusPrimeEngine() {
             </div>
           ))}
           {isSynthesizing && (
-            <div className="w-full flex justify-start animate-pulse">
-               <div className="h-1 w-48 bg-gradient-to-r from-indigo-500/0 via-indigo-500 to-indigo-500/0 rounded-full" />
+            <div className="w-full flex justify-start animate-pulse p-6">
+               <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
             </div>
           )}
           <div ref={chatEndRef} />
         </div>
       </main>
 
+      {/* FOOTER INPUT */}
       <footer className="fixed bottom-0 w-full p-8 md:p-12 bg-gradient-to-t from-black via-black/95 to-transparent flex flex-col items-center z-[50]">
         <div className={`w-full max-w-3xl border rounded-[3rem] p-3 md:p-4 flex items-center gap-4 shadow-2xl backdrop-blur-3xl transition-all duration-700 ${
           isExpired ? 'bg-zinc-950/40 border-white/5 opacity-50' : 'bg-zinc-950 border-indigo-500/30 shadow-indigo-500/5'
@@ -245,7 +268,7 @@ export default function NexusPrimeEngine() {
             value={userMessage}
             onChange={(e) => setUserMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder={isExpired ? "Temporal link offline. Restore Nexus Access to chat..." : "Command the Nexus..."}
+            placeholder={isExpired ? "Restore Nexus Access to chat..." : "Command the Nexus..."}
             className="flex-1 bg-transparent outline-none resize-none h-12 md:h-14 py-3 px-6 text-sm text-white font-medium placeholder:text-zinc-800 disabled:cursor-not-allowed"
             disabled={isExpired && user?.role !== 'ADMIN'}
           />
@@ -261,6 +284,7 @@ export default function NexusPrimeEngine() {
         <p className="mt-4 text-[8px] font-black uppercase tracking-[0.4em] text-zinc-800">Observing the Transmission. Join the Forge to Influence the Pattern.</p>
       </footer>
 
+      {/* ACCESS PORTAL */}
       {isTrayOpen && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
             <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2.5rem] p-10" onClick={e => e.stopPropagation()}>
