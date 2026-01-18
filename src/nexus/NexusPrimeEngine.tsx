@@ -31,7 +31,6 @@ export default function NexusPrimeEngine() {
   const [showSuccess, setShowSuccess] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // --- 📡 REAL-TIME TRANSMISSION SYNC ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
@@ -44,7 +43,6 @@ export default function NexusPrimeEngine() {
     return () => { socket.disconnect(); };
   }, []);
 
-  // --- ⏳ TEMPORAL ACCESS TIMER ---
   useEffect(() => {
     const timer = setInterval(() => {
       if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai') {
@@ -87,8 +85,6 @@ export default function NexusPrimeEngine() {
     if (action === 'share') {
       navigator.share?.({ title: 'Janus Forge Nexus Transmission', text: content, url: window.location.href });
     }
-    // Logic for Like/Save would typically hit a backend route
-    console.log(`${action} triggered for:`, content.substring(0, 20));
   };
 
   const handleRefuel = async (priceId: string, hours: number) => {
@@ -126,7 +122,6 @@ export default function NexusPrimeEngine() {
       });
       const data = await response.json();
       if (response.ok && data.results) {
-        // Fallback for non-socket updates
         setTimeout(() => {
           setChatThread(prev => {
             if (prev.some(m => m.content === data.results[0].response)) return prev;
@@ -134,7 +129,7 @@ export default function NexusPrimeEngine() {
               id: `ai-${Math.random()}`,
               type: 'ai',
               content: r.response,
-              sender: r.model, // RESTORED MODEL NAMES
+              sender: r.model,
             }));
             setIsSynthesizing(false);
             return [...prev, ...aiEntries];
@@ -147,24 +142,68 @@ export default function NexusPrimeEngine() {
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center">
       
+      {/* SUCCESS OVERLAY */}
+      {showSuccess && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none p-4">
+          <div className="bg-indigo-600 border border-white/20 px-8 py-5 rounded-[2rem] shadow-[0_0_80px_rgba(79,70,229,0.4)] animate-in zoom-in duration-500 flex items-center gap-5 pointer-events-auto">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-600">
+              <ShieldCheck size={24} />
+            </div>
+            <div>
+              <h4 className="text-lg font-black italic uppercase tracking-tighter text-white">Handshake Complete</h4>
+              <p className="text-indigo-100 text-[8px] font-black uppercase tracking-widest opacity-80">Nexus Access Restored</p>
+            </div>
+            <X onClick={() => setShowSuccess(false)} size={18} className="ml-4 cursor-pointer opacity-50" />
+          </div>
+        </div>
+      )}
+
       {/* HEADER */}
       <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center gap-2">
           <Globe className="text-indigo-500 animate-pulse" size={18}/>
           <span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span>
         </div>
-        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all ${isExpired ? 'border-amber-500 text-amber-500' : 'border-indigo-500/20 text-indigo-400'}`}>
+        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all ${isExpired ? 'border-amber-500 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-400'}`}>
           {timeLeft}
         </button>
       </header>
 
-      <main className="w-full max-w-4xl px-4 pt-32 pb-48">
+      <main className="w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48">
+        
+        {/* LOGO VIDEO RESTORED */}
+        <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
+           <video autoPlay loop muted playsInline className="w-full h-full object-contain">
+            <source src="/janus-logo-video.mp4" type="video/mp4" />
+          </video>
+        </div>
+
+        {/* HERO TITLE RESTORED */}
+        <div className="text-center mb-16">
+          <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">
+              NEXUS PRIME
+          </h3>
+
+          <div className="mt-6 flex flex-col items-center gap-4 text-center">
+            {isExpired && (
+              <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
+                <Lock size={10} className="text-amber-500"/>
+                <span className="text-[11px] font-black text-amber-500 uppercase tracking-widest">Observer Mode Only</span>
+              </div>
+            )}
+
+            <p className="text-zinc-500 text-sm max-w-sm font-medium italic">
+              {isExpired
+                ? "Nexus Access required to contribute to the Forge. Join the transmission to engage the Council."
+                : "Nexus Link Synchronized. You are now free to synthesize with the Council."}
+            </p>
+          </div>
+        </div>
+
         {/* CHAT THREAD */}
-        <div className="space-y-16">
+        <div className="w-full space-y-16">
           {chatThread.map((msg) => (
             <div key={msg.id} className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-4`}>
-              
-              {/* SENDER LABEL */}
               <div className="mb-3 px-2 flex items-center gap-3">
                 <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.type === 'user' ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>
                   {msg.sender}
@@ -179,7 +218,6 @@ export default function NexusPrimeEngine() {
               }`}>
                 <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                 
-                {/* INTERACTION BAR */}
                 <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="flex gap-6">
                     <button onClick={() => handleAction('like', msg.content)} className="text-zinc-600 hover:text-indigo-400 transition-colors"><ThumbsUp size={14}/></button>
