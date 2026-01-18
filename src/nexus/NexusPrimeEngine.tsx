@@ -253,7 +253,7 @@ export default function NexusPrimeEngine() {
             {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}
           </button>
         </div>
-        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.4em] text-white-800">Observing Transmission Alpha • Jan 17 2026</p>
+        <p className="mt-4 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-800">Observing Transmission Alpha • Jan 17 2026</p>
       </footer>
 
       {/* ACCESS TRAY */}
