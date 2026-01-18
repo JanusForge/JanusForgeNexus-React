@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { 
-  Send, Loader2, X, Globe, ShieldCheck, Lock, Zap, 
-  ThumbsUp, Share2, Printer, Bookmark, ChevronRight 
+import {
+  Send, Loader2, X, Globe, ShieldCheck, Lock, Zap,
+  ThumbsUp, Share2, Printer, Bookmark, ChevronRight
 } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 import { io } from 'socket.io-client';
@@ -29,8 +29,10 @@ export default function NexusPrimeEngine() {
   const [timeLeft, setTimeLeft] = useState<string | null>("SYNCING...");
   const [isExpired, setIsExpired] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [nexusTime, setNexusTime] = useState<string>(""); // Live Clock State
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // --- 📡 REAL-TIME SYNC ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
@@ -43,6 +45,23 @@ export default function NexusPrimeEngine() {
     return () => { socket.disconnect(); };
   }, []);
 
+  // --- ⏱️ LIVE NEXUS CLOCK (-5 UTC) ---
+  useEffect(() => {
+    const clockTimer = setInterval(() => {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZone: 'America/New_York'
+      });
+      setNexusTime(timeStr);
+    }, 1000);
+    return () => clearInterval(clockTimer);
+  }, []);
+
+  // --- ⏳ ACCESS TIMER ---
   useEffect(() => {
     const timer = setInterval(() => {
       if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai') {
@@ -75,7 +94,7 @@ export default function NexusPrimeEngine() {
   }, [chatThread]);
 
   const toggleAnchor = (id: string) => {
-    setChatThread(prev => prev.map(msg => 
+    setChatThread(prev => prev.map(msg =>
       msg.id === id ? { ...msg, isAnchored: !msg.isAnchored } : msg
     ));
   };
@@ -113,9 +132,9 @@ export default function NexusPrimeEngine() {
       const response = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          prompt: originalMsg, 
-          models: selectedModels, 
+        body: JSON.stringify({
+          prompt: originalMsg,
+          models: selectedModels,
           userId: user?.id,
           systemContext: `[TEMPORAL_ANCHOR: January 17, 2026]`
         }),
@@ -140,17 +159,17 @@ export default function NexusPrimeEngine() {
   };
 
   const getNexusDate = () => {
-  return new Date().toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'America/New_York' // This enforces the -5 UTC (Eastern Time)
-  });
-};
+    return new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'America/New_York'
+    });
+  };
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center">
-      
+
       {/* SUCCESS OVERLAY */}
       {showSuccess && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none p-4">
@@ -179,15 +198,15 @@ export default function NexusPrimeEngine() {
       </header>
 
       <main className="w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48">
-        
-        {/* LOGO VIDEO RESTORED */}
+
+        {/* LOGO VIDEO */}
         <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
            <video autoPlay loop muted playsInline className="w-full h-full object-contain">
             <source src="/janus-logo-video.mp4" type="video/mp4" />
           </video>
         </div>
 
-        {/* HERO TITLE RESTORED */}
+        {/* HERO TITLE */}
         <div className="text-center mb-16">
           <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">
               NEXUS PRIME
@@ -221,12 +240,12 @@ export default function NexusPrimeEngine() {
               </div>
 
               <div className={`group relative p-8 rounded-[2rem] border transition-all duration-500 ${
-                msg.type === 'user' 
-                  ? msg.isAnchored ? 'bg-indigo-600/10 border-indigo-500/50 shadow-2xl shadow-indigo-500/10' : 'bg-zinc-900/40 border-white/10' 
+                msg.type === 'user'
+                  ? msg.isAnchored ? 'bg-indigo-600/10 border-indigo-500/50 shadow-2xl shadow-indigo-500/10' : 'bg-zinc-900/40 border-white/10'
                   : 'bg-zinc-950 border-white/5 shadow-2xl'
               }`}>
                 <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                
+
                 <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="flex gap-6">
                     <button onClick={() => handleAction('like', msg.content)} className="text-zinc-600 hover:text-indigo-400 transition-colors"><ThumbsUp size={14}/></button>
@@ -262,9 +281,14 @@ export default function NexusPrimeEngine() {
             {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}
           </button>
         </div>
-        <p className="mt-4 text-[8px] font-black uppercase tracking-[0.4em] text-white-800">
-          Observing Transmission Alpha • {getNexusDate()}
-        </p>
+        <div className="mt-4 flex flex-col items-center gap-1">
+          <p className="text-[8px] font-black uppercase tracking-[0.4em] text-white/40">
+            Observing Transmission Alpha • {getNexusDate()}
+          </p>
+          <p className="text-[10px] font-black font-mono text-indigo-500 tracking-widest">
+            {nexusTime} EST
+          </p>
+        </div>
       </footer>
 
       {/* ACCESS TRAY */}
