@@ -2,8 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Send, Loader2, X, Clock, Zap, Star, Globe, ShieldCheck, Lock, Users, MessageSquare, ChevronRight } from 'lucide-react';
+import { Send, Loader2, X, Globe, ShieldCheck, Lock, Zap } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
+import { io } from 'socket.io-client';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 interface NexusUser {
   id: string;
@@ -25,6 +28,23 @@ export default function NexusPrimeEngine() {
   const [isExpired, setIsExpired] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // --- 📡 REAL-TIME SYNC LOGIC ---
+  useEffect(() => {
+    const socket = io(API_BASE_URL, { withCredentials: true });
+
+    // Listen for live entries from the Council or other users
+    socket.on('nexus:transmission', (entry: any) => {
+      setChatThread(prev => {
+        // Prevent duplicate messages if the sender is also the receiver
+        if (prev.find(m => m.id === entry.id)) return prev;
+        return [...prev, entry];
+      });
+      if (entry.type === 'ai') setIsSynthesizing(false);
+    });
+
+    return () => { socket.disconnect(); };
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -64,9 +84,15 @@ export default function NexusPrimeEngine() {
     }
   }, []);
 
+  const toggleAnchor = (id: string) => {
+    setChatThread(prev => prev.map(msg => 
+      msg.id === id ? { ...msg, isAnchored: !msg.isAnchored } : msg
+    ));
+  };
+
   const handleRefuel = async (priceId: string, hours: number) => {
     try {
-      const response = await fetch('https://janusforgenexus-backend.onrender.com/api/stripe/create-session', {
+      const response = await fetch(`${API_BASE_URL}/api/stripe/create-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ priceId, userId: user?.id, hours }),
@@ -84,40 +110,36 @@ export default function NexusPrimeEngine() {
     }
 
     const originalMsg = userMessage;
-    setChatThread(prev => [...prev, {
-      id: `msg-${Date.now()}`,
-      type: 'user',
-      content: originalMsg,
-      sender: user?.username || 'Nexus',
-      starred: false,
-    }]);
+    const msgId = `msg-${Date.now()}`;
+    const anchorDate = new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    });
 
     setIsSynthesizing(true);
     setUserMessage('');
 
     try {
-      const response = await fetch('https://janusforgenexus-backend.onrender.com/api/nexus/ignite', {
+      const response = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: originalMsg, models: selectedModels, userId: user?.id }),
+        body: JSON.stringify({ 
+          prompt: originalMsg, 
+          models: selectedModels, 
+          userId: user?.id,
+          systemContext: `[TEMPORAL_ANCHOR: ${anchorDate}] Process this discourse within the established reality of this date.`
+        }),
       });
       const data = await response.json();
-      if (response.ok && data.results) {
-        const aiEntries = data.results.map((r: any) => ({
-          id: `ai-${Math.random()}`,
-          type: 'ai',
-          content: r.response,
-          sender: r.model,
-        }));
-        setChatThread(prev => [...prev, ...aiEntries]);
-      }
-    } finally { setIsSynthesizing(false); }
+      // Logic assumes the backend broadcasts 'nexus:transmission' to everyone, 
+      // including the sender, so we don't manually push to local state here 
+      // to avoid double-rendering once the socket picks it up.
+    } catch (e) {
+      setIsSynthesizing(false);
+    }
   };
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden">
-
-      {/* SUCCESS OVERLAY */}
       {showSuccess && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center pointer-events-none p-4">
           <div className="bg-indigo-600 border border-white/20 px-8 py-5 rounded-[2rem] shadow-[0_0_80px_rgba(79,70,229,0.4)] animate-in zoom-in duration-500 flex items-center gap-5 pointer-events-auto">
@@ -133,7 +155,6 @@ export default function NexusPrimeEngine() {
         </div>
       )}
 
-      {/* HEADER */}
       <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/40 backdrop-blur-md border-b border-white/5">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
@@ -153,7 +174,6 @@ export default function NexusPrimeEngine() {
         </button>
       </header>
 
-      {/* MAIN VIEWPORT */}
       <main className="w-full max-w-4xl px-4 md:px-8 flex flex-col items-center pt-32 pb-48">
         <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
            <video autoPlay loop muted playsInline className="w-full h-full object-contain">
@@ -165,8 +185,6 @@ export default function NexusPrimeEngine() {
           <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">
               NEXUS PRIME
           </h3>
-
-          {/* AFFIXED STATUS ELEMENTS */}
           <div className="mt-6 flex flex-col items-center gap-4">
             {isExpired && (
               <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
@@ -174,7 +192,6 @@ export default function NexusPrimeEngine() {
                 <span className="text-[11px] font-black text-amber-500 uppercase tracking-widest">Observer Mode Only</span>
               </div>
             )}
-
             <p className="text-zinc-600 text-sm max-w-sm font-medium italic">
               {isExpired
                 ? "Nexus Access required to contribute to the Forge. Join the transmission to engage the Council."
@@ -183,21 +200,44 @@ export default function NexusPrimeEngine() {
           </div>
         </div>
 
-        {/* CHAT THREAD */}
-        <div className="w-full space-y-8">
+        <div className="w-full space-y-12">
           {chatThread.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in`}>
-              <div className={`max-w-[80%] p-6 rounded-3xl border ${msg.type === 'user' ? 'bg-white/5 border-white/10' : 'bg-zinc-900/60 border-white/5 shadow-2xl'}`}>
-                <p className="text-sm md:text-base text-zinc-100 whitespace-pre-wrap">{msg.content}</p>
+            <div key={msg.id} className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
+              <div className={`max-w-[85%] p-7 rounded-[2rem] border transition-all duration-700 ${
+                msg.type === 'user' 
+                  ? msg.isAnchored ? 'bg-indigo-500/10 border-indigo-500/50 shadow-[0_0_30px_rgba(79,70,229,0.1)]' : 'bg-white/5 border-white/10' 
+                  : 'bg-zinc-950/60 border-white/5 shadow-2xl backdrop-blur-md'
+              }`}>
+                {msg.type === 'ai' && (
+                  <div className="flex flex-col gap-2 mb-4">
+                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-indigo-400/80">Neural Synthesis</span>
+                    <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent animate-pulse" />
+                  </div>
+                )}
+                <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                {msg.type === 'user' && (
+                  <button 
+                    onClick={() => toggleAnchor(msg.id)}
+                    className={`mt-4 text-[9px] font-black uppercase tracking-widest transition-all ${
+                      msg.isAnchored ? 'text-indigo-400' : 'text-zinc-700 hover:text-zinc-500'
+                    }`}
+                  >
+                    {msg.isAnchored ? '• Anchored to Nexus •' : 'Anchor to Nexus'}
+                  </button>
+                )}
               </div>
             </div>
           ))}
+          {isSynthesizing && (
+            <div className="w-full flex justify-start animate-pulse">
+               <div className="h-1 w-48 bg-gradient-to-r from-indigo-500/0 via-indigo-500 to-indigo-500/0 rounded-full" />
+            </div>
+          )}
           <div ref={chatEndRef} />
         </div>
       </main>
 
-      {/* FOOTER INPUT */}
-      <footer className="fixed bottom-0 w-full p-8 md:p-12 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col items-center">
+      <footer className="fixed bottom-0 w-full p-8 md:p-12 bg-gradient-to-t from-black via-black/95 to-transparent flex flex-col items-center z-[50]">
         <div className={`w-full max-w-3xl border rounded-[3rem] p-3 md:p-4 flex items-center gap-4 shadow-2xl backdrop-blur-3xl transition-all duration-700 ${
           isExpired ? 'bg-zinc-950/40 border-white/5 opacity-50' : 'bg-zinc-950 border-indigo-500/30 shadow-indigo-500/5'
         }`}>
@@ -205,7 +245,7 @@ export default function NexusPrimeEngine() {
             value={userMessage}
             onChange={(e) => setUserMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder={isExpired ? "Temporal link offline. Restore Nexus Access to chat..." : "Command the Nexus. Enjoy!..."}
+            placeholder={isExpired ? "Temporal link offline. Restore Nexus Access to chat..." : "Command the Nexus..."}
             className="flex-1 bg-transparent outline-none resize-none h-12 md:h-14 py-3 px-6 text-sm text-white font-medium placeholder:text-zinc-800 disabled:cursor-not-allowed"
             disabled={isExpired && user?.role !== 'ADMIN'}
           />
@@ -218,9 +258,9 @@ export default function NexusPrimeEngine() {
             {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}
           </button>
         </div>
+        <p className="mt-4 text-[8px] font-black uppercase tracking-[0.4em] text-zinc-800">Observing the Transmission. Join the Forge to Influence the Pattern.</p>
       </footer>
 
-      {/* PORTAL SIDEBAR */}
       {isTrayOpen && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
             <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[2.5rem] p-10" onClick={e => e.stopPropagation()}>
@@ -228,7 +268,6 @@ export default function NexusPrimeEngine() {
                 <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400">Nexus Access</h3>
                 <X onClick={() => setIsTrayOpen(false)} size={20} className="cursor-pointer opacity-50 hover:opacity-100"/>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
                 {[
                   { label: '24H PASS', price: '$5', hours: 24, priceId: 'price_1Sqe8rGg8RUnSFObq4cv8Mnd' },
@@ -241,7 +280,6 @@ export default function NexusPrimeEngine() {
                   </button>
                 ))}
               </div>
-
               <div className="pt-8 border-t border-white/5">
                 <CouncilBuilder selectedModels={selectedModels} setSelectedModels={setSelectedModels} userBalance={0} onIgnite={handleIgnition} />
               </div>
