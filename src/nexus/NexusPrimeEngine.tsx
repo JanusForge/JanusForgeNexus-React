@@ -24,6 +24,8 @@ export default function NexusPrimeEngine() {
   const { user } = useAuth() as { user: NexusUser | null };
   const searchParams = useSearchParams(); 
   const router = useRouter(); 
+  
+  // --- STATE MANAGEMENT ---
   const [userMessage, setUserMessage] = useState('');
   const [chatThread, setChatThread] = useState<any[]>([]);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -33,7 +35,12 @@ export default function NexusPrimeEngine() {
   const [isExpired, setIsExpired] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [nexusTime, setNexusTime] = useState<string>("");
-  const [observerCount, setObserverCount] = useState<number>(1); // 🛠️ Live Watcher State
+  const [observerCount, setObserverCount] = useState<number>(1);
+  
+  // ⚡ SOCIAL THREADING STATES
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
+  const [activeParentPostId, setActiveParentPostId] = useState<string | null>(null);
+  
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // --- 0. PAYMENT SUCCESS HANDSHAKE ---
@@ -54,8 +61,9 @@ export default function NexusPrimeEngine() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
         const data = await res.json();
-        if (data && data.messages) {
-          setChatThread(data.messages);
+        // Backend now returns an array of root conversations or posts
+        if (Array.isArray(data)) {
+          setChatThread(data);
         }
       } catch (err) {
         console.error("Transmission Hydration Failed:", err);
@@ -64,7 +72,7 @@ export default function NexusPrimeEngine() {
     fetchStream();
   }, []);
 
-  // --- 2. SOCKET SYNC ---
+  // --- 2. SOCKET SYNC (SOCIAL UPDATE) ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     
@@ -73,16 +81,22 @@ export default function NexusPrimeEngine() {
         if (prev.find(m => m.id === entry.id)) return prev;
         return [...prev, entry];
       });
-      if (entry.type === 'ai') setIsSynthesizing(false);
+      if (!entry.is_human) setIsSynthesizing(false);
     });
 
-    // ⚡ Listen for Real-time Pulse
+    // Listen for new root conversations appearing on the feed
+    socket.on('nexus:new_root', (newRoot: any) => {
+      if (!activeThreadId) {
+        setChatThread(prev => [newRoot, ...prev]);
+      }
+    });
+
     socket.on('pulse-update', (data: { count: number }) => {
       setObserverCount(data.count);
     });
 
     return () => { socket.disconnect(); };
-  }, []);
+  }, [activeThreadId]);
 
   // --- 3. ACCESS TIMER ---
   useEffect(() => {
@@ -125,8 +139,9 @@ export default function NexusPrimeEngine() {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatThread]);
+  }, [chatThread, activeThreadId]);
 
+  // --- 5. ACTION HANDLERS ---
   const toggleAnchor = (id: string) => {
     setChatThread(prev => prev.map(msg =>
       msg.id === id ? { ...msg, isAnchored: !msg.isAnchored } : msg
@@ -159,17 +174,8 @@ export default function NexusPrimeEngine() {
       setIsTrayOpen(true);
       return;
     }
+
     const originalMsg = userMessage;
-    const tempId = `msg-${Date.now()}`;
-
-    setChatThread(prev => [...prev, {
-      id: tempId,
-      type: 'user',
-      content: originalMsg,
-      sender: user?.username || 'Nexus User',
-      isAnchored: false,
-    }]);
-
     setIsSynthesizing(true);
     setUserMessage('');
 
@@ -181,48 +187,46 @@ export default function NexusPrimeEngine() {
           prompt: originalMsg,
           models: selectedModels,
           userId: user?.id,
-          systemContext: `[TEMPORAL_ANCHOR: ${getNexusDate()}]`
+          conversationId: activeThreadId,
+          parentPostId: activeParentPostId
         }),
       });
-      await response.json();
+      const data = await response.json();
+      if (!activeThreadId && data.conversationId) {
+        setActiveThreadId(data.conversationId);
+      }
     } catch (e) {
       setIsSynthesizing(false);
       console.error("Ignition Error:", e);
     }
   };
 
-  const getNexusDate = () => {
-    return new Date().toLocaleDateString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric', timeZone: 'America/New_York'
-    });
-  };
+  // --- 6. SOCIAL FILTERING ---
+  const displayMessages = activeThreadId 
+    ? chatThread.filter(m => m.conversation_id === activeThreadId)
+    : chatThread.filter(m => !m.parent_post_id);
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden font-sans">
 
       {/* --- FORGE REFUELED OVERLAY --- */}
       {showSuccess && (
-        <div className="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center text-white px-4 transition-all animate-in fade-in duration-700 backdrop-blur-3xl">
+        <div className="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center transition-all animate-in fade-in duration-700 backdrop-blur-3xl">
           <div className="relative w-48 h-48 mb-12">
             <div className="absolute inset-0 bg-indigo-600 rounded-full blur-[60px] animate-pulse opacity-30"></div>
             <div className="relative border border-indigo-500/40 w-full h-full rounded-full flex items-center justify-center bg-zinc-900/40 backdrop-blur-xl shadow-[inset_0_0_40px_rgba(79,70,229,0.2)]">
               <div className="text-7xl animate-[bounce_2s_infinite]">⚡</div>
             </div>
           </div>
-
           <div className="text-center z-10">
-            <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent uppercase">
-              Forge Refueled
-            </h1>
+            <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent uppercase">Forge Refueled</h1>
             <p className="text-indigo-500 uppercase tracking-[0.5em] text-[10px] font-bold mb-10">Nexus Energy Synchronized</p>
-
             <div className="bg-zinc-900/80 border border-zinc-800 p-8 rounded-3xl max-w-md mx-auto shadow-2xl backdrop-blur-md">
-              <p className="text-zinc-400 text-xs leading-relaxed mb-8 uppercase tracking-widest font-bold">The Pentarchy has acknowledged your contribution. Your vault is being synchronized.</p>
+              <p className="text-zinc-400 text-xs leading-relaxed mb-8 uppercase tracking-widest font-bold italic">The Pentarchy has acknowledged your contribution.</p>
               <div className="relative w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div className="absolute top-0 left-0 bg-indigo-500 h-full animate-[loading_8s_linear] shadow-[0_0_15px_rgba(79,70,229,1)]"></div>
               </div>
             </div>
-
             <button onClick={() => setShowSuccess(false)} className="mt-12 px-10 py-4 bg-white text-black font-black rounded-full hover:bg-indigo-500 hover:text-white transition-all uppercase text-[10px] tracking-widest">Enter the Nexus</button>
           </div>
         </div>
@@ -230,7 +234,7 @@ export default function NexusPrimeEngine() {
 
       {/* HEADER */}
       <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveThreadId(null)}>
           <Globe className="text-indigo-500 animate-pulse" size={18}/>
           <span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span>
         </div>
@@ -241,71 +245,101 @@ export default function NexusPrimeEngine() {
       </header>
 
       {/* MAIN CONTENT */}
-      <main className={`w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48 transition-all duration-1000 ${showSuccess ? 'blur-2xl opacity-20 scale-95' : 'blur-0 opacity-100 scale-100'}`}>
-        <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
-           <video autoPlay loop muted playsInline className="w-full h-full object-contain">
-            <source src="/janus-logo-video.mp4" type="video/mp4" />
-          </video>
-        </div>
+      <main className={`w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48 transition-all duration-1000 ${showSuccess ? 'blur-2xl opacity-20' : 'opacity-100'}`}>
+        
+        {/* --- LOGO SECTION (Show only on Feed) --- */}
+        {!activeThreadId && (
+          <>
+            <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
+              <video autoPlay loop muted playsInline className="w-full h-full object-contain">
+                <source src="/janus-logo-video.mp4" type="video/mp4" />
+              </video>
+            </div>
+            <div className="text-center mb-16">
+              <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">NEXUS PRIME</h3>
+              <p className="text-zinc-500 text-sm mt-4 font-medium italic">Synchronized public transmission feed. Observe or Contribute.</p>
+            </div>
+          </>
+        )}
 
-        <div className="text-center mb-16">
-          <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">NEXUS PRIME</h3>
-          <div className="mt-6 flex flex-col items-center gap-4 text-center">
-            {isExpired && (
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
-                <Lock size={10} className="text-amber-500"/>
-                <span className="text-[11px] font-black text-amber-500 uppercase tracking-widest">Observer Mode Only</span>
-              </div>
-            )}
-            <p className="text-zinc-500 text-sm max-w-sm font-medium italic">
-              {isExpired ? "Nexus Access required to contribute to the Forge. Join the transmission to engage the Council." : "Nexus Link Synchronized. You are now free to synthesize with the Council."}
-            </p>
-          </div>
-        </div>
-
-        <div className="w-full space-y-16">
-          {chatThread.map((msg) => (
-            <div key={msg.id} className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-4`}>
-              <div className="mb-3 px-2 flex items-center gap-3">
-                <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.type === 'user' ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>
-                  {msg.sender}
-                </span>
-                {msg.isAnchored && <Zap size={10} className="text-indigo-500 animate-pulse"/>}
-              </div>
-
-              <div className={`group relative p-8 rounded-[2rem] border transition-all duration-500 ${
-                msg.type === 'user'
-                  ? msg.isAnchored ? 'bg-indigo-600/10 border-indigo-500/50 shadow-[0_0_40px_rgba(79,70,229,0.15)] ring-1 ring-indigo-500/20' : 'bg-zinc-900/40 border-white/10'
-                  : 'bg-zinc-950 border-white/5 shadow-2xl'
-              }`}>
-                {msg.isAnchored && (
-                  <div className="absolute -top-3 -right-3 bg-indigo-600 text-[8px] font-black px-3 py-1 rounded-full tracking-widest uppercase italic shadow-lg animate-pulse z-10">
-                    Sovereign Pattern
-                  </div>
-                )}
-                <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="flex gap-6">
-                    <button onClick={() => handleAction('like', msg.content)} className="text-zinc-600 hover:text-indigo-400 transition-colors"><ThumbsUp size={14}/></button>
-                    <button onClick={() => handleAction('save', msg.content)} className="text-zinc-600 hover:text-indigo-400 transition-colors"><Bookmark size={14}/></button>
-                    <button onClick={() => handleAction('print', msg.content)} className="text-zinc-600 hover:text-indigo-400 transition-colors"><Printer size={14}/></button>
-                    <button onClick={() => handleAction('share', msg.content)} className="text-zinc-600 hover:text-indigo-400 transition-colors"><Share2 size={14}/></button>
-                  </div>
-                  {msg.type === 'user' && (
-                    <button onClick={() => toggleAnchor(msg.id)} className={`text-[8px] font-black uppercase tracking-widest ${msg.isAnchored ? 'text-indigo-400' : 'text-zinc-700 hover:text-zinc-400'}`}>
-                      {msg.isAnchored ? '• Anchored •' : 'Anchor Pattern'}
-                    </button>
-                  )}
+        {/* --- 🏠 THE FEED VIEW (X-STYLE) --- */}
+        {!activeThreadId && (
+          <div className="space-y-6 w-full animate-in fade-in duration-700">
+            <h2 className="text-[10px] font-black tracking-[0.4em] text-indigo-500 mb-8 uppercase">Neural Pulse Feed</h2>
+            {displayMessages.map((root) => (
+              <div 
+                key={root.id}
+                onClick={() => setActiveThreadId(root.conversation_id || root.id)}
+                className="group p-8 rounded-[2.5rem] bg-zinc-900/40 border border-white/5 hover:border-indigo-500/50 transition-all cursor-pointer shadow-2xl"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">{root.name || root.sender || "Sovereign Node"}</span>
+                  <ChevronRight size={14} className="text-zinc-700 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
+                </div>
+                <p className="text-lg text-zinc-200 font-medium leading-relaxed">{root.content}</p>
+                <div className="mt-6 flex items-center gap-4 text-[9px] font-black text-indigo-400/60 uppercase tracking-widest">
+                  <span>View Synthesis Thread</span>
+                  <span className="opacity-20">•</span>
+                  <span>{new Date(root.created_at || root.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
+
+        {/* --- 🧵 THE FOCUSED THREAD VIEW --- */}
+        {activeThreadId && (
+          <div className="w-full animate-in slide-in-from-right-8 duration-500">
+            <button 
+              onClick={() => { setActiveThreadId(null); setActiveParentPostId(null); }}
+              className="mb-12 flex items-center gap-3 text-zinc-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"
+            >
+              <X size={14} /> Return to Neural Feed
+            </button>
+            
+            <div className="space-y-12">
+              {displayMessages.map((msg) => (
+                <div key={msg.id} className={`flex flex-col ${msg.is_human || msg.type === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-4`}>
+                  <div className="mb-3 px-2 flex items-center gap-3">
+                    <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${(msg.is_human || msg.type === 'user') ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>
+                      {msg.name || msg.sender}
+                    </span>
+                    {msg.isAnchored && <Zap size={10} className="text-indigo-500 animate-pulse"/>}
+                  </div>
+
+                  <div className={`group relative p-8 rounded-[2rem] border transition-all duration-500 ${
+                    (msg.is_human || msg.type === 'user')
+                      ? msg.isAnchored ? 'bg-indigo-600/10 border-indigo-500/50 shadow-[0_0_40px_rgba(79,70,229,0.15)]' : 'bg-zinc-900/40 border-white/10'
+                      : 'bg-zinc-950 border-white/5 shadow-2xl'
+                  }`}>
+                    {msg.isAnchored && (
+                      <div className="absolute -top-3 -right-3 bg-indigo-600 text-[8px] font-black px-3 py-1 rounded-full tracking-widest uppercase italic animate-pulse z-10">
+                        Sovereign Pattern
+                      </div>
+                    )}
+                    <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                    <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-6">
+                        <button onClick={() => handleAction('like', msg.content)} className="text-zinc-600 hover:text-indigo-400"><ThumbsUp size={14}/></button>
+                        <button onClick={() => handleAction('share', msg.content)} className="text-zinc-600 hover:text-indigo-400"><Share2 size={14}/></button>
+                      </div>
+                      {(msg.is_human || msg.type === 'user') && (
+                        <button onClick={() => toggleAnchor(msg.id)} className={`text-[8px] font-black uppercase tracking-widest ${msg.isAnchored ? 'text-indigo-400' : 'text-zinc-700'}`}>
+                          {msg.isAnchored ? '• Anchored •' : 'Anchor'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
             </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
+          </div>
+        )}
       </main>
 
       {/* FOOTER INPUT */}
-      <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center">
+      <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center z-[150]">
         <div 
           onClick={() => isExpired && setIsTrayOpen(true)}
           className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${
@@ -319,9 +353,9 @@ export default function NexusPrimeEngine() {
             readOnly={isExpired && user?.role !== 'ADMIN'}
             onChange={(e) => setUserMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder={isExpired ? "The Council is waiting for your input... [UNLOCK ACCESS]" : "Join the Conversation..."}
+            placeholder={isExpired ? "Unlock access to contribute..." : activeThreadId ? "Reply to this thread..." : "Start a new neural pattern..."}
             className={`flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm transition-colors ${
-              isExpired ? 'text-amber-500/50 cursor-pointer placeholder:text-amber-600/40 font-black tracking-tighter italic' : 'text-white placeholder:text-zinc-800'
+              isExpired ? 'text-amber-500/50 italic' : 'text-white'
             }`}
           />
           <button onClick={(e) => { e.stopPropagation(); handleIgnition(); }} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
@@ -332,10 +366,9 @@ export default function NexusPrimeEngine() {
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4">
-            <span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.type === 'user').length}</span> 
+            <span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human || m.type === 'user').length}</span> 
             <span className="opacity-30">•</span>
-            {/* 🛠️ Live Observer Count Sync */}
-            <span className="text-amber-500/70 animate-pulse">Observers Syncing: {observerCount}</span>
+            <span className="text-amber-500/70 animate-pulse">Observers: {observerCount}</span>
           </p>
           <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
@@ -355,8 +388,8 @@ export default function NexusPrimeEngine() {
                 { label: '7D SPRINT', price: '$20', hours: 168, priceId: 'price_1SqeAhGg8RUnSFObRUOFFNH7' },
                 { label: '30D FORGE', price: '$75', hours: 720, priceId: 'price_1SqeCqGg8RUnSFObHN4ZMCqs' }
               ].map((pass, i) => (
-                <button key={i} onClick={() => handleRefuel(pass.priceId, pass.hours)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left">
-                  <div className="text-[9px] font-black text-zinc-500 mb-1">{pass.label}</div>
+                <button key={i} onClick={() => handleRefuel(pass.priceId, pass.hours)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left group">
+                  <div className="text-[9px] font-black text-zinc-500 mb-1 group-hover:text-indigo-400">{pass.label}</div>
                   <div className="text-2xl font-black italic">{pass.price}</div>
                 </button>
               ))}
