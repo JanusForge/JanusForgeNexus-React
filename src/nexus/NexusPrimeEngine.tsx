@@ -1,5 +1,3 @@
-// src/nexus/NexusPrimeEngine.tsx (Full File)
-
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -27,6 +25,20 @@ export default function NexusPrimeEngine() {
   const [observerCount, setObserverCount] = useState<number>(1);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // --- 🛰️ REFUEL LOGIC (RESTORED) ---
+  const handleRefuel = async (priceId: string, hours: number) => {
+    try {
+      const tier = hours === 24 ? '24H' : hours === 168 ? '7D' : '30D';
+      const response = await fetch(`${API_BASE_URL}/api/stripe/create-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier, userId: user?.id }),
+      });
+      const data = await response.json();
+      if (data.url) window.location.href = data.url;
+    } catch (err) { console.error("Stripe Error:", err); }
+  };
+
   useEffect(() => {
     const fetchStream = async () => {
       const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
@@ -51,6 +63,11 @@ export default function NexusPrimeEngine() {
 
   useEffect(() => {
     const timer = setInterval(() => {
+      if (user?.role === 'ADMIN' || user?.role === 'GOD_MODE') {
+        setTimeLeft("ETERNAL ACCESS");
+        setIsExpired(false);
+        return;
+      }
       if (!user?.access_expiry) { setTimeLeft("ACCESS REQUIRED"); setIsExpired(true); return; }
       const diff = new Date(user.access_expiry).getTime() - new Date().getTime();
       if (diff <= 0) { setTimeLeft("EXPIRED"); setIsExpired(true); }
@@ -128,7 +145,7 @@ export default function NexusPrimeEngine() {
                 <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
                   <span className="text-[9px] font-black uppercase tracking-[0.2em] mb-2 text-zinc-500">{msg.name}</span>
                   <div className={`p-8 rounded-[2rem] border ${msg.is_human ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}>
-                    <p className="text-sm md:text-base text-zinc-200 leading-relaxed">{msg.content}</p>
+                    <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                   </div>
                 </div>
               ))}
@@ -140,7 +157,7 @@ export default function NexusPrimeEngine() {
 
       <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black flex flex-col items-center z-[150]">
         <div onClick={() => isExpired && setIsTrayOpen(true)} className="w-full max-w-3xl border border-indigo-500/30 rounded-[3rem] p-3 flex items-center gap-4 bg-zinc-950 shadow-2xl">
-          <textarea value={userMessage} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleIgnition()} placeholder={activeThreadId ? "Reply to thread..." : "Start new pattern..."} className="flex-1 bg-transparent outline-none p-3 text-sm text-white resize-none" />
+          <textarea value={userMessage} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleIgnition()} placeholder={activeThreadId ? "Reply to thread..." : "Start new pattern..."} className="flex-1 bg-transparent outline-none p-3 text-sm text-white resize-none h-12" />
           <button onClick={handleIgnition} className="w-14 h-14 bg-indigo-600 rounded-full flex items-center justify-center">
             {isSynthesizing ? <Loader2 className="animate-spin" /> : <Send size={20} />}
           </button>
@@ -152,13 +169,20 @@ export default function NexusPrimeEngine() {
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
            <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[3rem] p-10" onClick={e => e.stopPropagation()}>
              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-8">Temporal Access</h3>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[{l: '24H', p: '$5', h: 24, id: 'price_1Sqe8rGg8RUnSFObq4cv8Mnd'}].map((pass, i) => (
-                  <button key={i} onClick={() => handleRefuel(pass.id, pass.h)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                {[
+                  {l: '24H', p: '$5', h: 24, id: 'price_1Sqe8rGg8RUnSFObq4cv8Mnd'},
+                  {l: '7D', p: '$20', h: 168, id: 'price_1SqeAhGg8RUnSFObRUOFFNH7'},
+                  {l: '30D', p: '$75', h: 720, id: 'price_1SqeCqGg8RUnSFObHN4ZMCqs'}
+                ].map((pass, i) => (
+                  <button key={i} onClick={() => handleRefuel(pass.id, pass.h)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left">
                     <div className="text-[9px] font-black text-zinc-500">{pass.l}</div>
                     <div className="text-2xl font-black italic">{pass.p}</div>
                   </button>
                 ))}
+             </div>
+             <div className="pt-8 border-t border-white/5">
+                <CouncilBuilder selectedModels={selectedModels} setSelectedModels={setSelectedModels} userBalance={0} onIgnite={handleIgnition} />
              </div>
            </div>
         </div>
