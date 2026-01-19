@@ -33,6 +33,7 @@ export default function NexusPrimeEngine() {
   const [isExpired, setIsExpired] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [nexusTime, setNexusTime] = useState<string>("");
+  const [observerCount, setObserverCount] = useState<number>(1); // 🛠️ Live Watcher State
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // --- 0. PAYMENT SUCCESS HANDSHAKE ---
@@ -66,6 +67,7 @@ export default function NexusPrimeEngine() {
   // --- 2. SOCKET SYNC ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
+    
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
         if (prev.find(m => m.id === entry.id)) return prev;
@@ -73,6 +75,12 @@ export default function NexusPrimeEngine() {
       });
       if (entry.type === 'ai') setIsSynthesizing(false);
     });
+
+    // ⚡ Listen for Real-time Pulse
+    socket.on('pulse-update', (data: { count: number }) => {
+      setObserverCount(data.count);
+    });
+
     return () => { socket.disconnect(); };
   }, []);
 
@@ -190,7 +198,7 @@ export default function NexusPrimeEngine() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden">
+    <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden font-sans">
 
       {/* --- FORGE REFUELED OVERLAY --- */}
       {showSuccess && (
@@ -324,9 +332,10 @@ export default function NexusPrimeEngine() {
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4">
-            <span className="text-indigo-400">Nodes Active: {chatThread.length + 3}</span> 
+            <span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.type === 'user').length}</span> 
             <span className="opacity-30">•</span>
-            <span className="text-amber-500/50">Observers: 12</span>
+            {/* 🛠️ Live Observer Count Sync */}
+            <span className="text-amber-500/70 animate-pulse">Observers Syncing: {observerCount}</span>
           </p>
           <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
