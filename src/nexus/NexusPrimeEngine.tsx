@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useSearchParams, useRouter } from 'next/navigation'; // Added for payment detection
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Send, Loader2, X, Globe, ShieldCheck, Lock, Zap,
   ThumbsUp, Share2, Printer, Bookmark, ChevronRight
@@ -39,17 +39,15 @@ export default function NexusPrimeEngine() {
   useEffect(() => {
     if (searchParams.get('payment_success') === 'true') {
       setShowSuccess(true);
-      // Auto-hide overlay and clean URL after 8 seconds
       const timer = setTimeout(() => {
         setShowSuccess(false);
-        // This removes the query params from the browser bar without reloading
         router.replace(window.location.pathname);
       }, 8000);
       return () => clearTimeout(timer);
     }
   }, [searchParams, router]);
 
-  // --- 1. HYDRATION: Load Global Stream on Mount ---
+  // --- 1. HYDRATION ---
   useEffect(() => {
     const fetchStream = async () => {
       try {
@@ -65,7 +63,7 @@ export default function NexusPrimeEngine() {
     fetchStream();
   }, []);
 
-  // --- 2. REAL-TIME SYNC: Socket Listener ---
+  // --- 2. SOCKET SYNC ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
@@ -78,7 +76,7 @@ export default function NexusPrimeEngine() {
     return () => { socket.disconnect(); };
   }, []);
 
-  // --- 3. ACCESS TIMER: Auth Checks ---
+  // --- 3. ACCESS TIMER ---
   useEffect(() => {
     const timer = setInterval(() => {
       if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai') {
@@ -100,13 +98,13 @@ export default function NexusPrimeEngine() {
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
-        setTimeLeft(`${h}h ${m}m ${s}s remaining`);
+        setTimeLeft(`${h}h ${m}m ${s}s`);
       }
     }, 1000);
     return () => clearInterval(timer);
   }, [user]);
 
-  // --- 4. LIVE NEXUS CLOCK (-5 UTC) ---
+  // --- 4. CLOCK ---
   useEffect(() => {
     const clockTimer = setInterval(() => {
       setNexusTime(new Date().toLocaleTimeString('en-US', {
@@ -136,9 +134,7 @@ export default function NexusPrimeEngine() {
 
   const handleRefuel = async (priceId: string, hours: number) => {
     try {
-      // Determine tier string for backend mapping
       const tier = hours === 24 ? '24H' : hours === 168 ? '7D' : '30D';
-      
       const response = await fetch(`${API_BASE_URL}/api/stripe/create-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -210,30 +206,16 @@ export default function NexusPrimeEngine() {
             <h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent uppercase">
               Forge Refueled
             </h1>
-            <p className="text-indigo-500 uppercase tracking-[0.5em] text-[10px] font-bold mb-10">
-              Nexus Energy Synchronized
-            </p>
+            <p className="text-indigo-500 uppercase tracking-[0.5em] text-[10px] font-bold mb-10">Nexus Energy Synchronized</p>
 
             <div className="bg-zinc-900/80 border border-zinc-800 p-8 rounded-3xl max-w-md mx-auto shadow-2xl backdrop-blur-md">
-              <p className="text-zinc-400 text-xs leading-relaxed mb-8 uppercase tracking-widest font-bold">
-                The Pentarchy has acknowledged your contribution. Your vault is being synchronized.
-              </p>
+              <p className="text-zinc-400 text-xs leading-relaxed mb-8 uppercase tracking-widest font-bold">The Pentarchy has acknowledged your contribution. Your vault is being synchronized.</p>
               <div className="relative w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
                 <div className="absolute top-0 left-0 bg-indigo-500 h-full animate-[loading_8s_linear] shadow-[0_0_15px_rgba(79,70,229,1)]"></div>
               </div>
-              <div className="mt-4 flex justify-between text-[8px] uppercase tracking-widest text-zinc-600 font-bold">
-                <span>Initializing</span>
-                <span>Synchronizing</span>
-                <span>Ready</span>
-              </div>
             </div>
 
-            <button
-              onClick={() => setShowSuccess(false)}
-              className="mt-12 px-10 py-4 bg-white text-black font-black rounded-full hover:bg-indigo-500 hover:text-white transition-all uppercase text-[10px] tracking-widest"
-            >
-              Enter the Nexus
-            </button>
+            <button onClick={() => setShowSuccess(false)} className="mt-12 px-10 py-4 bg-white text-black font-black rounded-full hover:bg-indigo-500 hover:text-white transition-all uppercase text-[10px] tracking-widest">Enter the Nexus</button>
           </div>
         </div>
       )}
@@ -244,27 +226,22 @@ export default function NexusPrimeEngine() {
           <Globe className="text-indigo-500 animate-pulse" size={18}/>
           <span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span>
         </div>
-        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all ${isExpired ? 'border-amber-500 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-400'}`}>
+        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all flex items-center gap-3 ${isExpired ? 'border-amber-500 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5'}`}>
+          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired ? 'bg-amber-500' : 'bg-indigo-500'}`} />
           {timeLeft}
         </button>
       </header>
 
-      {/* MAIN CONTENT BLURRED IF SUCCESS IS SHOWN */}
+      {/* MAIN CONTENT */}
       <main className={`w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48 transition-all duration-1000 ${showSuccess ? 'blur-2xl opacity-20 scale-95' : 'blur-0 opacity-100 scale-100'}`}>
-
-        {/* LOGO VIDEO */}
         <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
            <video autoPlay loop muted playsInline className="w-full h-full object-contain">
             <source src="/janus-logo-video.mp4" type="video/mp4" />
           </video>
         </div>
 
-        {/* HERO TITLE */}
         <div className="text-center mb-16">
-          <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">
-              NEXUS PRIME
-          </h3>
-
+          <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">NEXUS PRIME</h3>
           <div className="mt-6 flex flex-col items-center gap-4 text-center">
             {isExpired && (
               <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
@@ -272,16 +249,12 @@ export default function NexusPrimeEngine() {
                 <span className="text-[11px] font-black text-amber-500 uppercase tracking-widest">Observer Mode Only</span>
               </div>
             )}
-
             <p className="text-zinc-500 text-sm max-w-sm font-medium italic">
-              {isExpired
-                ? "Nexus Access required to contribute to the Forge. Join the transmission to engage the Council."
-                : "Nexus Link Synchronized. You are now free to synthesize with the Council."}
+              {isExpired ? "Nexus Access required to contribute to the Forge. Join the transmission to engage the Council." : "Nexus Link Synchronized. You are now free to synthesize with the Council."}
             </p>
           </div>
         </div>
 
-        {/* CHAT THREAD */}
         <div className="w-full space-y-16">
           {chatThread.map((msg) => (
             <div key={msg.id} className={`flex flex-col ${msg.type === 'user' ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-4`}>
@@ -294,11 +267,15 @@ export default function NexusPrimeEngine() {
 
               <div className={`group relative p-8 rounded-[2rem] border transition-all duration-500 ${
                 msg.type === 'user'
-                  ? msg.isAnchored ? 'bg-indigo-600/10 border-indigo-500/50 shadow-2xl shadow-indigo-500/10' : 'bg-zinc-900/40 border-white/10'
+                  ? msg.isAnchored ? 'bg-indigo-600/10 border-indigo-500/50 shadow-[0_0_40px_rgba(79,70,229,0.15)] ring-1 ring-indigo-500/20' : 'bg-zinc-900/40 border-white/10'
                   : 'bg-zinc-950 border-white/5 shadow-2xl'
               }`}>
+                {msg.isAnchored && (
+                  <div className="absolute -top-3 -right-3 bg-indigo-600 text-[8px] font-black px-3 py-1 rounded-full tracking-widest uppercase italic shadow-lg animate-pulse z-10">
+                    Sovereign Pattern
+                  </div>
+                )}
                 <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-
                 <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
                   <div className="flex gap-6">
                     <button onClick={() => handleAction('like', msg.content)} className="text-zinc-600 hover:text-indigo-400 transition-colors"><ThumbsUp size={14}/></button>
@@ -321,26 +298,37 @@ export default function NexusPrimeEngine() {
 
       {/* FOOTER INPUT */}
       <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center">
-        <div className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all ${isExpired ? 'opacity-40 grayscale' : 'bg-zinc-950 border-indigo-500/30'}`}>
+        <div 
+          onClick={() => isExpired && setIsTrayOpen(true)}
+          className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${
+            isExpired 
+              ? 'bg-amber-500/5 border-amber-500/20 hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.1)]' 
+              : 'bg-zinc-950 border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.1)]'
+          }`}
+        >
           <textarea
             value={userMessage}
+            readOnly={isExpired && user?.role !== 'ADMIN'}
             onChange={(e) => setUserMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())}
-            placeholder={isExpired ? "Access Required..." : "Join the Conversation..."}
-            className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white placeholder:text-zinc-800"
-            disabled={isExpired && user?.role !== 'ADMIN'}
+            placeholder={isExpired ? "The Council is waiting for your input... [UNLOCK ACCESS]" : "Join the Conversation..."}
+            className={`flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm transition-colors ${
+              isExpired ? 'text-amber-500/50 cursor-pointer placeholder:text-amber-600/40 font-black tracking-tighter italic' : 'text-white placeholder:text-zinc-800'
+            }`}
           />
-          <button onClick={handleIgnition} className="w-14 h-14 rounded-full bg-indigo-600 flex items-center justify-center hover:bg-indigo-500 transition-all">
-            {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}
+          <button onClick={(e) => { e.stopPropagation(); handleIgnition(); }} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+            isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white hover:bg-indigo-500'
+          }`}>
+            {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : (isExpired ? <Lock size={20}/> : <Send size={20} />)}
           </button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">
-            Observing Transmission Alpha • {getNexusDate()}
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4">
+            <span className="text-indigo-400">Nodes Active: {chatThread.length + 3}</span> 
+            <span className="opacity-30">•</span>
+            <span className="text-amber-500/50">Observers: 12</span>
           </p>
-          <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">
-            {nexusTime} EST
-          </p>
+          <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
       </footer>
 
