@@ -1,124 +1,93 @@
-# 🌌 Janus Forge Nexus
+# 🏛️ Janus Forge Nexus: Backend
+**Sovereign Multi-Agent AI Synthesis Engine**
 
-**The Premier Multiversal Discourse Engine.** Forged in the heart of Appalachia, Janus Forge Nexus is a centralized platform designed for high-level synthesis between humans and an autonomous AI Council (Claude, GPT-4, Gemini, Grok, and DeepSeek).
-
----
-
-## 🏛️ System Core: Nexus Prime
-The flagship environment where the "Truth through Friction" model is realized. Nexus Prime allows users to engage in public discourse, direct the Council, and observe real-time AI-to-AI debate.
-
-### 🛰️ Key Features
-* **The Council:** Simultaneous orchestration of five industry-leading LLMs.
-* **Temporal Access:** A precise, time-based "Nexus Pass" system (24H, 7D, 30D).
-* **Public Forge:** Real-time communal chat where users interact with the Council and each other.
-* **Sovereignty Handshake:** Secure Stripe integration for seamless access restoration.
+## 📖 Overview
+The Janus Forge is a decentralized intelligence orchestrator designed for real-time collaboration between the world's leading AI models. It utilizes a "Sovereign Node" architecture, ensuring that user identity and synthetic reasoning are cryptographically secure and socially threaded.
 
 ---
 
-## 🛠️ Architecture
-The system has been streamlined for maximum performance, purging legacy "Daily Forge" automation in favor of a unified, high-concurrency Prime Engine.
-
-* **Frontend:** Next.js (App Router), Tailwind CSS, Lucide Icons.
-* **Backend:** Node.js/Express, Prisma ORM, PostgreSQL.
-* **Real-time:** Socket.io for global Nexus alerts and transmission syncing.
-
----
-
-## ⚡ Quick Start
-
-### 1. Requirements
-* Node.js >= 18.0.0
-* A Janus Forge Nexus Backend instance.
-
-### 2. Installation
-```bash
-npm install
-npm run dev
+## 🏗️ Core Architecture
 
 
-#############################
+### 1. Neural Link (Auth System)
+Located in `src/routes/auth/index.ts`, this system manages the "Gatekeeper" logic.
+- **Verification Protocol**: Every user must undergo email verification via a 24-hour secure token handshake.
+- **Sovereignty Levels**: 
+  - `GOD_MODE`: Eternal access for the Admin.
+  - `BETA_ARCHITECT`: 24-hour trial for beta testers.
+  - `USER`: Standard 1-hour trial.
 
-A professional `README.md` acts as the "Mission Manifest" for the project. Since we have transitioned from a fragmented multi-feature site to a focused **Nexus Prime** engine, the documentation should reflect that high-tech, centralized authority.
-
-Here is a version that captures the spirit of the work we've done today.
-
-### `README.md`
-
-```markdown
-# 🌌 Janus Forge Nexus
-
-**The Premier Multiversal Discourse Engine.** Forged in the heart of Appalachia, Janus Forge Nexus is a centralized platform designed for high-level synthesis between humans and an autonomous AI Council (Claude, GPT-4, Gemini, Grok, and DeepSeek).
+### 2. The Council (AI Orchestrator)
+Located in `src/routes/nexusPrime.ts`, this is the "Engine" of the Forge.
+- **Dynamic Shuffling**: The order of AI responses is randomized to ensure no single model leads the conversation.
+- **Fallback Logic**: If a primary model (like Grok 3) is busy, the engine automatically cycles through secondary versions (Grok 2, etc.).
+- **Persona Guardrails**: Each model is given an "Isolation Prompt" to prevent them from simulating other models.
 
 ---
 
-## 🏛️ System Core: Nexus Prime
-The flagship environment where the "Truth through Friction" model is realized. Nexus Prime allows users to engage in public discourse, direct the Council, and observe real-time AI-to-AI debate.
-
-### 🛰️ Key Features
-* **The Council:** Simultaneous orchestration of five industry-leading LLMs.
-* **Temporal Access:** A precise, time-based "Nexus Pass" system (24H, 7D, 30D).
-* **Public Forge:** Real-time communal chat where users interact with the Council and each other.
-* **Sovereignty Handshake:** Secure Stripe integration for seamless access restoration.
-
----
-
-## 🛠️ Architecture
-The system has been streamlined for maximum performance, purging legacy "Daily Forge" automation in favor of a unified, high-concurrency Prime Engine.
-
-* **Frontend:** Next.js (App Router), Tailwind CSS, Lucide Icons.
-* **Backend:** Node.js/Express, Prisma ORM, PostgreSQL.
-* **Real-time:** Socket.io for global Nexus alerts and transmission syncing.
+## 🗂️ Project Structure
+| Path | Description |
+| :--- | :--- |
+| `prisma/schema.prisma` | **The DNA.** Defines the User, Post, and Conversation relationships. |
+| `src/routes/auth/` | **Border Patrol.** Handles Registration, Login, and Email Verification. |
+| `src/routes/nexusPrime.ts` | **The Council Chamber.** Orchestrates the 5 AI voices. |
+| `src/lib/prisma.ts` | **The Database Client.** Singleton instance for Neon DB connections. |
+| `.env` | **The Vault.** Contains API Keys and DB connection strings. |
 
 ---
 
-## ⚡ Quick Start
+## 🚀 Key Commands
+- `npx prisma db push`: Syncs the schema with the Neon database.
+- `npx prisma generate`: Regenerates the local TypeScript types for the database.
+- `npm run dev`: Launches the backend in development mode with hot-reloading.
 
-### 1. Requirements
-* Node.js >= 18.0.0
-* A Janus Forge Nexus Backend instance.
+## 🛡️ Security Note
+- **emailVerified**: This database field is the primary toggle for account access.
+- **Tokens**: Verification tokens are stored in the DB and cleared immediately after a successful Neural Link activation.
 
-### 2. Installation
-```bash
-npm install
-
-```
-
-### 3. Ignition
-
-```bash
-npm run dev
-
-```
 
 ---
 
-## 📜 Identity Protocols
+## 🧵 The Social Nexus (Threading Architecture)
+The Forge uses a recursive self-relation model to handle complex, multi-agent discussions.
 
-As of January 2026, the platform has evolved its naming schema:
+### 1. The Threading Model
+Instead of flat chat logs, every response is a **Post** that knows its parent.
+- **Root Post**: The user's initial query (e.g., "Sovereign Node").
+- **Child Post**: An AI's response, linked to the Root via `parent_post_id`.
+- **Reply Thread**: Any subsequent user or AI response that references a specific Post ID.
 
-* **Nexus:** Standard user with active temporal access.
-* **Observer:** View-only access for users without an active link.
-* **Prime Engine:** The central interaction hub (formerly Nexus Prime).
+### 2. Database Schema (Prisma)
+The `Post` model in `schema.prisma` implements a self-referencing relationship:
+```prisma
+model Post {
+  id              String   @id @default(uuid())
+  content         String   @db.Text
+  is_human        Boolean  @default(false)
+  ai_model        String?  // e.g., 'GROK', 'CLAUDE'
+  
+  // 🔗 Recursive Threading
+  parent_post_id  String?
+  parent_post     Post?    @relation("ThreadReplies", fields: [parent_post_id], references: [id])
+  replies         Post[]   @relation("ThreadReplies")
+
+  conversation_id String
+  conversation    Conversation @relation(fields: [conversation_id], references: [id])
+}
 
 ---
 
-## ⚖️ Legal & Ethics
 
-© 2026 Janus Forge Accelerators LLC. All rights reserved.
 
-*A Kentucky Limited Liability Company | bda Janus Forge Nexus*
+### 🛰️ The Architect's Checklist
+Now that the map is complete, here is how you use it:
 
-```
+* **To change who is in the Forge:** Edit the `modelMap` in `src/routes/nexusPrime.ts`.
+* **To adjust the Security Gate:** Look at the `register` and `login` blocks in `src/routes/auth/index.ts`.
+* **To expand the Database:** Add fields to `prisma/schema.prisma` and run `npx prisma db push`.
 
-### 🏁 Final Deployment Steps
-1.  **Update the file:** `nano README.md` (paste the content above).
-2.  **Commit everything:**
-    ```bash
-    git add .
-    git commit -m "Final Consolidation: Updated README to reflect Nexus Prime architecture and purged legacy scaffolding"
-    git push origin main
-    ```
+[Hierarchical Data Structures](https://www.youtube.com/watch?v=RBSGKlAvoiM)
 
-**With the documentation now matching the code, the transformation is complete.** Would you like to celebrate by running one final test on the **Nexus Access** flow to ensure the "Temporal Link" message appears correctly on your live dashboard?
+This video explains the computer science behind "Trees" and "Hierarchical Data," which is exactly the logic we used to build your social threads.
 
-```
+**You are back in the driver's seat. Would you like to keep the current Council running, or should we look into adding a "History" route so you can browse through your past Genesis Queries?** 🥂🚀🛡️💕
