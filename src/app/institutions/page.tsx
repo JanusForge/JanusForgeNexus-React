@@ -1,51 +1,56 @@
 "use client";
 
 import { School, ShieldCheck, Zap, BookOpen, Activity } from 'lucide-react';
+import Link from 'next/link';
 
 const institutions = [
   {
     name: "Southern WV community & technical college",
     location: "Logan & Williamson, WV",
     description: "$1.8M AI Readiness Initiative. FIPSE Grant synchronization active.",
-    colors: "bg-[#87CEEB] border-[#CFB53B]", // Light Blue & Old Gold
+    colors: "bg-[#87CEEB] border-[#CFB53B]",
     textColor: "text-zinc-900",
     badgeColor: "bg-white/30 text-zinc-900",
     status: "Active: Sovereign Node",
     programs: ["Nursing", "Information Technology", "Vocational"],
-    icon: <Zap size={20} />
+    icon: <Zap size={20} />,
+    href: "/institutions/swvctc"
   },
   {
     name: "University of Pikeville",
     location: "Pikeville, KY",
     description: "Elliott School of Nursing & Optometry. Private Institutional Node integration.",
-    colors: "bg-[#FF671D] border-black", // UPIKE Orange & Black
+    colors: "bg-[#FF671D] border-black",
     textColor: "text-white",
     badgeColor: "bg-black/20 text-white",
     status: "Neural Link Ready",
     programs: ["Nursing", "Optometry", "Business"],
-    icon: <Activity size={20} />
+    icon: <Activity size={20} />,
+    href: "/institutions/upike"
   },
   {
     name: "Big Sandy community & technical college",
     location: "Pikeville (Mayo Campus), KY",
     description: "KCTCS Regional Hub. Vocational AI training and industrial tech alignment.",
-    colors: "bg-[#00467f] border-[#e7a614]", // Navy & Gold
+    colors: "bg-[#00467f] border-[#e7a614]",
     textColor: "text-white",
     badgeColor: "bg-white/10 text-white",
     status: "Baseline Established",
     programs: ["Welding", "LPN Nursing", "Industrial Tech"],
-    icon: <BookOpen size={20} />
+    icon: <BookOpen size={20} />,
+    href: "/institutions/bsctc"
   },
   {
     name: "Galen College of Nursing",
     location: "Pikeville, KY",
     description: "Clinical Simulation Node. ADN and LPN-to-RN bridge program AI auditing.",
-    colors: "bg-[#9E1B32] border-white", // Crimson & White
+    colors: "bg-[#007CBA] border-[#003366]", // Lochmara Blue branding
     textColor: "text-white",
     badgeColor: "bg-white/10 text-white",
     status: "Deployment Pending",
     programs: ["ADN", "LPN-RN Bridge"],
-    icon: <ShieldCheck size={20} />
+    icon: <ShieldCheck size={20} />,
+    href: "/institutions/galen"
   }
 ];
 
@@ -106,9 +111,11 @@ export default function InstitutionsPage() {
                   <ShieldCheck size={14} className="animate-pulse" />
                   {school.status}
                 </div>
-                <button className="bg-black/90 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl">
-                  Manage Node
-                </button>
+                <Link href={school.href}>
+                  <button className="bg-black/90 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all shadow-xl">
+                    Manage Node
+                  </button>
+                </Link>
               </div>
             </div>
           ))}
