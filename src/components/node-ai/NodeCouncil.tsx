@@ -33,6 +33,11 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
     setActiveThreadId(thread.id);
   };
 
+  const handleNewThread = () => {
+    setFeed([]);
+    setActiveThreadId(null);
+  };
+
   const handleIgnite = async () => {
     if (!prompt.trim() || !user) return;
     setIsSynthesizing(true);
@@ -48,7 +53,12 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
 
   return (
     <div className="flex bg-zinc-900/80 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl h-[650px]">
-      <NodeArchiveSidebar institution={institution} userType={userType} onSelectThread={handleLoadThread} />
+      <NodeArchiveSidebar 
+        institution={institution} 
+        userType={userType} 
+        onSelectThread={handleLoadThread} 
+        onNewThread={handleNewThread}
+      />
       
       <div className="flex-1 flex flex-col min-w-0">
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-black/40">
@@ -66,8 +76,8 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
           {feed.map((msg: any) => (
             <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
               <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
-      {msg.is_human ? (user?.username || 'CassandraWilliamson') : msg.name.split('_')[1]}
-    </span>
+                {msg.is_human ? (user?.username || 'CassandraWilliamson') : msg.name.split('_')[1]}
+              </span>
               <div className={`p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
                 {msg.content}
               </div>
