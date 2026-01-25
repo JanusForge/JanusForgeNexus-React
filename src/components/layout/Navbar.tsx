@@ -27,7 +27,21 @@ export default function Navbar() {
   const hasAccess = !!(user?.access_expiry && new Date(user.access_expiry) > new Date());
 
   useEffect(() => {
-    const socket = io(API_BASE_URL, { withCredentials: true });
+    // 🛡️ SURGICAL FIX: Force WebSocket transport to avoid 400 Polling errors
+    const socket = io(API_BASE_URL, { 
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn("Nexus Connection Syncing...", err.message);
+      // Force fallback if websocket fails, but prioritize clean handshake
+      if (err.message === 'xhr poll error') {
+        socket.connect();
+      }
+    });
 
     socket.on('nexus:transmission', (data: any) => {
       setSystemAlert("The Council is Synthesizing...");
@@ -74,8 +88,7 @@ export default function Navbar() {
               <Link href="/" className="text-zinc-400 hover:text-white transition-colors font-black text-[10px] uppercase tracking-[0.2em]">
                 Home
               </Link>
-              
-              {/* --- 🏫 RESTORED: INSTITUTIONAL HUB --- */}
+
               {isAdmin && (
                 <Link href="/institutions" className="text-emerald-400 hover:text-emerald-300 transition-colors font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
                   <School size={12} />
@@ -145,7 +158,7 @@ export default function Navbar() {
             <div className="md:hidden py-8 border-t border-white/5 animate-in slide-in-from-top-4 duration-300">
               <div className="flex flex-col gap-6 px-4">
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-white text-[10px] font-black uppercase tracking-widest">Home</Link>
-                
+
                 {isAdmin && (
                   <Link href="/institutions" onClick={() => setMobileMenuOpen(false)} className="text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                     <School size={14} /> Institutional Hub
@@ -153,13 +166,13 @@ export default function Navbar() {
                 )}
 
                 <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">Nexus Access</Link>
-                
+
                 {isAdmin && (
                   <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-amber-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                     <ShieldAlert size={14} /> Nexus Watch
                   </Link>
                 )}
-                
+
                 {isAuthenticated ? (
                   <>
                     <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Profile</Link>
@@ -176,6 +189,3 @@ export default function Navbar() {
     </div>
   );
 }
-
-
-// Keep it real, Cassandra Williamson
