@@ -65,7 +65,9 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
           {feed.map((msg: any) => (
             <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
-              <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">{msg.is_human ? 'Sovereign' : msg.name.split('_')[1]}</span>
+              <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
+      {msg.is_human ? (user?.username || 'CassandraWilliamson') : msg.name.split('_')[1]}
+    </span>
               <div className={`p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
                 {msg.content}
               </div>
