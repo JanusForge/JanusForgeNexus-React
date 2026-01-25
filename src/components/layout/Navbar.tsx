@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { Menu, X, User, LogOut, ShieldAlert, Radio, ShieldCheck, Clock, Zap } from 'lucide-react';
+import { Menu, X, User, LogOut, ShieldAlert, Radio, ShieldCheck, Clock, Zap, School } from 'lucide-react';
 import { io } from 'socket.io-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -24,23 +24,18 @@ export default function Navbar() {
   const isAuthenticated = !!user;
   const isAdmin = isAuthenticated && (user?.email === 'admin@janusforge.ai' || user?.role === 'GOD_MODE' || user?.role === 'ADMIN');
 
-  // --- ⏳ NEXUS ACCESS LOGIC ---
   const hasAccess = !!(user?.access_expiry && new Date(user.access_expiry) > new Date());
 
   useEffect(() => {
-    // Connect to the Neural Link
     const socket = io(API_BASE_URL, { withCredentials: true });
 
-    // 📡 SYNCED: Listen for the "Deep Pull" transmissions
     socket.on('nexus:transmission', (data: any) => {
       setSystemAlert("The Council is Synthesizing...");
       setTimeout(() => setSystemAlert(null), 10000);
     });
 
-    // 🔓 SYNCED: Listen for the Stripe Webhook to unlock access in real-time
     socket.on('nexus:access_granted', (data: { userId: string }) => {
       if (data.userId === user?.id) {
-        // Soft reload to refresh the auth state and flip the badge
         window.location.reload();
       }
     });
@@ -50,7 +45,6 @@ export default function Navbar() {
 
   return (
     <div className="sticky top-0 z-50">
-      {/* --- Neural Pulse Alert --- */}
       {systemAlert && (
         <div className="bg-indigo-600 text-white py-2 px-4 flex items-center justify-center gap-3 animate-in slide-in-from-top duration-500">
           <Radio size={16} className="animate-pulse flex-shrink-0" />
@@ -67,7 +61,6 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
 
-            {/* --- Logo / Home --- */}
             <Link href="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 bg-white text-black rounded-xl flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-500 shadow-lg shadow-indigo-500/20">
                 <ShieldCheck size={22} />
@@ -77,11 +70,19 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* --- Desktop Navigation --- */}
             <div className="hidden md:flex items-center gap-8">
               <Link href="/" className="text-zinc-400 hover:text-white transition-colors font-black text-[10px] uppercase tracking-[0.2em]">
                 Home
               </Link>
+              
+              {/* --- 🏫 RESTORED: INSTITUTIONAL HUB --- */}
+              {isAdmin && (
+                <Link href="/institutions" className="text-emerald-400 hover:text-emerald-300 transition-colors font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
+                  <School size={12} />
+                  Institutional Hub
+                </Link>
+              )}
+
               <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300 transition-colors font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-2">
                 <Zap size={12} />
                 Nexus Access
@@ -98,7 +99,6 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* --- Auth & Access Status --- */}
             <div className="flex items-center gap-6">
               {isAuthenticated && (
                 <div className={`flex items-center gap-3 px-4 py-2 rounded-full border transition-all duration-500 ${
@@ -141,17 +141,25 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* --- Mobile Menu --- */}
           {mobileMenuOpen && (
             <div className="md:hidden py-8 border-t border-white/5 animate-in slide-in-from-top-4 duration-300">
               <div className="flex flex-col gap-6 px-4">
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-white text-[10px] font-black uppercase tracking-widest">Home</Link>
+                
+                {isAdmin && (
+                  <Link href="/institutions" onClick={() => setMobileMenuOpen(false)} className="text-emerald-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                    <School size={14} /> Institutional Hub
+                  </Link>
+                )}
+
                 <Link href="/pricing" onClick={() => setMobileMenuOpen(false)} className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">Nexus Access</Link>
+                
                 {isAdmin && (
                   <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="text-amber-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
                     <ShieldAlert size={14} /> Nexus Watch
                   </Link>
                 )}
+                
                 {isAuthenticated ? (
                   <>
                     <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="text-zinc-400 text-[10px] font-black uppercase tracking-widest">Profile</Link>
@@ -168,3 +176,6 @@ export default function Navbar() {
     </div>
   );
 }
+
+
+// Keep it real, Cassandra Williamson
