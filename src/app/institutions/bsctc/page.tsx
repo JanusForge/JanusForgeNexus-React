@@ -26,7 +26,9 @@ export default function BSCTCDashboard() {
           </div>
         </div>
 
+        {/* 🔑 Key added for clean state reset on role change */}
         <NodeCouncil 
+          key={`BSCTC-${activeRole}`}
           institution="BSCTC Mayo" 
           userType={activeRole} 
           accentColor={activeRole === 'FACULTY' ? 'bg-[#00467f]' : 'bg-[#e7a614]'} 

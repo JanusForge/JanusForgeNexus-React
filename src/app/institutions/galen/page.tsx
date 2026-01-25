@@ -26,7 +26,9 @@ export default function GalenDashboard() {
           </div>
         </div>
 
+        {/* 🔑 Key added for clean state reset on role change */}
         <NodeCouncil 
+          key={`GALEN-${activeRole}`}
           institution="Galen" 
           userType={activeRole} 
           accentColor="bg-[#007CBA]" 
