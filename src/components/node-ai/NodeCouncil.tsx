@@ -83,7 +83,7 @@ export default function NodeCouncil({ institution, userType, accentColor }: Node
       <div className="h-[400px] p-6 overflow-y-auto space-y-4 bg-zinc-950/50 scrollbar-hide">
         {feed.length === 0 && (
           <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-            <p className="italic text-xs text-zinc-500 uppercase font-black tracking-tighter">Waiting for ${institution} Council Ignition...</p>
+            <p className="italic text-xs text-zinc-500 uppercase font-black tracking-tighter">Waiting for {institution} Council Ignition...</p>
           </div>
         )}
         
@@ -126,3 +126,4 @@ export default function NodeCouncil({ institution, userType, accentColor }: Node
       </div>
     </div>
   );
+}
