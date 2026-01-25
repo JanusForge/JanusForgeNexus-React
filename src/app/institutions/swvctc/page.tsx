@@ -1,9 +1,13 @@
 "use client";
 
-import { Activity, Shield, Cpu, Zap, ArrowLeft, AlertTriangle, GlobeLock } from 'lucide-react';
+import { Activity, Shield, Cpu, Zap, ArrowLeft, GlobeLock } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
+import NodeCouncil from '@/components/node-ai/NodeCouncil';
 
 export default function SWVCTCDashboard() {
+  const [activeRole, setActiveRole] = useState<'FACULTY' | 'STUDENT'>('FACULTY');
+
   const nodeStats = [
     { label: "Local GPU Load", value: "42%", icon: <Cpu size={18} />, color: "text-emerald-400" },
     { label: "Sovereignty Status", value: "100% LOCAL", icon: <GlobeLock size={18} />, color: "text-blue-400" },
@@ -19,110 +23,78 @@ export default function SWVCTCDashboard() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div>
             <Link href="/institutions" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-4 text-xs font-black uppercase tracking-widest">
-              <ArrowLeft size={14} /> Back to Regional Hub
+              <ArrowLeft size={14} /> Regional Hub
             </Link>
             <h1 className="text-5xl font-black uppercase tracking-tighter italic text-[#87CEEB]">
               Southern WV <span className="text-white">Node</span>
             </h1>
-            <p className="text-zinc-500 font-bold uppercase text-xs tracking-[0.3em] mt-2">Logan Campus Infrastructure Core</p>
+            <p className="text-zinc-500 font-bold uppercase text-xs tracking-[0.3em] mt-2">Logan Campus Core</p>
           </div>
-          <div className="bg-[#CFB53B]/10 border border-[#CFB53B]/20 px-6 py-3 rounded-2xl flex items-center gap-4">
-            <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
-            <span className="text-[#CFB53B] font-black uppercase text-xs tracking-widest text-center">Neural Link: Synchronized</span>
+          
+          <div className="flex flex-col items-end gap-3">
+             <div className="bg-[#CFB53B]/10 border border-[#CFB53B]/20 px-6 py-3 rounded-2xl flex items-center gap-4">
+                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[#CFB53B] font-black uppercase text-xs tracking-widest text-center">Neural Link: Active</span>
+             </div>
+             {/* ROLE SWITCHER */}
+             <div className="flex gap-2 p-1 bg-zinc-900/50 rounded-xl border border-white/5">
+                <button 
+                  onClick={() => setActiveRole('FACULTY')}
+                  className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeRole === 'FACULTY' ? 'bg-[#87CEEB] text-black' : 'text-zinc-500'}`}
+                >
+                  Faculty
+                </button>
+                <button 
+                  onClick={() => setActiveRole('STUDENT')}
+                  className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeRole === 'STUDENT' ? 'bg-[#CFB53B] text-black' : 'text-zinc-500'}`}
+                >
+                  Student
+                </button>
+             </div>
           </div>
         </div>
 
-        {/* --- TELEMETRY GRID --- */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {nodeStats.map((stat) => (
-            <div key={stat.label} className="bg-zinc-900/30 border border-white/5 p-6 rounded-3xl group hover:border-white/10 transition-all">
-              <div className={`${stat.color} mb-3 opacity-50 group-hover:opacity-100 transition-opacity`}>
-                {stat.icon}
-              </div>
-              <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest mb-1">{stat.label}</p>
-              <p className="text-2xl font-black italic uppercase tracking-tighter">{stat.value}</p>
-            </div>
-          ))}
-        </div>
-
+        {/* --- MAIN INTERACTIVE GRID --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* --- PILLAR 1: SOVEREIGN EDGE MONITOR --- */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-[2.5rem] relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-8 opacity-10">
-                 <Cpu size={120} />
-               </div>
-               <h2 className="text-xl font-black uppercase tracking-tight mb-6 flex items-center gap-3">
-                 <Zap size={20} className="text-yellow-400" /> Sovereign Edge Hardware
-               </h2>
-               <div className="space-y-4">
-                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest border-b border-white/5 pb-2">
-                   <span className="text-zinc-500">Node Cluster ID:</span>
-                   <span>LOGAN-NODE-01</span>
-                 </div>
-                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest border-b border-white/5 pb-2">
-                   <span className="text-zinc-500">LLM Cache Status:</span>
-                   <span className="text-emerald-400">OPTIMIZED (Llama-3-70B-Q4)</span>
-                 </div>
-                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest border-b border-white/5 pb-2">
-                   <span className="text-zinc-500">Offline Resilience:</span>
-                   <span className="text-blue-400">READY (72hr Cache Active)</span>
-                 </div>
-               </div>
-               <button className="mt-8 w-full py-4 bg-white text-black font-black uppercase text-xs tracking-[0.2em] rounded-2xl hover:bg-[#87CEEB] transition-colors shadow-lg">
-                 Reboot Local Core
-               </button>
-            </div>
-
-            {/* --- PILLAR 2: FACULTY REFEREE INTERFACE --- */}
-            <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-[2.5rem]">
-               <h2 className="text-xl font-black uppercase tracking-tight mb-6 flex items-center gap-3">
-                 <Activity size={20} className="text-amber-400" /> Faculty Referee Control
-               </h2>
-               <p className="text-zinc-400 text-sm font-medium mb-6">
-                 Launch adversarial simulation modules for classroom instruction and AI literacy certification.
-               </p>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <button className="p-6 bg-black border border-white/5 rounded-2xl text-left hover:border-amber-400/50 transition-all group">
-                   <p className="text-[10px] font-black text-amber-500 uppercase mb-1">Nursing Module</p>
-                   <p className="text-sm font-black uppercase italic tracking-tighter">Clinical Ethics Debate</p>
-                 </button>
-                 <button className="p-6 bg-black border border-white/5 rounded-2xl text-left hover:border-blue-400/50 transition-all group">
-                   <p className="text-[10px] font-black text-blue-500 uppercase mb-1">IT Module</p>
-                   <p className="text-sm font-black uppercase italic tracking-tighter">Cyber-Defense Simulation</p>
-                 </button>
-               </div>
-            </div>
+          {/* THE COUNCIL CLONE */}
+          <div className="lg:col-span-2">
+            <NodeCouncil 
+              institution="SWVCTC" 
+              userType={activeRole} 
+              accentColor={activeRole === 'FACULTY' ? 'bg-[#87CEEB]' : 'bg-[#CFB53B]'} 
+            />
           </div>
 
-          {/* --- PILLAR 3: PRIVACY GUARDRAIL LOGS --- */}
-          <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-[2.5rem] h-fit">
-            <h2 className="text-xl font-black uppercase tracking-tight mb-6 flex items-center gap-3">
-               <Shield size={20} className="text-indigo-400" /> Integrity Logs
-            </h2>
-            <div className="space-y-6">
-              <div className="border-l-2 border-emerald-500 pl-4">
-                <p className="text-[10px] font-black text-zinc-500 uppercase">08:45 AM</p>
-                <p className="text-[11px] font-bold">Predictive audit complete: No bias detected in Nursing Cohort B.</p>
+          {/* TELEMETRY COLUMN */}
+          <div className="space-y-4">
+            {nodeStats.map((stat) => (
+              <div key={stat.label} className="bg-zinc-900/30 border border-white/5 p-6 rounded-3xl group hover:border-white/10 transition-all flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`${stat.color} opacity-70`}>{stat.icon}</div>
+                  <div>
+                    <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">{stat.label}</p>
+                    <p className="text-xl font-black italic uppercase tracking-tighter">{stat.value}</p>
+                  </div>
+                </div>
               </div>
-              <div className="border-l-2 border-blue-500 pl-4">
-                <p className="text-[10px] font-black text-zinc-500 uppercase">07:22 AM</p>
-                <p className="text-[11px] font-bold">Data Sovereignty Check: 100% of packets remained regional.</p>
+            ))}
+            
+            {/* INTEGRITY LOG MODULE */}
+            <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-[2rem] mt-4">
+              <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-zinc-500">Integrity Logs</h2>
+              <div className="space-y-4">
+                <div className="border-l-2 border-emerald-500 pl-4">
+                  <p className="text-[9px] font-black text-zinc-600 uppercase">08:45 AM</p>
+                  <p className="text-[11px] font-bold">Predictive audit: No bias detected.</p>
+                </div>
+                <div className="border-l-2 border-blue-500 pl-4">
+                  <p className="text-[9px] font-black text-zinc-600 uppercase">07:22 AM</p>
+                  <p className="text-[11px] font-bold">Data Sovereignty: 100% Local.</p>
+                </div>
               </div>
-              <div className="border-l-2 border-amber-500 pl-4">
-                <p className="text-[10px] font-black text-zinc-500 uppercase">Yesterday</p>
-                <p className="text-[11px] font-bold text-zinc-400">Referee Module: Prof. Miller certified Level 1 Fluency.</p>
-              </div>
-            </div>
-            <div className="mt-8 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl flex gap-3">
-              <AlertTriangle size={18} className="text-red-500 flex-shrink-0" />
-              <p className="text-[9px] font-black uppercase text-red-500 leading-tight">
-                Warning: External cloud sync attempt blocked by Logan Privacy Guardrail.
-              </p>
             </div>
           </div>
-
         </div>
       </div>
     </div>
