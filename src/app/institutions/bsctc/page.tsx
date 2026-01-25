@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Shield, Zap, ArrowLeft, Construction, Wrench } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import NodeCouncil from '@/components/node-ai/NodeCouncil';
@@ -20,29 +20,17 @@ export default function BSCTCDashboard() {
               Big Sandy <span className="text-white">Mayo Node</span>
             </h1>
           </div>
-          <div className="flex flex-col items-end gap-3">
-             <div className="bg-[#e7a614]/10 border border-[#e7a614]/20 px-6 py-3 rounded-2xl flex items-center gap-4">
-                <div className="w-3 h-3 bg-[#e7a614] rounded-full animate-pulse shadow-[0_0_10px_rgba(231,166,20,0.5)]" />
-                <span className="text-[#e7a614] font-black uppercase text-xs tracking-widest">Workforce Mesh: Active</span>
-             </div>
-             <div className="flex gap-2 p-1 bg-zinc-900/50 rounded-xl border border-white/5">
-                <button onClick={() => setActiveRole('FACULTY')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeRole === 'FACULTY' ? 'bg-[#00467f] text-white' : 'text-zinc-500'}`}>Instructor</button>
-                <button onClick={() => setActiveRole('STUDENT')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeRole === 'STUDENT' ? 'bg-[#e7a614] text-black' : 'text-zinc-500'}`}>Apprentice</button>
-             </div>
+          <div className="flex gap-2 p-1 bg-zinc-900/50 rounded-xl border border-white/5">
+            <button onClick={() => setActiveRole('FACULTY')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeRole === 'FACULTY' ? 'bg-[#00467f] text-white' : 'text-zinc-500'}`}>Instructor</button>
+            <button onClick={() => setActiveRole('STUDENT')} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeRole === 'STUDENT' ? 'bg-[#e7a614] text-black' : 'text-zinc-500'}`}>Apprentice</button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <NodeCouncil institution="BSCTC Mayo" userType={activeRole} accentColor={activeRole === 'FACULTY' ? 'bg-[#00467f]' : 'bg-[#e7a614]'} />
-          </div>
-          <div className="bg-zinc-900/50 border border-white/5 p-8 rounded-[2rem] h-fit">
-            <h2 className="text-xs font-black uppercase tracking-[0.2em] mb-6 text-[#e7a614]">Workforce Logs</h2>
-            <div className="bg-black/30 p-4 rounded-xl border-l-2 border-[#00467f]">
-              <p className="text-[11px] font-bold">Safety Referee session: OSHA Guidelines Active.</p>
-            </div>
-          </div>
-        </div>
+        <NodeCouncil 
+          institution="BSCTC Mayo" 
+          userType={activeRole} 
+          accentColor={activeRole === 'FACULTY' ? 'bg-[#00467f]' : 'bg-[#e7a614]'} 
+        />
       </div>
     </div>
   );
