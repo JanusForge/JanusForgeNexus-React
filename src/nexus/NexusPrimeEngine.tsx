@@ -5,7 +5,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Send, Loader2, X, Globe, ShieldCheck, Lock, Zap,
-  ThumbsUp, Share2, Printer, Bookmark, ChevronRight
+  ThumbsUp, Share2, Printer, Bookmark, ChevronRight, ArrowDown
 } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 import { io } from 'socket.io-client';
@@ -36,6 +36,10 @@ export default function NexusPrimeEngine() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [nexusTime, setNexusTime] = useState<string>("");
   const [observerCount, setObserverCount] = useState<number>(1);
+
+  // ⚡ SCROLL CONTROL STATES
+  const [userIsAtBottom, setUserIsAtBottom] = useState(true);
+  const [hasNewMessages, setHasNewMessages] = useState(false);
 
   // ⚡ SOCIAL THREADING STATES
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
@@ -78,6 +82,12 @@ export default function NexusPrimeEngine() {
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
         if (prev.find(m => m.id === entry.id)) return prev;
+        
+        // If user is scrolled up, flag that new messages exist
+        if (!userIsAtBottom) {
+          setHasNewMessages(true);
+        }
+        
         return [...prev, entry];
       });
       if (!entry.is_human) setIsSynthesizing(false);
@@ -94,7 +104,7 @@ export default function NexusPrimeEngine() {
     });
 
     return () => { socket.disconnect(); };
-  }, [activeThreadId]);
+  }, [activeThreadId, userIsAtBottom]);
 
   // --- 3. ACCESS TIMER ---
   useEffect(() => {
@@ -135,9 +145,33 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(clockTimer);
   }, []);
 
+  // --- SCROLL MONITORING LOGIC ---
   useEffect(() => {
+    const handleScroll = () => {
+      const offset = 150; 
+      const isBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - offset;
+      setUserIsAtBottom(isBottom);
+      
+      if (isBottom) {
+        setHasNewMessages(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (userIsAtBottom) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatThread, activeThreadId, userIsAtBottom]);
+
+  const scrollToBottom = () => {
+    setUserIsAtBottom(true);
+    setHasNewMessages(false);
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatThread, activeThreadId]);
+  };
 
   // --- 5. ACTION HANDLERS ---
   const toggleAnchor = (id: string) => {
@@ -153,7 +187,6 @@ export default function NexusPrimeEngine() {
     }
   };
 
-  // ✅ THE RESTORED REFUEL FUNCTION (ONLY CHANGE)
   const handleRefuel = async (priceId: string, hours: number) => {
     try {
       const tier = hours === 24 ? '24H' : hours === 168 ? '7D' : '30D';
@@ -177,6 +210,9 @@ export default function NexusPrimeEngine() {
     const originalMsg = userMessage;
     setIsSynthesizing(true);
     setUserMessage('');
+    
+    // Manual message send should always jump to bottom
+    scrollToBottom();
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
@@ -207,6 +243,17 @@ export default function NexusPrimeEngine() {
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden font-sans">
+
+      {/* --- NEW MESSAGE TOAST --- */}
+      {hasNewMessages && !userIsAtBottom && (
+        <button 
+          onClick={scrollToBottom}
+          className="fixed bottom-32 z-[160] bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_30px_rgba(79,70,229,0.4)] animate-in slide-in-from-bottom-4 duration-300 border border-white/20"
+        >
+          <ArrowDown size={16} className="animate-bounce" />
+          <span className="text-[10px] font-black uppercase tracking-widest">New Transmissions</span>
+        </button>
+      )}
 
       {/* --- FORGE REFUELED OVERLAY --- */}
       {showSuccess && (
@@ -246,7 +293,7 @@ export default function NexusPrimeEngine() {
       {/* MAIN CONTENT */}
       <main className={`w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48 transition-all duration-1000 ${showSuccess ? 'blur-2xl opacity-20' : 'opacity-100'}`}>
 
-        {/* --- LOGO SECTION (Show only on Feed) --- */}
+        {/* --- LOGO SECTION --- */}
         {!activeThreadId && (
           <>
             <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
@@ -261,7 +308,7 @@ export default function NexusPrimeEngine() {
           </>
         )}
 
-        {/* --- 🏠 THE FEED VIEW (X-STYLE) --- */}
+        {/* --- 🏠 THE FEED VIEW --- */}
         {!activeThreadId && (
           <div className="space-y-6 w-full animate-in fade-in duration-700">
             <h2 className="text-[10px] font-black tracking-[0.4em] text-indigo-500 mb-8 uppercase">Neural Pulse Feed</h2>
