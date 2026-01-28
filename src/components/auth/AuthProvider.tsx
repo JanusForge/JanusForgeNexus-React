@@ -27,6 +27,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ✅ [Surgical Edit]: Capture Referral Codes from URL on Landing
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) {
+        console.log("Sovereign Referral Detected:", ref);
+        // Persist code in localStorage so it survives navigation to Login/Signup pages
+        localStorage.setItem('janus_ref_code', ref);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('janus_user');
     if (storedUser) {
@@ -98,6 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     localStorage.removeItem('janus_user');
     localStorage.removeItem('janus_token');
+    // Also clear referral code on logout if you want a clean slate
+    localStorage.removeItem('janus_ref_code'); 
     setUser(null);
     window.location.href = '/login';
   };
