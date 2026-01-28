@@ -4,6 +4,8 @@ import { Shield, Zap, Radio, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import NodeArchiveSidebar from './NodeArchiveSidebar';
+// ✅ Surgical Addition: Mermaid Support
+import MermaidViewer from '@/components/ui/MermaidViewer';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
@@ -53,13 +55,13 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
 
   return (
     <div className="flex bg-zinc-900/80 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl h-[650px]">
-      <NodeArchiveSidebar 
-        institution={institution} 
-        userType={userType} 
-        onSelectThread={handleLoadThread} 
+      <NodeArchiveSidebar
+        institution={institution}
+        userType={userType}
+        onSelectThread={handleLoadThread}
         onNewThread={handleNewThread}
       />
-      
+
       <div className="flex-1 flex flex-col min-w-0">
         <div className="p-6 border-b border-white/5 flex justify-between items-center bg-black/40">
           <div className="flex items-center gap-3">
@@ -79,7 +81,12 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
                 {msg.is_human ? (user?.username || 'CassandraWilliamson') : msg.name.split('_')[1]}
               </span>
               <div className={`p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
-                {msg.content}
+                {/* ✅ Surgical Logic: Check for Mermaid diagram markers */}
+                {msg.content.trim().startsWith('graph') || msg.content.trim().startsWith('flowchart') ? (
+                  <MermaidViewer chart={msg.content} />
+                ) : (
+                  msg.content
+                )}
               </div>
             </div>
           ))}
