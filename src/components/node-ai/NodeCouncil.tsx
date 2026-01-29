@@ -3,9 +3,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Shield, Zap, Radio, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '@/components/auth/AuthProvider';
-// ✅ Fixed path for Vercel build
+// ✅ Absolute path for Vercel stability
 import NodeArchiveSidebar from '@/components/node-ai/NodeArchiveSidebar';
-// ✅ Surgical Addition: Mermaid Support
+// ✅ Mermaid Support
 import MermaidViewer from '@/components/ui/MermaidViewer';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -83,21 +83,41 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
               </span>
               <div className={`p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
                 {(() => {
-                  const content = msg.content || "";
-                  const mermaidRegex = /(?:graph|flowchart)\s+[A-Z]{2}[\s\S]*?(?=\n\n|$|```)/;
-                  const match = content.match(mermaidRegex);
+                  let content = msg.content || "";
+                  
+                  // ✅ FIX: Sanitize Smart Quotes that break Mermaid rendering
+                  const sanitizedContent = content
+                    .replace(/[\u201C\u201D]/g, '"')
+                    .replace(/[\u2018\u2019]/g, "'");
 
-                  if (match) {
-                    const before = content.split(match[0])[0];
-                    const after = content.split(match[0])[1];
+                  // ✅ DETECT: Mermaid Blocks
+                  const mermaidRegex = /(?:graph|flowchart|sequenceDiagram|erDiagram|gantt|pie)\s+[\s\S]*?(?=\n\n|$|```)/;
+                  const mermaidMatch = sanitizedContent.match(mermaidRegex);
+
+                  if (mermaidMatch) {
+                    const before = sanitizedContent.split(mermaidMatch[0])[0];
+                    const after = sanitizedContent.split(mermaidMatch[0])[1];
                     return (
                       <div className="flex flex-col gap-4">
                         {before && <p>{before.replace(/```mermaid|```/g, "").trim()}</p>}
-                        <MermaidViewer chart={match[0].trim()} />
+                        <MermaidViewer chart={mermaidMatch[0].trim()} />
                         {after && <p>{after.replace(/```mermaid|```/g, "").trim()}</p>}
                       </div>
                     );
                   }
+
+                  // ✅ FALLBACK: Detect Legacy Graphviz/DOT syntax
+                  if (content.includes('digraph') || content.includes('strict digraph')) {
+                    return (
+                      <div className="bg-zinc-950/50 p-4 border border-indigo-500/30 rounded-xl space-y-2">
+                        <p className="text-[10px] text-indigo-400 uppercase font-black tracking-tighter italic opacity-70">Legacy Logic Matrix Detected</p>
+                        <pre className="text-xs text-zinc-400 overflow-x-auto p-2 bg-black/20 rounded-md border border-white/5">
+                          {content.replace(/```dot|```/g, "").trim()}
+                        </pre>
+                      </div>
+                    );
+                  }
+                  
                   return content;
                 })()}
               </div>
@@ -126,6 +146,3 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
     </div>
   );
 }
-
-
-// Keep it real, Cassandra Williamson
