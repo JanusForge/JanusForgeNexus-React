@@ -8,7 +8,7 @@ import NodeArchiveSidebar from '@/components/node-ai/NodeArchiveSidebar';
 // ✅ Mermaid Support
 import MermaidViewer from '@/components/ui/MermaidViewer';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '[https://janusforgenexus-backend.onrender.com](https://janusforgenexus-backend.onrender.com)';
 
 export default function NodeCouncil({ institution, userType, accentColor }: any) {
   const { user } = useAuth() as any;
@@ -83,42 +83,36 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
               </span>
               <div className={`p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
                 {(() => {
-                  let content = msg.content || "";
+                  const rawContent = msg.content || "";
                   
-                  // ✅ FIX: Sanitize Smart Quotes that break Mermaid rendering
-                  const sanitizedContent = content
-                    .replace(/[\u201C\u201D]/g, '"')
-                    .replace(/[\u2018\u2019]/g, "'");
+                  // ✅ Regex to find Mermaid code even if surrounded by text or backticks
+                  const mermaidRegex = /(?:graph|flowchart|sequenceDiagram|erDiagram|gantt|pie)\s+[\s\S]*?(?=\n\n|$|```)/i;
+                  const match = rawContent.match(mermaidRegex);
 
-                  // ✅ DETECT: Mermaid Blocks
-                  const mermaidRegex = /(?:graph|flowchart|sequenceDiagram|erDiagram|gantt|pie)\s+[\s\S]*?(?=\n\n|$|```)/;
-                  const mermaidMatch = sanitizedContent.match(mermaidRegex);
+                  if (match) {
+                    // Sanitize the chart code: strip backticks and fix "smart" quotes
+                    const chartCode = match[0]
+                      .replace(/```mermaid/g, "")
+                      .replace(/```/g, "")
+                      .replace(/[\u201C\u201D]/g, '"')
+                      .replace(/[\u2018\u2019]/g, "'")
+                      .trim();
 
-                  if (mermaidMatch) {
-                    const before = sanitizedContent.split(mermaidMatch[0])[0];
-                    const after = sanitizedContent.split(mermaidMatch[0])[1];
+                    const parts = rawContent.split(match[0]);
+                    const before = parts[0]?.replace(/```mermaid|```/g, "").trim();
+                    const after = parts[1]?.replace(/```/g, "").trim();
+
                     return (
                       <div className="flex flex-col gap-4">
-                        {before && <p>{before.replace(/```mermaid|```/g, "").trim()}</p>}
-                        <MermaidViewer chart={mermaidMatch[0].trim()} />
-                        {after && <p>{after.replace(/```mermaid|```/g, "").trim()}</p>}
+                        {before && <p className="whitespace-pre-wrap">{before}</p>}
+                        <MermaidViewer chart={chartCode} />
+                        {after && <p className="whitespace-pre-wrap">{after}</p>}
                       </div>
                     );
                   }
 
-                  // ✅ FALLBACK: Detect Legacy Graphviz/DOT syntax
-                  if (content.includes('digraph') || content.includes('strict digraph')) {
-                    return (
-                      <div className="bg-zinc-950/50 p-4 border border-indigo-500/30 rounded-xl space-y-2">
-                        <p className="text-[10px] text-indigo-400 uppercase font-black tracking-tighter italic opacity-70">Legacy Logic Matrix Detected</p>
-                        <pre className="text-xs text-zinc-400 overflow-x-auto p-2 bg-black/20 rounded-md border border-white/5">
-                          {content.replace(/```dot|```/g, "").trim()}
-                        </pre>
-                      </div>
-                    );
-                  }
-                  
-                  return content;
+                  // Default text rendering
+                  return <p className="whitespace-pre-wrap">{rawContent}</p>;
                 })()}
               </div>
             </div>
