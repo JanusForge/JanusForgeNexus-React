@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 import { io } from 'socket.io-client';
+import AdvocateLeaderboard from '@/components/admin/AdvocateLeaderboard';
+
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
@@ -305,6 +307,12 @@ export default function NexusPrimeEngine() {
               <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">NEXUS PRIME</h3>
               <p className="text-zinc-500 text-sm mt-4 font-medium italic">Synchronized public transmission feed. Observe or Contribute.</p>
             </div>
+            
+            {/* ✅ 🏆 SOVEREIGN LEADERBOARD TILE: Surgical Injection */}
+            <div className="w-full mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+               <AdvocateLeaderboard adminId={user?.id || ''} />
+            </div>
+            
           </>
         )}
 
