@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Shield, Zap, Radio, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '@/components/auth/AuthProvider';
-import NodeArchiveSidebar from './NodeArchiveSidebar';
+// ✅ Fixed path for Vercel build
+import NodeArchiveSidebar from '@/components/node-ai/NodeArchiveSidebar';
 // ✅ Surgical Addition: Mermaid Support
 import MermaidViewer from '@/components/ui/MermaidViewer';
 
@@ -81,12 +82,24 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
                 {msg.is_human ? (user?.username || 'CassandraWilliamson') : msg.name.split('_')[1]}
               </span>
               <div className={`p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
-                {/* ✅ Surgical Logic: Check for Mermaid diagram markers */}
-                {msg.content.trim().startsWith('graph') || msg.content.trim().startsWith('flowchart') ? (
-                  <MermaidViewer chart={msg.content} />
-                ) : (
-                  msg.content
-                )}
+                {(() => {
+                  const content = msg.content || "";
+                  const mermaidRegex = /(?:graph|flowchart)\s+[A-Z]{2}[\s\S]*?(?=\n\n|$|```)/;
+                  const match = content.match(mermaidRegex);
+
+                  if (match) {
+                    const before = content.split(match[0])[0];
+                    const after = content.split(match[0])[1];
+                    return (
+                      <div className="flex flex-col gap-4">
+                        {before && <p>{before.replace(/```mermaid|```/g, "").trim()}</p>}
+                        <MermaidViewer chart={match[0].trim()} />
+                        {after && <p>{after.replace(/```mermaid|```/g, "").trim()}</p>}
+                      </div>
+                    );
+                  }
+                  return content;
+                })()}
               </div>
             </div>
           ))}
@@ -94,8 +107,19 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
 
         <div className="p-6 bg-black/60 border-t border-white/5">
           <div className="relative flex items-center">
-            <input value={prompt} onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleIgnite()} placeholder="Instruct the Council..." className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 px-6 pr-16 text-xs focus:outline-none"/>
-            <button onClick={handleIgnite} className={`absolute right-2 p-3 rounded-xl transition-all ${accentColor}`}><Zap size={18}/></button>
+            <input 
+              value={prompt} 
+              onChange={(e) => setPrompt(e.target.value)} 
+              onKeyDown={(e) => e.key === 'Enter' && handleIgnite()} 
+              placeholder="Instruct the Council..." 
+              className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 px-6 pr-16 text-xs focus:outline-none"
+            />
+            <button 
+              onClick={handleIgnite} 
+              className={`absolute right-2 p-3 rounded-xl transition-all ${accentColor}`}
+            >
+              <Zap size={18}/>
+            </button>
           </div>
         </div>
       </div>
