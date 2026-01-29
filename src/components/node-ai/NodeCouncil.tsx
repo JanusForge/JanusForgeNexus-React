@@ -3,12 +3,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Shield, Zap, Radio, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '@/components/auth/AuthProvider';
-// ✅ Absolute path for Vercel stability
 import NodeArchiveSidebar from '@/components/node-ai/NodeArchiveSidebar';
-// ✅ Mermaid Support
 import MermaidViewer from '@/components/ui/MermaidViewer';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '[https://janusforgenexus-backend.onrender.com](https://janusforgenexus-backend.onrender.com)';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 export default function NodeCouncil({ institution, userType, accentColor }: any) {
   const { user } = useAuth() as any;
@@ -83,36 +81,23 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
               </span>
               <div className={`p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
                 {(() => {
-                  const rawContent = msg.content || "";
+                  const content = msg.content || "";
                   
-                  // ✅ Regex to find Mermaid code even if surrounded by text or backticks
-                  const mermaidRegex = /(?:graph|flowchart|sequenceDiagram|erDiagram|gantt|pie)\s+[\s\S]*?(?=\n\n|$|```)/i;
-                  const match = rawContent.match(mermaidRegex);
+                  // Restore the cleaner "Is it Mermaid?" check that allows multiple blocks
+                  const isMermaid = content.trim().startsWith('graph') || 
+                                   content.trim().startsWith('flowchart') || 
+                                   content.includes('```mermaid');
 
-                  if (match) {
-                    // Sanitize the chart code: strip backticks and fix "smart" quotes
-                    const chartCode = match[0]
-                      .replace(/```mermaid/g, "")
-                      .replace(/```/g, "")
-                      .replace(/[\u201C\u201D]/g, '"')
-                      .replace(/[\u2018\u2019]/g, "'")
-                      .trim();
+                  if (isMermaid) {
+                    // Extract just the code if it's wrapped in backticks, else take it raw
+                    const chartCode = content.includes('```mermaid') 
+                      ? content.split('```mermaid')[1].split('```')[0].trim()
+                      : content.trim();
 
-                    const parts = rawContent.split(match[0]);
-                    const before = parts[0]?.replace(/```mermaid|```/g, "").trim();
-                    const after = parts[1]?.replace(/```/g, "").trim();
-
-                    return (
-                      <div className="flex flex-col gap-4">
-                        {before && <p className="whitespace-pre-wrap">{before}</p>}
-                        <MermaidViewer chart={chartCode} />
-                        {after && <p className="whitespace-pre-wrap">{after}</p>}
-                      </div>
-                    );
+                    return <MermaidViewer chart={chartCode} />;
                   }
 
-                  // Default text rendering
-                  return <p className="whitespace-pre-wrap">{rawContent}</p>;
+                  return <p className="whitespace-pre-wrap">{content}</p>;
                 })()}
               </div>
             </div>
