@@ -3,14 +3,14 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, ShieldCheck, UserPlus, AlertCircle, Zap } from 'lucide-react';
-import { useAuth } from '@/components/auth/AuthProvider'; // Added for session sync
+import { useAuth } from '@/components/auth/AuthProvider'; 
 
 export const dynamic = 'force-dynamic';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 function RegisterForm() {
-  const { updateUserData } = useAuth(); // Destructure update function
+  const { updateUserData } = useAuth(); 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,13 +20,13 @@ function RegisterForm() {
   const searchParams = useSearchParams();
 
   const referralCode = searchParams.get('ref') || '';
-  const redirectTo = searchParams.get('redirect') || '/nexus'; // Default to Nexus for onboarding
+  const redirectTo = searchParams.get('redirect') || '/nexus'; 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setStatus('loading');
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
@@ -50,14 +50,12 @@ function RegisterForm() {
         throw new Error(data.error || 'Registration failed');
       }
 
-      // ✅ SUCCESS: Sync the session to AuthProvider immediately
       if (data.user) {
         updateUserData(data.user);
       }
 
       setStatus('success');
 
-      // Short delay for the success animation
       setTimeout(() => {
         router.push(decodeURIComponent(redirectTo));
       }, 2000);
@@ -80,11 +78,12 @@ function RegisterForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
-          {referralCode === 'BETA_2026' && (
-            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center gap-3 animate-pulse">
-              <Zap size={18} className="text-blue-400 shrink-0 fill-blue-400" />
-              <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest">
-                Beta Link Active: 50 Token Bounty Initialized
+          {/* ✅ Updated logic for Temporal Access Pass rewards */}
+          {['BETA_2026', 'TIM-2026', 'NATASHA-2026', 'CARRA-2026', 'JORDAN-2026', 'ASHLEY-2026'].includes(referralCode) && (
+            <div className="p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl flex items-center gap-3 animate-pulse">
+              <Zap size={18} className="text-indigo-400 shrink-0 fill-indigo-400" />
+              <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest">
+                Advocate Link Active: Temporal Pass Bonus Initialized
               </p>
             </div>
           )}
@@ -102,7 +101,7 @@ function RegisterForm() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-blue-500 transition-all text-sm font-bold"
+              className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-indigo-500 transition-all text-sm font-bold"
               placeholder="Enter your handle"
               required
             />
@@ -115,7 +114,7 @@ function RegisterForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-blue-500 transition-all text-sm font-bold"
+              className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-indigo-500 transition-all text-sm font-bold"
               placeholder="you@example.com"
               required
             />
@@ -128,7 +127,7 @@ function RegisterForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-blue-500 transition-all text-sm font-bold"
+              className="w-full px-5 py-4 bg-black border border-white/10 rounded-2xl text-white placeholder-gray-700 focus:outline-none focus:border-indigo-500 transition-all text-sm font-bold"
               placeholder="••••••••"
               required
               minLength={8}
@@ -137,7 +136,7 @@ function RegisterForm() {
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="w-full py-5 bg-white text-black font-black uppercase text-xs tracking-[0.3em] rounded-2xl transition-all hover:bg-blue-500 hover:text-white disabled:opacity-50 shadow-xl active:scale-95"
+            className="w-full py-5 bg-white text-black font-black uppercase text-xs tracking-[0.3em] rounded-2xl transition-all hover:bg-indigo-600 hover:text-white disabled:opacity-50 shadow-xl active:scale-95"
           >
             {status === 'loading' ? (
               <Loader2 className="animate-spin mx-auto" size={20} />
@@ -153,23 +152,23 @@ function RegisterForm() {
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 selection:bg-blue-500/30">
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 selection:bg-indigo-500/30">
       <div className="w-full max-w-md">
         <div className="bg-gray-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/10 p-10 shadow-2xl">
           <div className="text-center mb-10">
-            <div className="inline-block mb-6 p-4 bg-blue-600/10 rounded-2xl border border-blue-500/20">
-              <UserPlus className="text-blue-500" size={32} />
+            <div className="inline-block mb-6 p-4 bg-indigo-600/10 rounded-2xl border border-indigo-500/20">
+              <UserPlus className="text-indigo-500" size={32} />
             </div>
             <h1 className="text-4xl font-black text-white uppercase tracking-tighter italic">Initialize Profile</h1>
             <p className="text-gray-500 mt-2 text-xs font-bold uppercase tracking-widest">Join the Nexus and engage the Council</p>
           </div>
-          <Suspense fallback={<Loader2 className="animate-spin mx-auto text-blue-500" />}>
+          <Suspense fallback={<Loader2 className="animate-spin mx-auto text-indigo-500" />}>
             <RegisterForm />
           </Suspense>
           <div className="mt-10 pt-8 border-t border-white/5 text-center">
             <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">
               Already an Architect?{' '}
-              <Link href="/login" className="text-blue-500 hover:text-white transition-colors ml-1">
+              <Link href="/login" className="text-indigo-500 hover:text-white transition-colors ml-1">
                 Sign In
               </Link>
             </p>
@@ -179,7 +178,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-
-// Keep it clean
-// CLW
