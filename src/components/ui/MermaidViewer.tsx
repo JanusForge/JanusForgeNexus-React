@@ -3,8 +3,9 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import mermaid from 'mermaid';
 
+// Initialize once with the Janus Forge "Sovereign" palette
 mermaid.initialize({
-  startOnLoad: false,
+  startOnLoad: false, 
   theme: 'dark',
   securityLevel: 'loose',
   themeVariables: {
@@ -27,6 +28,7 @@ export default function MermaidViewer({ chart }: { chart: string }) {
       if (!chart) return;
       try {
         setIsRendering(true);
+        // We generate a truly unique ID for every Council member's chart
         const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
         const { svg: renderedSvg } = await mermaid.render(id, chart);
         
@@ -35,7 +37,7 @@ export default function MermaidViewer({ chart }: { chart: string }) {
           setIsRendering(false);
         }
       } catch (err) {
-        console.error("Mermaid Error:", err);
+        console.error("Mermaid Render Error:", err);
         if (isMounted) {
           setError(true);
           setIsRendering(false);
@@ -57,7 +59,11 @@ export default function MermaidViewer({ chart }: { chart: string }) {
     URL.revokeObjectURL(url);
   };
 
-  if (error) return <div className="text-[10px] text-red-500 p-4 border border-red-500/20 bg-red-500/5 rounded-xl">Visual Synthesis Syntax Error</div>;
+  if (error) return (
+    <div className="text-[10px] text-red-500 p-4 border border-red-500/20 bg-red-500/5 rounded-xl font-mono">
+      [!] Visual Synthesis Failure: Check Logic Syntax
+    </div>
+  );
 
   return (
     <div className="group relative my-4 w-full bg-black/40 p-6 rounded-3xl border border-white/5 overflow-hidden transition-all hover:border-indigo-500/30">
