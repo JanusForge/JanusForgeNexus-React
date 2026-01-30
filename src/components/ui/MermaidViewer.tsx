@@ -1,127 +1,84 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
-import { Shield, Zap, Radio, Lock } from 'lucide-react';
-import { io } from 'socket.io-client';
-import { useAuth } from '@/components/auth/AuthProvider';
-import NodeArchiveSidebar from '@/components/node-ai/NodeArchiveSidebar';
-import MermaidViewer from '@/components/ui/MermaidViewer';
+import React, { useEffect, useState, useRef } from 'react';
+import { Download, Loader2 } from 'lucide-react';
+import mermaid from 'mermaid';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'dark',
+  securityLevel: 'loose',
+  themeVariables: {
+    primaryColor: '#6366f1',
+    primaryTextColor: '#fff',
+    lineColor: '#6366f1',
+    mainBkg: '#09090b',
+  }
+});
 
-export default function NodeCouncil({ institution, userType, accentColor }: any) {
-  const { user } = useAuth() as any;
-  const [prompt, setPrompt] = useState("");
-  const [isSynthesizing, setIsSynthesizing] = useState(false);
-  const [feed, setFeed] = useState<any[]>([]);
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const socket = io(API_BASE_URL, { withCredentials: true });
-    socket.on(`node:${institution}:transmission`, (data: any) => {
-      setFeed((prev) => [...prev, data]);
-      setIsSynthesizing(false);
-    });
-    return () => { socket.disconnect(); };
-  }, [institution]);
+export default function MermaidViewer({ chart }: { chart: string }) {
+  const [svg, setSvg] = useState<string>('');
+  const [isRendering, setIsRendering] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [feed]);
+    let isMounted = true;
 
-  const handleLoadThread = (thread: any) => {
-    setFeed(thread.posts || []);
-    setActiveThreadId(thread.id);
+    const renderChart = async () => {
+      if (!chart) return;
+      try {
+        setIsRendering(true);
+        const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
+        const { svg: renderedSvg } = await mermaid.render(id, chart);
+        
+        if (isMounted) {
+          setSvg(renderedSvg);
+          setIsRendering(false);
+        }
+      } catch (err) {
+        console.error("Mermaid Error:", err);
+        if (isMounted) {
+          setError(true);
+          setIsRendering(false);
+        }
+      }
+    };
+
+    renderChart();
+    return () => { isMounted = false; };
+  }, [chart]);
+
+  const handleDownload = () => {
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `nexus-logic-${Date.now()}.svg`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
-  const handleNewThread = () => {
-    setFeed([]);
-    setActiveThreadId(null);
-  };
-
-  const handleIgnite = async () => {
-    if (!prompt.trim() || !user) return;
-    setIsSynthesizing(true);
-    try {
-      await fetch(`${API_BASE_URL}/api/nodes/ignite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, institution, userType, userId: user.id, conversationId: activeThreadId })
-      });
-      setPrompt("");
-    } catch (err) { setIsSynthesizing(false); }
-  };
+  if (error) return <div className="text-[10px] text-red-500 p-4 border border-red-500/20 bg-red-500/5 rounded-xl">Visual Synthesis Syntax Error</div>;
 
   return (
-    <div className="flex bg-zinc-900/80 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl h-[650px]">
-      <NodeArchiveSidebar
-        institution={institution}
-        userType={userType}
-        onSelectThread={handleLoadThread}
-        onNewThread={handleNewThread}
-      />
-
-      <div className="flex-1 flex flex-col min-w-0">
-        <div className="p-6 border-b border-white/5 flex justify-between items-center bg-black/40">
-          <div className="flex items-center gap-3">
-            <Radio size={18} className={isSynthesizing ? "animate-pulse text-emerald-400" : "text-zinc-600"} />
-            <div>
-              <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><Lock size={8}/> Secure Node Session</p>
-              <h2 className="text-xs font-bold uppercase">{institution} | {userType}</h2>
-            </div>
-          </div>
-          <Shield size={16} className="text-zinc-800" />
+    <div className="group relative my-4 w-full bg-black/40 p-6 rounded-3xl border border-white/5 overflow-hidden transition-all hover:border-indigo-500/30">
+      {isRendering ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="animate-spin text-indigo-500" size={24} />
         </div>
-
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
-          {feed.map((msg: any) => (
-            <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
-              <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
-                {msg.is_human ? (user?.username || 'CassandraWilliamson') : msg.name}
-              </span>
-              <div className={`p-5 rounded-3xl max-w-[90%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
-                {(() => {
-                  const content = msg.content || "";
-                  const mermaidRegex = /```mermaid([\s\S]*?)```/;
-                  const match = content.match(mermaidRegex);
-
-                  if (match) {
-                    const chartCode = match[1].trim();
-                    const textParts = content.split(mermaidRegex);
-                    return (
-                      <div className="space-y-4">
-                        {textParts[0] && <p className="whitespace-pre-wrap">{textParts[0].trim()}</p>}
-                        <MermaidViewer chart={chartCode} />
-                        {textParts[2] && <p className="whitespace-pre-wrap">{textParts[2].trim()}</p>}
-                      </div>
-                    );
-                  }
-
-                  return <p className="whitespace-pre-wrap">{content}</p>;
-                })()}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="p-6 bg-black/60 border-t border-white/5">
-          <div className="relative flex items-center">
-            <input
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleIgnite()}
-              placeholder="Instruct the Council..."
-              className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 px-6 pr-16 text-xs focus:outline-none"
-            />
-            <button
-              onClick={handleIgnite}
-              className={`absolute right-2 p-3 rounded-xl transition-all ${accentColor}`}
-            >
-              <Zap size={18}/>
-            </button>
-          </div>
-        </div>
-      </div>
+      ) : (
+        <>
+          <button 
+            onClick={handleDownload}
+            className="absolute top-4 right-4 p-2 bg-zinc-900 border border-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2 text-[10px] text-zinc-400 hover:text-white"
+          >
+            <Download size={14} /> Export SVG
+          </button>
+          <div 
+            className="flex justify-center overflow-x-auto custom-scrollbar"
+            dangerouslySetInnerHTML={{ __html: svg }} 
+          />
+        </>
+      )}
     </div>
   );
 }
