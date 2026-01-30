@@ -4,11 +4,10 @@ import { Shield, Zap, Radio, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import NodeArchiveSidebar from '@/components/node-ai/NodeArchiveSidebar';
-import MermaidViewer from '@/components/ui/MermaidViewer';
+import FlowViewer from '@/components/ui/FlowViewer'; // 🏛️ New React Flow Component
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
-// 🏛️ Restored 'default' keyword for institutional page compatibility
 export default function NodeCouncil({ institution, userType, accentColor }: any) {
   const { user } = useAuth() as any;
   const [prompt, setPrompt] = useState("");
@@ -80,24 +79,46 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
               <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
                 {msg.is_human ? (user?.username || 'CassandraWilliamson') : msg.name}
               </span>
-              <div className={`p-5 rounded-3xl max-w-[90%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
+              <div className={`p-5 rounded-3xl max-w-[92%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
                 {(() => {
                   const content = msg.content || "";
                   
-                  // 🏛️ SOVEREIGN REGEX: Handles spaces and different backtick styles
-                  const mermaidRegex = /```(?:mermaid)?\s*([\s\S]*?)\s*```/;
-                  const match = content.match(mermaidRegex);
+                  // 🏛️ SOVEREIGN FLOW PARSER
+                  // Looks for JSON blocks tagged as 'json-flow'
+                  const flowRegex = /```json-flow([\s\S]*?)```/;
+                  const match = content.match(flowRegex);
 
                   if (match) {
-                    const chartCode = match[1].trim();
-                    const textParts = content.split(mermaidRegex);
-                    return (
-                      <div className="space-y-4">
-                        {textParts[0] && <p className="whitespace-pre-wrap">{textParts[0].trim()}</p>}
-                        <MermaidViewer chart={chartCode} />
-                        {textParts[textParts.length - 1] && <p className="whitespace-pre-wrap">{textParts[textParts.length - 1].trim()}</p>}
-                      </div>
-                    );
+                    try {
+                      const flowData = JSON.parse(match[1].trim());
+                      const textParts = content.split(flowRegex);
+                      
+                      return (
+                        <div className="space-y-4 w-full">
+                          {textParts[0] && <p className="whitespace-pre-wrap">{textParts[0].trim()}</p>}
+                          
+                          <FlowViewer 
+                            nodes={flowData.nodes || []} 
+                            edges={flowData.edges || []} 
+                          />
+
+                          {textParts[textParts.length - 1] && (
+                            <p className="whitespace-pre-wrap text-zinc-400 italic text-[11px]">
+                              {textParts[textParts.length - 1].trim()}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    } catch (e) {
+                      return (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+                          <p className="text-[10px] font-mono text-red-400">
+                            [!] Flow Logic Synthesis Error: Invalid JSON Manifest
+                          </p>
+                          <pre className="text-[9px] mt-2 opacity-50 overflow-x-auto">{match[1]}</pre>
+                        </div>
+                      );
+                    }
                   }
 
                   return <p className="whitespace-pre-wrap">{content}</p>;
