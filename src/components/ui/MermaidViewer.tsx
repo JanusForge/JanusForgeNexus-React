@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Download, Loader2, AlertCircle } from 'lucide-react';
 import mermaid from 'mermaid';
 
@@ -10,9 +10,9 @@ mermaid.initialize({
   themeVariables: {
     primaryColor: '#6366f1',
     primaryTextColor: '#fff',
-    lineColor: '#818cf8', // Lightened indigo for better contrast
+    lineColor: '#818cf8', 
     mainBkg: 'transparent',
-    nodeBkg: '#1e1b4b',   // Deep indigo node background
+    nodeBkg: '#1e1b4b',   
   }
 });
 
@@ -29,10 +29,7 @@ export default function MermaidViewer({ chart }: { chart: string }) {
         setIsRendering(true);
         setError(null);
         const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
-        
-        // Ensure the chart code isn't empty or just whitespace
-        if (chart.trim().length === 0) throw new Error("Empty chart definition");
-
+        await mermaid.parse(chart); // Pre-validation
         const { svg: renderedSvg } = await mermaid.render(id, chart);
         
         if (isMounted) {
@@ -63,7 +60,8 @@ export default function MermaidViewer({ chart }: { chart: string }) {
 
   if (error) return (
     <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] font-mono text-red-400">
-      [!] Visual Synthesis Error: {error}
+      <div className="flex items-center gap-2 mb-2 uppercase font-black"><AlertCircle size={14}/> Synthesis Error</div>
+      {error}
     </div>
   );
 
