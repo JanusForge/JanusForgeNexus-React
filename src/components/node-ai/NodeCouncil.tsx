@@ -16,10 +16,10 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 🏛️ CUMULATIVE MANIFOLD COLLECTORS
-  // These store the evolving state of the graph as models contribute
-  const allNodes: any[] = [];
-  const allEdges: any[] = [];
+  // 🏛️ CUMULATIVE MANIFOLD STATE
+  // These arrays persist across the entire session to collect model contributions
+  const allNodes = useRef<any[]>([]);
+  const allEdges = useRef<any[]>([]);
 
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
@@ -40,11 +40,16 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
   }, [feed]);
 
   const handleLoadThread = (thread: any) => {
+    // Reset manifolds when loading a new thread
+    allNodes.current = [];
+    allEdges.current = [];
     setFeed(thread.posts || []);
     setActiveThreadId(thread.id);
   };
 
   const handleNewThread = () => {
+    allNodes.current = [];
+    allEdges.current = [];
     setFeed([]);
     setActiveThreadId(null);
   };
@@ -94,7 +99,7 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
           {feed.map((msg: any) => {
             const content = msg.content || "";
             
-            // 🛡️ REGEX: Catching any version of the JSON manifest
+            // 🛡️ REGEX: Handles spaces and different json tags
             const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
             const match = content.match(flowRegex);
 
@@ -102,15 +107,18 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
               try {
                 const data = JSON.parse(match[1].trim());
                 
-                // 🏛️ DYNAMIC SYNTHESIS: Add new parts to the cumulative arrays
+                // 🏛️ CUMULATIVE UPDATE LOGIC
+                // We use a ref so the graph grows as we map through the feed
                 if (data.nodes) {
                   data.nodes.forEach((newNode: any) => {
-                    if (!allNodes.find(n => n.id === newNode.id)) allNodes.push(newNode);
+                    const exists = allNodes.current.find(n => n.id === newNode.id);
+                    if (!exists) allNodes.current.push(newNode);
                   });
                 }
                 if (data.edges) {
                   data.edges.forEach((newEdge: any) => {
-                    if (!allEdges.find(e => e.id === newEdge.id)) allEdges.push(newEdge);
+                    const exists = allEdges.current.find(e => e.id === newEdge.id);
+                    if (!exists) allEdges.current.push(newEdge);
                   });
                 }
 
@@ -122,11 +130,12 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
                     <div className="p-6 rounded-3xl w-full bg-indigo-500/5 border border-indigo-500/10 text-indigo-50">
                       {textParts[0] && <p className="whitespace-pre-wrap mb-4">{textParts[0].trim()}</p>}
                       
-                      <div className="relative z-10 w-full" style={{ minHeight: '400px' }}>
+                      {/* 🛡️ GRAPH MANIFESTATION ZONE */}
+                      <div className="relative z-10 w-full" style={{ height: '400px', minHeight: '400px' }}>
                         <FlowViewer 
                           key={`flow-${msg.id}`} 
-                          nodes={[...allNodes]} 
-                          edges={[...allEdges]} 
+                          nodes={[...allNodes.current]} 
+                          edges={[...allEdges.current]} 
                         />
                       </div>
 
@@ -137,17 +146,17 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
                   </div>
                 );
               } catch (e) {
-                // Fallback for failed parses
                 return (
                   <div key={msg.id} className="flex flex-col items-start">
-                    <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">{msg.name}</span>
-                    <p className="p-5 rounded-3xl bg-indigo-500/10 text-indigo-50 border border-white/5">{content}</p>
+                    <p className="p-5 rounded-3xl bg-red-500/5 border border-red-500/10 text-red-200 text-xs font-mono">
+                      [!] Visual Synthesis Fragment Corrupted
+                    </p>
                   </div>
                 );
               }
             }
 
-            // Standard message render
+            // Standard message fallback
             return (
               <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
                 <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
