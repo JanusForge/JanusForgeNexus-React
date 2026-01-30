@@ -83,18 +83,27 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
                 {(() => {
                   const content = msg.content || "";
                   
-                  // Restore the cleaner "Is it Mermaid?" check that allows multiple blocks
-                  const isMermaid = content.trim().startsWith('graph') || 
-                                   content.trim().startsWith('flowchart') || 
-                                   content.includes('```mermaid');
+                  // 🏛️ RESILIENT REGEX PARSER
+                  // Captures anything between ```mermaid and ```
+                  const mermaidRegex = /```mermaid([\s\S]*?)```/;
+                  const match = content.match(mermaidRegex);
 
-                  if (isMermaid) {
-                    // Extract just the code if it's wrapped in backticks, else take it raw
-                    const chartCode = content.includes('```mermaid') 
-                      ? content.split('```mermaid')[1].split('```')[0].trim()
-                      : content.trim();
+                  if (match && match[1]) {
+                    const chartCode = match[1].trim();
+                    const parts = content.split(/```mermaid[\s\S]*?```/);
 
-                    return <MermaidViewer chart={chartCode} />;
+                    return (
+                      <div className="space-y-4">
+                        {parts[0] && <p className="whitespace-pre-wrap">{parts[0].trim()}</p>}
+                        <MermaidViewer chart={chartCode} />
+                        {parts[1] && <p className="whitespace-pre-wrap">{parts[1].trim()}</p>}
+                      </div>
+                    );
+                  }
+
+                  // Fallback for naked graph definitions
+                  if (content.trim().startsWith('graph') || content.trim().startsWith('flowchart')) {
+                    return <MermaidViewer chart={content.trim()} />;
                   }
 
                   return <p className="whitespace-pre-wrap">{content}</p>;
@@ -106,15 +115,15 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
 
         <div className="p-6 bg-black/60 border-t border-white/5">
           <div className="relative flex items-center">
-            <input 
-              value={prompt} 
-              onChange={(e) => setPrompt(e.target.value)} 
-              onKeyDown={(e) => e.key === 'Enter' && handleIgnite()} 
-              placeholder="Instruct the Council..." 
+            <input
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleIgnite()}
+              placeholder="Instruct the Council..."
               className="w-full bg-zinc-900 border border-white/10 rounded-2xl py-4 px-6 pr-16 text-xs focus:outline-none"
             />
-            <button 
-              onClick={handleIgnite} 
+            <button
+              onClick={handleIgnite}
               className={`absolute right-2 p-3 rounded-xl transition-all ${accentColor}`}
             >
               <Zap size={18}/>
