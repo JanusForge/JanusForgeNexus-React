@@ -16,12 +16,22 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // 🏛️ CUMULATIVE MANIFOLD COLLECTORS
+  // These store the evolving state of the graph as models contribute
+  const allNodes: any[] = [];
+  const allEdges: any[] = [];
+
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
-    socket.on(`nexus:transmission`, (data: any) => {
+    
+    // Unified listener for Nexus and Institutional transmissions
+    const channel = institution ? `node:${institution}:transmission` : 'nexus:transmission';
+    
+    socket.on(channel, (data: any) => {
       setFeed((prev) => [...prev, data]);
       setIsSynthesizing(false);
     });
+    
     return () => { socket.disconnect(); };
   }, [institution]);
 
@@ -80,54 +90,75 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
           <Shield size={16} className="text-zinc-800" />
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
-          {feed.map((msg: any) => (
-            <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
-              <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
-                {msg.is_human ? (user?.username || 'SovereignNode') : msg.name}
-              </span>
-              <div className={`p-5 rounded-3xl max-w-[95%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
-                {(() => {
-                  const content = msg.content || "";
-                  
-                  // 🏛️ EXTRA-RESILIENT FLOW PARSER
-                  const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
-                  const match = content.match(flowRegex);
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
+          {feed.map((msg: any) => {
+            const content = msg.content || "";
+            
+            // 🛡️ REGEX: Catching any version of the JSON manifest
+            const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
+            const match = content.match(flowRegex);
 
-                  if (match && match[1]) {
-                    try {
-                      const flowData = JSON.parse(match[1].trim());
-                      const textParts = content.split(flowRegex);
+            if (match && match[1]) {
+              try {
+                const data = JSON.parse(match[1].trim());
+                
+                // 🏛️ DYNAMIC SYNTHESIS: Add new parts to the cumulative arrays
+                if (data.nodes) {
+                  data.nodes.forEach((newNode: any) => {
+                    if (!allNodes.find(n => n.id === newNode.id)) allNodes.push(newNode);
+                  });
+                }
+                if (data.edges) {
+                  data.edges.forEach((newEdge: any) => {
+                    if (!allEdges.find(e => e.id === newEdge.id)) allEdges.push(newEdge);
+                  });
+                }
+
+                const textParts = content.split(flowRegex);
+
+                return (
+                  <div key={msg.id} className="flex flex-col items-start w-full">
+                    <span className="text-[8px] font-black uppercase text-zinc-600 mb-2 px-2">{msg.name}</span>
+                    <div className="p-6 rounded-3xl w-full bg-indigo-500/5 border border-indigo-500/10 text-indigo-50">
+                      {textParts[0] && <p className="whitespace-pre-wrap mb-4">{textParts[0].trim()}</p>}
                       
-                      return (
-                        <div className="space-y-4 w-full relative">
-                          {textParts[0] && <p className="whitespace-pre-wrap">{textParts[0].trim()}</p>}
-                          
-                          {/* 🛡️ FORCE STACKING CONTEXT */}
-                          <div className="relative z-50 w-full min-h-[400px]">
-                            <FlowViewer 
-                              nodes={flowData.nodes || []} 
-                              edges={flowData.edges || []} 
-                            />
-                          </div>
+                      <div className="relative z-10 w-full" style={{ minHeight: '400px' }}>
+                        <FlowViewer 
+                          key={`flow-${msg.id}`} 
+                          nodes={[...allNodes]} 
+                          edges={[...allEdges]} 
+                        />
+                      </div>
 
-                          {textParts[textParts.length - 1] && (
-                            <p className="whitespace-pre-wrap text-zinc-400 italic text-[11px] mt-4">
-                              {textParts[textParts.length - 1].trim()}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    } catch (e) {
-                      return <p className="whitespace-pre-wrap">{content}</p>;
-                    }
-                  }
+                      {textParts[textParts.length - 1] && (
+                        <p className="mt-4 text-zinc-500 italic text-[10px]">{textParts[textParts.length - 1].trim()}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              } catch (e) {
+                // Fallback for failed parses
+                return (
+                  <div key={msg.id} className="flex flex-col items-start">
+                    <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">{msg.name}</span>
+                    <p className="p-5 rounded-3xl bg-indigo-500/10 text-indigo-50 border border-white/5">{content}</p>
+                  </div>
+                );
+              }
+            }
 
-                  return <p className="whitespace-pre-wrap">{content}</p>;
-                })()}
+            // Standard message render
+            return (
+              <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
+                <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
+                  {msg.is_human ? (user?.username || 'SovereignNode') : msg.name}
+                </span>
+                <div className={`p-5 rounded-3xl max-w-[85%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
+                   <p className="whitespace-pre-wrap">{content}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="p-6 bg-black/60 border-t border-white/5">
@@ -141,7 +172,7 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
             />
             <button
               onClick={handleIgnite}
-              className={`absolute right-2 p-3 rounded-xl transition-all ${accentColor || 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
+              className={`absolute right-2 p-3 rounded-xl transition-all ${accentColor || 'bg-indigo-600'}`}
             >
               <Zap size={18}/>
             </button>
