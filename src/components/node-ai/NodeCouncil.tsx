@@ -4,7 +4,7 @@ import { Shield, Zap, Radio, Lock } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import NodeArchiveSidebar from '@/components/node-ai/NodeArchiveSidebar';
-import FlowViewer from '@/components/ui/FlowViewer'; // 🏛️ New React Flow Component
+import FlowViewer from '@/components/ui/FlowViewer'; 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
@@ -18,7 +18,7 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
 
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
-    socket.on(`node:${institution}:transmission`, (data: any) => {
+    socket.on(`nexus:transmission`, (data: any) => {
       setFeed((prev) => [...prev, data]);
       setIsSynthesizing(false);
     });
@@ -46,7 +46,14 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
       await fetch(`${API_BASE_URL}/api/nodes/ignite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, institution, userType, userId: user.id, conversationId: activeThreadId })
+        body: JSON.stringify({ 
+            prompt, 
+            institution, 
+            userType, 
+            userId: user.id, 
+            conversationId: activeThreadId,
+            models: ['CLAUDE', 'GPT4', 'GEMINI', 'GROK', 'DEEPSEEK'] 
+        })
       });
       setPrompt("");
     } catch (err) { setIsSynthesizing(false); }
@@ -67,7 +74,7 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
             <Radio size={18} className={isSynthesizing ? "animate-pulse text-emerald-400" : "text-zinc-600"} />
             <div>
               <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><Lock size={8}/> Secure Node Session</p>
-              <h2 className="text-xs font-bold uppercase">{institution} | {userType}</h2>
+              <h2 className="text-xs font-bold uppercase">{institution || 'Nexus Prime'} | {userType}</h2>
             </div>
           </div>
           <Shield size={16} className="text-zinc-800" />
@@ -77,47 +84,42 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
           {feed.map((msg: any) => (
             <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
               <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
-                {msg.is_human ? (user?.username || 'CassandraWilliamson') : msg.name}
+                {msg.is_human ? (user?.username || 'SovereignNode') : msg.name}
               </span>
-              <div className={`p-5 rounded-3xl max-w-[92%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
+              <div className={`p-5 rounded-3xl max-w-[95%] text-sm leading-relaxed ${msg.is_human ? 'bg-zinc-800 border border-white/5 text-white' : 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-50'}`}>
                 {(() => {
                   const content = msg.content || "";
                   
-                  // 🏛️ SOVEREIGN FLOW PARSER
-                  // Looks for JSON blocks tagged as 'json-flow'
-                  const flowRegex = /```json-flow([\s\S]*?)```/;
+                  // 🏛️ EXTRA-RESILIENT FLOW PARSER
+                  const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
                   const match = content.match(flowRegex);
 
-                  if (match) {
+                  if (match && match[1]) {
                     try {
                       const flowData = JSON.parse(match[1].trim());
                       const textParts = content.split(flowRegex);
                       
                       return (
-                        <div className="space-y-4 w-full">
+                        <div className="space-y-4 w-full relative">
                           {textParts[0] && <p className="whitespace-pre-wrap">{textParts[0].trim()}</p>}
                           
-                          <FlowViewer 
-                            nodes={flowData.nodes || []} 
-                            edges={flowData.edges || []} 
-                          />
+                          {/* 🛡️ FORCE STACKING CONTEXT */}
+                          <div className="relative z-50 w-full min-h-[400px]">
+                            <FlowViewer 
+                              nodes={flowData.nodes || []} 
+                              edges={flowData.edges || []} 
+                            />
+                          </div>
 
                           {textParts[textParts.length - 1] && (
-                            <p className="whitespace-pre-wrap text-zinc-400 italic text-[11px]">
+                            <p className="whitespace-pre-wrap text-zinc-400 italic text-[11px] mt-4">
                               {textParts[textParts.length - 1].trim()}
                             </p>
                           )}
                         </div>
                       );
                     } catch (e) {
-                      return (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-                          <p className="text-[10px] font-mono text-red-400">
-                            [!] Flow Logic Synthesis Error: Invalid JSON Manifest
-                          </p>
-                          <pre className="text-[9px] mt-2 opacity-50 overflow-x-auto">{match[1]}</pre>
-                        </div>
-                      );
+                      return <p className="whitespace-pre-wrap">{content}</p>;
                     }
                   }
 
@@ -139,7 +141,7 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
             />
             <button
               onClick={handleIgnite}
-              className={`absolute right-2 p-3 rounded-xl transition-all ${accentColor}`}
+              className={`absolute right-2 p-3 rounded-xl transition-all ${accentColor || 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
             >
               <Zap size={18}/>
             </button>
