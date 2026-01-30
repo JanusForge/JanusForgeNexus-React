@@ -10,20 +10,19 @@ mermaid.initialize({
   themeVariables: {
     primaryColor: '#6366f1',
     primaryTextColor: '#fff',
-    lineColor: '#6366f1',
-    mainBkg: 'transparent', // 🏛️ DEEPSEEK FIX: Prevents black-on-black nullification
-    tertiaryColor: '#1e1b4b'
+    lineColor: '#818cf8', // Lightened indigo for better contrast
+    mainBkg: 'transparent',
+    nodeBkg: '#1e1b4b',   // Deep indigo node background
   }
 });
 
 export default function MermaidViewer({ chart }: { chart: string }) {
   const [svg, setSvg] = useState<string>('');
   const [isRendering, setIsRendering] = useState(true);
-  const [error, setError] = useState<string | null>(null); // 🏛️ GEMINI FIX: Surfacing specific errors
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-
     const renderChart = async () => {
       if (!chart) return;
       try {
@@ -31,10 +30,11 @@ export default function MermaidViewer({ chart }: { chart: string }) {
         setError(null);
         const id = `mermaid-${Math.random().toString(36).substring(2, 11)}`;
         
-        // Pre-validate syntax as suggested by Gemini
-        await mermaid.parse(chart);
-        
+        // Ensure the chart code isn't empty or just whitespace
+        if (chart.trim().length === 0) throw new Error("Empty chart definition");
+
         const { svg: renderedSvg } = await mermaid.render(id, chart);
+        
         if (isMounted) {
           setSvg(renderedSvg);
           setIsRendering(false);
@@ -42,12 +42,11 @@ export default function MermaidViewer({ chart }: { chart: string }) {
       } catch (err: any) {
         console.error("Mermaid Render Error:", err);
         if (isMounted) {
-          setError(err.message || "Syntax Error in Mermaid Logic");
+          setError(err.message || "Logic Syntax Error");
           setIsRendering(false);
         }
       }
     };
-
     renderChart();
     return () => { isMounted = false; };
   }, [chart]);
@@ -63,32 +62,25 @@ export default function MermaidViewer({ chart }: { chart: string }) {
   };
 
   if (error) return (
-    <div className="flex flex-col gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400">
-      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
-        <AlertCircle size={14} /> Visual Synthesis Failure
-      </div>
-      <p className="text-[10px] font-mono leading-tight bg-black/40 p-2 rounded border border-red-500/10">
-        {error}
-      </p>
+    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] font-mono text-red-400">
+      [!] Visual Synthesis Error: {error}
     </div>
   );
 
   return (
-    <div className="group relative my-4 w-full bg-indigo-500/5 p-6 rounded-3xl border border-white/5 overflow-hidden transition-all hover:border-indigo-500/30">
+    <div className="group relative my-4 w-full bg-white/[0.03] p-6 rounded-3xl border border-white/10 transition-all hover:border-indigo-500/30">
       {isRendering ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="animate-spin text-indigo-500" size={24} />
-        </div>
+        <div className="flex items-center justify-center py-8"><Loader2 className="animate-spin text-indigo-500" size={24} /></div>
       ) : (
         <>
           <button 
             onClick={handleDownload}
-            className="absolute top-4 right-4 p-2 bg-zinc-900 border border-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all flex items-center gap-2 text-[10px] text-zinc-400 hover:text-white z-10"
+            className="absolute top-4 right-4 p-2 bg-zinc-900 border border-white/10 rounded-lg opacity-0 group-hover:opacity-100 transition-all text-zinc-400 hover:text-white z-10"
           >
-            <Download size={14} /> Export SVG
+            <Download size={14} />
           </button>
           <div 
-            className="flex justify-center overflow-x-auto scrollbar-thin scrollbar-thumb-zinc-800"
+            className="flex justify-center overflow-x-auto brightness-125 saturate-150"
             dangerouslySetInnerHTML={{ __html: svg }} 
           />
         </>
