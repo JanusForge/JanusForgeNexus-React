@@ -83,25 +83,29 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
                 {(() => {
                   const content = msg.content || "";
                   
-                  // 🏛️ RESILIENT REGEX PARSER
-                  // Captures anything between ```mermaid and ```
+                  // 🏛️ SOVEREIGN REGEX PARSER
                   const mermaidRegex = /```mermaid([\s\S]*?)```/;
                   const match = content.match(mermaidRegex);
 
                   if (match && match[1]) {
                     const chartCode = match[1].trim();
-                    const parts = content.split(/```mermaid[\s\S]*?```/);
+                    // Split content by the mermaid block to preserve text before/after
+                    const textParts = content.split(/```mermaid[\s\S]*?```/);
 
                     return (
-                      <div className="space-y-4">
-                        {parts[0] && <p className="whitespace-pre-wrap">{parts[0].trim()}</p>}
-                        <MermaidViewer chart={chartCode} />
-                        {parts[1] && <p className="whitespace-pre-wrap">{parts[1].trim()}</p>}
+                      <div className="space-y-4 w-full">
+                        {textParts[0] && <p className="whitespace-pre-wrap">{textParts[0].trim()}</p>}
+                        
+                        <div className="bg-black/20 rounded-xl p-2 border border-white/5 overflow-x-auto">
+                           <MermaidViewer chart={chartCode} />
+                        </div>
+
+                        {textParts[1] && <p className="whitespace-pre-wrap">{textParts[1].trim()}</p>}
                       </div>
                     );
                   }
 
-                  // Fallback for naked graph definitions
+                  // Fallback for naked definitions
                   if (content.trim().startsWith('graph') || content.trim().startsWith('flowchart')) {
                     return <MermaidViewer chart={content.trim()} />;
                   }
