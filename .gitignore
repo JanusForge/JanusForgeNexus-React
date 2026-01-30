@@ -97,3 +97,5 @@ logs/
 
 # Misc
 .svelte-kit
+.vercel
+.env*.local

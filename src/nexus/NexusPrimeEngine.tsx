@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 import { io } from 'socket.io-client';
-import AdvocateLeaderboard from '@/components/admin/AdvocateLeaderboard';
+import ReferralLeaderboard from '@/components/nexus/ReferralLeaderboard';
 
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -310,7 +310,7 @@ export default function NexusPrimeEngine() {
             
             {/* ✅ 🏆 SOVEREIGN LEADERBOARD TILE: Surgical Injection */}
             <div className="w-full mb-16 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-               <AdvocateLeaderboard adminId={user?.id || ''} />
+               <ReferralLeaderboard />
             </div>
             
           </>
