@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
-import { Shield, Zap, Radio, Lock } from 'lucide-react';
+import { Shield, Zap, Radio, Lock, Activity } from 'lucide-react'; // Added Activity for debug
 import { io } from 'socket.io-client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import NodeArchiveSidebar from '@/components/node-ai/NodeArchiveSidebar';
@@ -16,15 +16,12 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 🏛️ CUMULATIVE MANIFOLD STATE
-  // These arrays persist across the entire session to collect model contributions
+  // 🏛️ PERSISTENT MANIFOLD DATA
   const allNodes = useRef<any[]>([]);
   const allEdges = useRef<any[]>([]);
 
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
-    
-    // Unified listener for Nexus and Institutional transmissions
     const channel = institution ? `node:${institution}:transmission` : 'nexus:transmission';
     
     socket.on(channel, (data: any) => {
@@ -40,7 +37,6 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
   }, [feed]);
 
   const handleLoadThread = (thread: any) => {
-    // Reset manifolds when loading a new thread
     allNodes.current = [];
     allEdges.current = [];
     setFeed(thread.posts || []);
@@ -88,7 +84,10 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
           <div className="flex items-center gap-3">
             <Radio size={18} className={isSynthesizing ? "animate-pulse text-emerald-400" : "text-zinc-600"} />
             <div>
-              <p className="text-[9px] font-black uppercase text-zinc-600 tracking-widest flex items-center gap-1"><Lock size={8}/> Secure Node Session</p>
+              {/* 🛡️ DEBUG BADGE: If you don't see this, the file isn't updating! */}
+              <p className="text-[9px] font-black uppercase text-indigo-400 tracking-widest flex items-center gap-1">
+                <Activity size={8}/> Flow-Parser-Active-v2
+              </p>
               <h2 className="text-xs font-bold uppercase">{institution || 'Nexus Prime'} | {userType}</h2>
             </div>
           </div>
@@ -98,8 +97,6 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-hide">
           {feed.map((msg: any) => {
             const content = msg.content || "";
-            
-            // 🛡️ REGEX: Handles spaces and different json tags
             const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
             const match = content.match(flowRegex);
 
@@ -107,18 +104,15 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
               try {
                 const data = JSON.parse(match[1].trim());
                 
-                // 🏛️ CUMULATIVE UPDATE LOGIC
-                // We use a ref so the graph grows as we map through the feed
+                // 🏛️ Update persistent refs
                 if (data.nodes) {
                   data.nodes.forEach((newNode: any) => {
-                    const exists = allNodes.current.find(n => n.id === newNode.id);
-                    if (!exists) allNodes.current.push(newNode);
+                    if (!allNodes.current.find(n => n.id === newNode.id)) allNodes.current.push(newNode);
                   });
                 }
                 if (data.edges) {
                   data.edges.forEach((newEdge: any) => {
-                    const exists = allEdges.current.find(e => e.id === newEdge.id);
-                    if (!exists) allEdges.current.push(newEdge);
+                    if (!allEdges.current.find(e => e.id === newEdge.id)) allEdges.current.push(newEdge);
                   });
                 }
 
@@ -130,10 +124,9 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
                     <div className="p-6 rounded-3xl w-full bg-indigo-500/5 border border-indigo-500/10 text-indigo-50">
                       {textParts[0] && <p className="whitespace-pre-wrap mb-4">{textParts[0].trim()}</p>}
                       
-                      {/* 🛡️ GRAPH MANIFESTATION ZONE */}
-                      <div className="relative z-10 w-full" style={{ height: '400px', minHeight: '400px' }}>
+                      <div className="relative z-50 w-full" style={{ height: '400px', minHeight: '400px' }}>
                         <FlowViewer 
-                          key={`flow-${msg.id}`} 
+                          key={`flow-render-${msg.id}`} 
                           nodes={[...allNodes.current]} 
                           edges={[...allEdges.current]} 
                         />
@@ -146,17 +139,10 @@ export default function NodeCouncil({ institution, userType, accentColor }: any)
                   </div>
                 );
               } catch (e) {
-                return (
-                  <div key={msg.id} className="flex flex-col items-start">
-                    <p className="p-5 rounded-3xl bg-red-500/5 border border-red-500/10 text-red-200 text-xs font-mono">
-                      [!] Visual Synthesis Fragment Corrupted
-                    </p>
-                  </div>
-                );
+                return <p key={msg.id} className="whitespace-pre-wrap">{content}</p>;
               }
             }
 
-            // Standard message fallback
             return (
               <div key={msg.id} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'}`}>
                 <span className="text-[8px] font-black uppercase text-zinc-600 mb-1 px-2">
