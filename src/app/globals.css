@@ -1,15 +1,53 @@
+/* 🏛️ REACT FLOW SOVEREIGN ENGINE STYLES */
+/* Move to top to prevent Next.js build-stripping */
+@import "@xyflow/react/dist/style.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-[#050505] text-zinc-100 antialiased; }
+  body { 
+    @apply bg-[#050505] text-zinc-100 antialiased; 
+  }
+}
+
+/* 🛡️ FORCE VISIBILITY OVERRIDE (For when dark-on-dark nullification occurs) */
+.react-flow__node {
+  background: #09090b !important; /* zinc-950 */
+  color: white !important;
+  border: 1px solid #3f3f46 !important; /* zinc-700 */
+  border-radius: 12px !important;
+  padding: 12px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+  min-width: 150px !important;
+  text-align: center !important;
+}
+
+.react-flow__edge-path {
+  stroke: #6366f1 !important; /* indigo-500 */
+  stroke-width: 2.5 !important;
+  filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.4));
+}
+
+.react-flow__controls {
+  background: #18181b !important;
+  border: 1px solid #27272a !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.react-flow__attribution {
+  display: none !important;
 }
 
 @layer utilities {
   .custom-scrollbar::-webkit-scrollbar { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { @apply bg-white/10 rounded-full hover:bg-indigo-500; }
-  
+
   .text-gradient {
     @apply bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent;
   }
@@ -21,9 +59,9 @@
 /* 🏛️ JANUS FORGE PRINT PROTOCOL */
 @media print {
   /* Hide the sidebar, reset button, and model selection UI */
-  aside, 
-  .no-print, 
-  button, 
+  aside,
+  .no-print,
+  button,
   .council-builder-ui {
     display: none !important;
   }
