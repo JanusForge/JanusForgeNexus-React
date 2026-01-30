@@ -1,6 +1,7 @@
 "use client";
 import React from 'react';
-import { ReactFlow, Background, Controls, Edge, Node } from '@xyflow/react';
+import { ReactFlow, Background, Controls, Node, Edge } from '@xyflow/react';
+// 🏛️ CRITICAL: If this CSS is missing, the nodes will be invisible!
 import '@xyflow/react/dist/style.css';
 
 interface FlowViewerProps {
@@ -10,24 +11,28 @@ interface FlowViewerProps {
 
 export default function FlowViewer({ nodes, edges }: FlowViewerProps) {
   return (
-    <div className="h-[400px] w-full bg-black/40 rounded-3xl border border-white/10 overflow-hidden shadow-2xl relative group">
+    <div 
+      className="relative border border-white/10 rounded-2xl bg-black/40 shadow-2xl overflow-hidden"
+      style={{ height: '450px', width: '100%', minHeight: '450px' }} // 🛡️ FORCE HEIGHT
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        fitView
         colorMode="dark"
-        // Prevent accidental scrolling while navigating the chat
-        preventScrolling={true} 
+        fitView
+        // 🏛️ Ensure it doesn't fight with the chat scroll
+        preventScrolling={false}
         zoomOnScroll={false}
+        panOnScroll={true}
       >
-        <Background color="#333" gap={20} />
-        <Controls className="fill-indigo-500" />
+        <Background color="#222" gap={20} />
+        <Controls />
       </ReactFlow>
-      
-      {/* 🏛️ Sovereign Overlay */}
-      <div className="absolute top-4 left-4 z-10">
-        <span className="text-[10px] font-black uppercase text-indigo-400 bg-indigo-950/50 px-3 py-1 rounded-full border border-indigo-500/30 tracking-widest">
-          Sovereign Logic Map
+
+      {/* 🏷️ Sovereign Tag to verify the component is mounted */}
+      <div className="absolute bottom-2 right-2 pointer-events-none">
+        <span className="text-[8px] text-zinc-600 font-mono uppercase tracking-tighter">
+          Nexus Flow Engine v12
         </span>
       </div>
     </div>
