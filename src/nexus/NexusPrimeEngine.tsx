@@ -38,7 +38,9 @@ export default function NexusPrimeEngine() {
   const [isExpired, setIsExpired] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [nexusTime, setNexusTime] = useState<string>("");
-  const [observerCount, setObserverCount] = useState<number>(1); // 🛰️ REAL-TIME COUNT
+  
+  // 🛰️ INITIALIZED AS 0 - Populated by Socket and Sync
+  const [observerCount, setObserverCount] = useState<number>(0); 
 
   const allNodes = useRef<any[]>([]);
   const allEdges = useRef<any[]>([]);
@@ -52,35 +54,35 @@ export default function NexusPrimeEngine() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // --- HYDRATION & STREAMING ---
+  const fetchStream = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
+      const data = await res.json();
+      if (Array.isArray(data)) setChatThread(data);
+    } catch (err) { console.error("Transmission Hydration Failed:", err); }
+  };
+
   useEffect(() => {
-    const fetchStream = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
-        const data = await res.json();
-        if (Array.isArray(data)) setChatThread(data);
-      } catch (err) { console.error("Transmission Hydration Failed:", err); }
-    };
     fetchStream();
   }, []);
 
-  // 🛡️ HARDENED SOCKET ENGINE: Deduplication & Observer Logic
+  // 🛡️ HARDENED SOCKET ENGINE: Deduplication & REAL Observer Logic
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
 
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // 🛡️ DEDUPLICATION SHIELD: Check ID or match optimistic content
         const existing = prev.find(m => m.id === entry.id || (m.conversation_id === 'pending' && m.content === entry.content));
-        
         if (existing) {
-          // Replace 'pending' placeholder with real DB record to sync IDs
-          return prev.map(m => (m.id === existing.id) ? entry : m);
+          return prev.map(m => (m.id === existing.id || m.content === entry.content) ? entry : m);
         }
-
+        if (!activeThreadId && entry.conversation_id && !entry.is_human) {
+            setActiveThreadId(entry.conversation_id);
+        }
         if (!entry.is_human) setIsSynthesizing(false);
-        if (!userIsAtBottom) setHasNewMessages(true);
         return [...prev, entry];
       });
+      if (!userIsAtBottom) setHasNewMessages(true);
     });
 
     socket.on('nexus:new_root', (newRoot: any) => { 
@@ -92,8 +94,11 @@ export default function NexusPrimeEngine() {
       }
     });
 
+    // 🛰️ REAL-TIME OBSERVER SYNC
     socket.on('pulse-update', (data: { count: number }) => {
-      if (data.count) setObserverCount(data.count);
+      if (data.count !== undefined) {
+        setObserverCount(data.count);
+      }
     });
 
     return () => { socket.disconnect(); };
@@ -152,7 +157,6 @@ export default function NexusPrimeEngine() {
     setIsSynthesizing(true);
     setUserMessage('');
 
-    // 🚀 OPTIMISTIC POSTING
     const tempId = 'pending-' + Date.now();
     if (!activeThreadId) {
       setChatThread(prev => [...prev, {
@@ -180,6 +184,7 @@ export default function NexusPrimeEngine() {
       const data = await response.json();
       if (data.conversationId) {
         setActiveThreadId(data.conversationId);
+        await fetchStream(); 
       }
     } catch (e) {
       setIsSynthesizing(false);
@@ -199,7 +204,9 @@ export default function NexusPrimeEngine() {
   const handleAction = (action: string, content: string) => { if (action === 'share') navigator.share?.({ title: 'Janus Forge Transmission', text: content, url: window.location.href }); };
 
   // --- RENDER LOGIC ---
-  const displayMessages = activeThreadId ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId) : chatThread.filter(m => !m.parent_post_id);
+  const displayMessages = activeThreadId 
+    ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId) 
+    : chatThread.filter(m => !m.parent_post_id);
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden font-sans">
@@ -271,15 +278,18 @@ export default function NexusPrimeEngine() {
       </main>
 
       <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center z-[150]">
-        <div onClick={() => isExpired && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${ isExpired ? 'bg-amber-500/5 border-amber-500/20' : 'bg-zinc-950 border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.1)]' }`}>
+        <div onClick={() => isExpired && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${ isExpired ? 'bg-amber-500/5 border-amber-500/20 shadow-[0_0_30px_rgba(245,158,11,0.1)]' : 'bg-zinc-950 border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.1)]' }`}>
           <textarea value={userMessage} readOnly={isExpired && user?.role !== 'ADMIN'} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())} placeholder={isExpired ? "Unlock access to contribute..." : "Start a new neural pattern..."} className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white" />
-          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white' }`}> {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />} </button>
+          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white hover:bg-indigo-500' }`}> {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />} </button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4">
             <span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human).length}</span>
             <span className="opacity-30">•</span>
-            <span className="text-amber-500/70 animate-pulse">Observers: {observerCount}</span>
+            {/* 🛰️ DYNAMIC OBSERVER DISPLAY */}
+            <span className="text-amber-500/70 animate-pulse">
+               Observers: {observerCount > 0 ? observerCount : "Syncing..."}
+            </span>
           </p>
           <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
