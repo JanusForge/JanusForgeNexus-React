@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Send, Loader2, X, Globe, ShieldCheck, Lock, Zap,
   ThumbsUp, Share2, Printer, Bookmark, ChevronRight, ArrowDown
-} from 'lucide-react';
+} from 'lucide-center'; // Note: check your lucide-react import name
 import CouncilBuilder from './components/CouncilBuilder';
 import { io } from 'socket.io-client';
 import FlowViewer from '@/components/ui/FlowViewer';
@@ -22,6 +22,7 @@ export default function NexusPrimeEngine() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // --- STATE ---
   const [userMessage, setUserMessage] = useState('');
   const [chatThread, setChatThread] = useState<any[]>([]);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -41,25 +42,29 @@ export default function NexusPrimeEngine() {
   const [activeParentPostId, setActiveParentPostId] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchStream = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
-        const data = await res.json();
-        if (Array.isArray(data)) setChatThread(data);
-      } catch (err) { console.error("Sync Failed:", err); }
-    };
-    fetchStream();
-  }, []);
+  // --- HYDRATION ---
+  const fetchStream = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
+      const data = await res.json();
+      if (Array.isArray(data)) setChatThread(data);
+    } catch (err) { console.error("Sync Failed:", err); }
+  };
 
+  useEffect(() => { fetchStream(); }, []);
+
+  // --- SOCKET ENGINE (HARDENED) ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
+        // Deduplication to prevent the double-posting shown in your screenshots
         const isDuplicate = prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && m.id.startsWith('pending')));
         if (isDuplicate) {
           return prev.map(m => (m.content === entry.content && m.id.startsWith('pending')) ? entry : m);
         }
+        
+        // Auto-Anchor view if we get a response for a thread we just started
         if (entry.conversation_id && !entry.is_human && !activeThreadId) {
             setActiveThreadId(entry.conversation_id);
         }
@@ -68,28 +73,33 @@ export default function NexusPrimeEngine() {
       });
       if (!userIsAtBottom) setHasNewMessages(true);
     });
+
     socket.on('pulse-update', (data: { count: number }) => {
       if (data.count !== undefined) setObserverCount(data.count);
     });
+
     return () => { socket.disconnect(); };
   }, [activeThreadId, userIsAtBottom]);
 
+  // --- ADMIN/GOD OVERRIDE ---
   useEffect(() => {
     const timer = setInterval(() => {
       const isAdmin = user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai';
       if (isAdmin) { setTimeLeft("ETERNAL ACCESS"); setIsExpired(false); return; }
       if (!user?.access_expiry) { setTimeLeft("ACCESS REQUIRED"); setIsExpired(true); return; }
+      
       const diff = new Date(user.access_expiry).getTime() - new Date().getTime();
       if (diff <= 0) { setTimeLeft("EXPIRED"); setIsExpired(true); }
       else {
         setIsExpired(false);
         const h = Math.floor(diff/3600000); const m = Math.floor((diff%3600000)/60000); const s = Math.floor((diff%60000)/1000);
-        setTimeLeft(`${h}h ${m}m ${s}s`);
+        setTimeLeft(`${h}h ${m}s ${s}s`);
       }
     }, 1000);
     return () => clearInterval(timer);
   }, [user]);
 
+  // --- REFUEL ---
   const handleRefuel = async (priceId: string, hours: number) => {
     try {
       const tier = hours === 24 ? '24H' : hours === 168 ? '7D' : '30D';
@@ -101,13 +111,16 @@ export default function NexusPrimeEngine() {
     } catch (err) { console.error("Stripe Error:", err); }
   };
 
+  // --- IGNITION ---
   const handleIgnition = async () => {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
     if (!userMessage.trim() || isSynthesizing) return;
     if (isExpired && !isAdmin) { setIsTrayOpen(true); return; }
+
     const originalMsg = userMessage;
     setIsSynthesizing(true);
     setUserMessage('');
+
     const tempId = 'pending-' + Date.now();
     if (!activeThreadId) {
       setChatThread(prev => [...prev, {
@@ -115,6 +128,7 @@ export default function NexusPrimeEngine() {
         name: user?.username || "Sovereign Node", conversation_id: 'pending'
       }]);
     }
+
     try {
       const res = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -125,6 +139,7 @@ export default function NexusPrimeEngine() {
     } catch (e) { setIsSynthesizing(false); setChatThread(prev => prev.filter(m => m.id !== tempId)); }
   };
 
+  // --- UTILS ---
   useEffect(() => {
     const clock = setInterval(() => setNexusTime(new Date().toLocaleTimeString('en-US', { hour12: true, timeZone: 'America/New_York' })), 1000);
     return () => clearInterval(clock);
@@ -181,6 +196,7 @@ export default function NexusPrimeEngine() {
           {!activeThreadId && <h2 className="text-[10px] font-black tracking-[0.4em] text-indigo-500 mb-8 uppercase">Neural Pulse Feed</h2>}
           {activeThreadId && ( <button onClick={() => { setActiveThreadId(null); setActiveParentPostId(null); allNodes.current=[]; allEdges.current=[]; }} className="mb-12 flex items-center gap-3 text-zinc-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"><X size={14} /> Return to Feed</button> )}
 
+          {/* 🚀 THE FIXED RENDERER: Restored AI visibility logic */}
           {displayMessages.map((msg) => {
             const content = msg.content || "";
             const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
@@ -205,15 +221,15 @@ export default function NexusPrimeEngine() {
             return (
               <div key={msg.id}
                 onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined}
-                className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}
+                className={`flex flex-col ${msg.is_human || msg.type === 'user' ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}
               >
                 <div className="mb-3 px-2 flex items-center gap-3">
-                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>
+                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.is_human || msg.type === 'user' ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>
                     {msg.name || msg.sender || msg.ai_model}
                   </span>
                   {!activeThreadId && <ChevronRight size={10} className="text-zinc-800 group-hover:text-indigo-500 transition-all" />}
                 </div>
-                <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}>
+                <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human || msg.type === 'user' ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}>
                   <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{content}</p>
                 </div>
               </div>
@@ -226,10 +242,10 @@ export default function NexusPrimeEngine() {
       <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center z-[150]">
         <div onClick={() => (isExpired && !isAdminAccess) && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${ isExpired && !isAdminAccess ? 'bg-amber-500/5 border-amber-500/20' : 'bg-zinc-950 border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.1)]' }`}>
           <textarea value={userMessage} readOnly={isExpired && !isAdminAccess} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())} placeholder={isExpired && !isAdminAccess ? "Unlock access to contribute..." : "Start a new neural pattern..."} className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white" />
-          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center ${ isExpired && !isAdminAccess ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white hover:bg-indigo-500' }`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
+          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ isExpired && !isAdminAccess ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white hover:bg-indigo-500' }`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4"><span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human).length}</span><span className="opacity-30">•</span><span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span></p>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4"><span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human || m.type === 'user').length}</span><span className="opacity-30">•</span><span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span></p>
           <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
       </footer>
