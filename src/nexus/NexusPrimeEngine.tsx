@@ -9,8 +9,6 @@ import {
 } from 'lucide-react';
 import CouncilBuilder from './components/CouncilBuilder';
 import { io } from 'socket.io-client';
-// 🛡️ Muted for Sovereign Focus
-// import ReferralLeaderboard from '@/components/nexus/ReferralLeaderboard';
 import FlowViewer from '@/components/ui/FlowViewer';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
@@ -55,31 +53,24 @@ export default function NexusPrimeEngine() {
 
   useEffect(() => { fetchStream(); }, []);
 
-  // 🛡️ PRIORITY SOCKET ENGINE
+  // --- SOCKET ENGINE (Surgically Fixed) ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
 
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // 1. DEDUPLICATION: Strict check on ID or Content
+        // 🛡️ Deduplication Shield
         if (prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && m.id.startsWith('pending')))) {
-          // Replace optimistic pending with real data
           return prev.map(m => (m.content === entry.content && m.id.startsWith('pending')) ? entry : m);
         }
-
-        // 🚀 THE PRIORITY ANCHOR: If we are 'Thinking' but not anchored, FORCE anchor to this ID
+        // Snap anchor if first AI response arrives
         if (entry.conversation_id && !entry.is_human && !activeThreadId) {
             setActiveThreadId(entry.conversation_id);
-            setIsSynthesizing(false);
         }
-
+        if (!entry.is_human) setIsSynthesizing(false);
         return [...prev, entry];
       });
       if (!userIsAtBottom) setHasNewMessages(true);
-    });
-
-    socket.on('nexus:new_root', (newRoot: any) => { 
-      setChatThread(prev => (prev.find(m => m.id === newRoot.id)) ? prev : [newRoot, ...prev]);
     });
 
     socket.on('pulse-update', (data: { count: number }) => {
@@ -89,40 +80,19 @@ export default function NexusPrimeEngine() {
     return () => { socket.disconnect(); };
   }, [activeThreadId, userIsAtBottom]);
 
-  // --- TIME/SCROLL ---
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN') { setTimeLeft("ETERNAL ACCESS"); setIsExpired(false); return; }
-      if (!user?.access_expiry) { setTimeLeft("ACCESS REQUIRED"); setIsExpired(true); return; }
-      const diff = new Date(user.access_expiry).getTime() - new Date().getTime();
-      if (diff <= 0) { setTimeLeft("EXPIRED"); setIsExpired(true); }
-      else {
-        setIsExpired(false);
-        const h = Math.floor(diff/3600000); const m = Math.floor((diff%3600000)/60000); const s = Math.floor((diff%60000)/1000);
-        setTimeLeft(`${h}h ${m}m ${s}s`);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [user]);
-
-  useEffect(() => {
-    const clock = setInterval(() => setNexusTime(new Date().toLocaleTimeString('en-US', { hour12: true, timeZone: 'America/New_York' })), 1000);
-    return () => clearInterval(clock);
-  }, []);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const isBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 150;
-      setUserIsAtBottom(isBottom);
-      if (isBottom) setHasNewMessages(false);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    if (userIsAtBottom && chatThread.length > 0) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatThread, userIsAtBottom]);
+  // --- REFUEL LOGIC (Build Fix) ---
+  const handleRefuel = async (priceId: string, hours: number) => {
+    try {
+      const tier = hours === 24 ? '24H' : hours === 168 ? '7D' : '30D';
+      const response = await fetch(`${API_BASE_URL}/api/stripe/create-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tier, userId: user?.id })
+      });
+      const data = await response.json();
+      if (data.url) window.location.href = data.url;
+    } catch (err) { console.error("Stripe Error:", err); }
+  };
 
   // --- IGNITION ---
   const handleIgnition = async () => {
@@ -133,7 +103,6 @@ export default function NexusPrimeEngine() {
     setIsSynthesizing(true);
     setUserMessage('');
 
-    // OPTIMISTIC POST
     const tempId = 'pending-' + Date.now();
     if (!activeThreadId) {
       setChatThread(prev => [...prev, {
@@ -159,21 +128,39 @@ export default function NexusPrimeEngine() {
     }
   };
 
-  const scrollToBottom = () => { setUserIsAtBottom(true); setHasNewMessages(false); chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
-  const handleAction = (action: string, content: string) => { if (action === 'share') navigator.share?.({ title: 'Janus Forge', text: content, url: window.location.href }); };
+  // --- UTILS ---
+  useEffect(() => {
+    const clock = setInterval(() => setNexusTime(new Date().toLocaleTimeString('en-US', { hour12: true, timeZone: 'America/New_York' })), 1000);
+    return () => clearInterval(clock);
+  }, []);
 
-  // 🚀 RENDER FILTER
+  useEffect(() => {
+    const handleScroll = () => {
+      const isBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 150;
+      setUserIsAtBottom(isBottom);
+      if (isBottom) setHasNewMessages(false);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (userIsAtBottom && chatThread.length > 0) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatThread, userIsAtBottom]);
+
+  const scrollToBottom = () => { setUserIsAtBottom(true); setHasNewMessages(false); chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
+  
   const displayMessages = activeThreadId 
     ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId || m.conversation_id === 'pending') 
     : chatThread.filter(m => !m.parent_post_id);
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden font-sans">
-      {hasNewMessages && !userIsAtBottom && ( <button onClick={scrollToBottom} className="fixed bottom-32 z-[160] bg-indigo-600 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_30px_rgba(79,70,229,0.4)] border border-white/20"><ArrowDown size={16} /><span className="text-[10px] font-black uppercase tracking-widest">New Transmissions</span></button> )}
+      {hasNewMessages && !userIsAtBottom && ( <button onClick={scrollToBottom} className="fixed bottom-32 z-[160] bg-indigo-600 text-white px-6 py-3 rounded-full flex items-center gap-3 border border-white/20 shadow-2xl"><ArrowDown size={16} /><span className="text-[10px] font-black uppercase tracking-widest">New Transmissions</span></button> )}
       
       <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setActiveThreadId(null); allNodes.current=[]; allEdges.current=[]; }}><Globe className="text-indigo-500 animate-pulse" size={18}/><span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span></div>
-        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all flex items-center gap-3 ${isExpired ? 'border-amber-500 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5'}`}><div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired ? 'bg-amber-500' : 'bg-indigo-500'}`} />{timeLeft}</button>
+        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] flex items-center gap-3 ${isExpired ? 'border-amber-500 text-amber-500' : 'border-indigo-500/20 text-indigo-400'}`}><div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired ? 'bg-amber-500' : 'bg-indigo-500'}`} />{timeLeft}</button>
       </header>
 
       <main className="w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48">
@@ -185,33 +172,14 @@ export default function NexusPrimeEngine() {
         )}
 
         <div className="space-y-12 w-full">
-          {!activeThreadId && <h2 className="text-[10px] font-black tracking-[0.4em] text-indigo-500 mb-8 uppercase">Neural Pulse Feed</h2>}
-          {activeThreadId && ( <button onClick={() => { setActiveThreadId(null); setActiveParentPostId(null); allNodes.current=[]; allEdges.current=[]; }} className="mb-12 flex items-center gap-3 text-zinc-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"><X size={14} /> Return to Feed</button> )}
+          {activeThreadId && ( <button onClick={() => setActiveThreadId(null)} className="mb-12 flex items-center gap-3 text-zinc-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"><X size={14} /> Return to Feed</button> )}
 
-          {displayMessages.map((msg) => {
-            const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
-            const match = msg.content?.match(flowRegex);
-            if (match && match[1]) {
-              try {
-                const data = JSON.parse(match[1].trim());
-                if (data.nodes) data.nodes.forEach((n: any) => { if (!allNodes.current.find(ex => ex.id === n.id)) allNodes.current.push(n); });
-                if (data.edges) data.edges.forEach((e: any) => { if (!allEdges.current.find(ex => ex.id === e.id)) allEdges.current.push(e); });
-                return (
-                  <div key={msg.id} className="w-full space-y-4 my-8 animate-in zoom-in duration-500">
-                    <div className="flex items-center gap-2 mb-2"><Zap size={14} className="text-indigo-500 animate-pulse" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 italic">Neural Manifest: {msg.ai_model || msg.sender}</span></div>
-                    <div className="w-full rounded-[2.5rem] border border-white/10 bg-zinc-900/40 backdrop-blur-3xl overflow-hidden shadow-2xl" style={{ height: '500px' }}><FlowViewer nodes={[...allNodes.current]} edges={[...allEdges.current]} /></div>
-                  </div>
-                );
-              } catch (err) { return null; }
-            }
-
-            return (
-              <div key={msg.id} onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}>
-                <div className="mb-3 px-2 flex items-center gap-3"><span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>{msg.name || msg.sender || msg.ai_model}</span>{!activeThreadId && <ChevronRight size={10} className="text-zinc-800" />}</div>
-                <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}><p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>
-              </div>
-            );
-          })}
+          {displayMessages.map((msg) => (
+            <div key={msg.id} onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}>
+              <div className="mb-3 px-2 flex items-center gap-3"><span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>{msg.name || msg.sender || msg.ai_model}</span>{!activeThreadId && <ChevronRight size={10} className="text-zinc-800" />}</div>
+              <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}><p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>
+            </div>
+          ))}
           <div ref={chatEndRef} />
         </div>
       </main>
@@ -219,7 +187,7 @@ export default function NexusPrimeEngine() {
       <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center z-[150]">
         <div onClick={() => isExpired && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${ isExpired ? 'bg-amber-500/5 border-amber-500/20' : 'bg-zinc-950 border-indigo-500/30' }`}>
           <textarea value={userMessage} readOnly={isExpired && user?.role !== 'ADMIN'} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())} placeholder={isExpired ? "Unlock access to contribute..." : "Start a new neural pattern..."} className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white" />
-          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white' }`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
+          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center ${ isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white' }`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4"><span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human).length}</span><span className="opacity-30">•</span><span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span></p>
@@ -227,7 +195,22 @@ export default function NexusPrimeEngine() {
         </div>
       </footer>
 
-      {isTrayOpen && ( <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}> <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[3rem] p-10" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-10"> <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Temporal Access</h3> <X onClick={() => setIsTrayOpen(false)} size={20} className="cursor-pointer opacity-40 hover:opacity-100"/> </div> <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10"> {[ { label: '24H PASS', price: '$5', hours: 24, priceId: 'price_1Sqe8rGg8RUnSFObq4cv8Mnd' }, { label: '7D SPRINT', price: '$20', hours: 168, priceId: 'price_1SqeAhGg8RUnSFObRUOFFNH7' }, { label: '30D FORGE', price: '$75', hours: 720, priceId: 'price_1SqeCqGg8RUnSFObHN4ZMCqs' } ].map((pass, i) => ( <button key={i} onClick={() => handleRefuel(pass.priceId, pass.hours)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left group"> <div className="text-[9px] font-black text-zinc-500 mb-1 group-hover:text-indigo-400">{pass.label}</div> <div className="text-2xl font-black italic">{pass.price}</div> </button> ))} </div> <div className="pt-8 border-t border-white/5"> <CouncilBuilder selectedModels={selectedModels} setSelectedModels={setSelectedModels} userBalance={0} onIgnite={handleIgnition} /> </div> </div> </div> )}
+      {isTrayOpen && (
+        <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
+          <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[3rem] p-10" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-10"><h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400">Temporal Access</h3><X onClick={() => setIsTrayOpen(false)} size={20} className="cursor-pointer opacity-40 hover:opacity-100"/></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+              {[ { label: '24H PASS', price: '$5', hours: 24, priceId: 'price_1Sqe8rGg8RUnSFObq4cv8Mnd' }, { label: '7D SPRINT', price: '$20', hours: 168, priceId: 'price_1SqeAhGg8RUnSFObRUOFFNH7' }, { label: '30D FORGE', price: '$75', hours: 720, priceId: 'price_1SqeCqGg8RUnSFObHN4ZMCqs' } ].map((pass, i) => (
+                <button key={i} onClick={() => handleRefuel(pass.priceId, pass.hours)} className="bg-white/5 border border-white/5 p-6 rounded-2xl hover:border-indigo-500 transition-all text-left group">
+                  <div className="text-[9px] font-black text-zinc-500 mb-1 group-hover:text-indigo-400">{pass.label}</div>
+                  <div className="text-2xl font-black italic">{pass.price}</div>
+                </button>
+              ))}
+            </div>
+            <div className="pt-8 border-t border-white/5"><CouncilBuilder selectedModels={selectedModels} setSelectedModels={setSelectedModels} userBalance={0} onIgnite={handleIgnition} /></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
