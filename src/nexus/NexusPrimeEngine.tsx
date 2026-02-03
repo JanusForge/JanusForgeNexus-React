@@ -36,32 +36,30 @@ export default function NexusPrimeEngine() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // --- HYDRATION ---
-  const fetchStream = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
-      const data = await res.json();
-      if (Array.isArray(data)) setChatThread(data);
-    } catch (err) { console.error("Sync Failed", err); }
-  };
-
   useEffect(() => {
+    const fetchStream = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
+        const data = await res.json();
+        if (Array.isArray(data)) setChatThread(data);
+      } catch (err) { console.error("Sync Failed", err); }
+    };
     fetchStream();
   }, []);
 
-  // --- SOCKET ENGINE (FIXED DEDUPLICATION & SNAP) ---
+  // --- SOCKET ENGINE (HARDENED VISIBILITY) ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // Check if message exists by ID or by matching content to an optimistic 'pending' user post
-        const isDuplicate = prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && (m.conversation_id === 'pending' || m.id.startsWith('pending'))));
+        // Deduplication to prevent the double/triple-posts seen in screenshots
+        const isDuplicate = prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && m.id.toString().startsWith('pending')));
         
         if (isDuplicate) {
-          // Replace the 'pending' optimistic post with the real server post
-          return prev.map(m => (m.content === entry.content && (m.id.startsWith('pending') || m.conversation_id === 'pending')) ? entry : m);
+          return prev.map(m => (m.content === entry.content && m.id.toString().startsWith('pending')) ? entry : m);
         }
 
-        // 🚀 THE BRIDGE: Force the UI to look at this conversation ID if it's the first AI reply
+        // Bridge: If we get a response for a thread we just started, snap into it
         if (entry.conversation_id && !entry.is_human && !activeThreadId) {
             setActiveThreadId(entry.conversation_id);
         }
@@ -75,7 +73,7 @@ export default function NexusPrimeEngine() {
     return () => { socket.disconnect(); };
   }, [activeThreadId]);
 
-  // --- ADMIN/ACCESS ---
+  // --- ADMIN/ACCESS OVERRIDE ---
   useEffect(() => {
     const timer = setInterval(() => {
       const isAdmin = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
@@ -92,7 +90,7 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(timer);
   }, [user]);
 
-  // --- IGNITION (STOP BANSHEE SCROLL) ---
+  // --- IGNITION (CONTROLLED SCROLL) ---
   const handleIgnition = async () => {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
     if (!userMessage.trim() || isSynthesizing) return;
@@ -102,18 +100,11 @@ export default function NexusPrimeEngine() {
     setIsSynthesizing(true);
     setUserMessage('');
 
-    // Optimistic Post - Use 'pending' for ID to ensure deduplication catches it
     const tempId = 'pending-' + Date.now();
-    setChatThread(prev => [...prev, { 
-      id: tempId, 
-      content: originalMsg, 
-      is_human: true, 
-      name: user?.username || "Node", 
-      conversation_id: activeThreadId || 'pending' 
-    }]);
+    setChatThread(prev => [...prev, { id: tempId, content: originalMsg, is_human: true, name: user?.username || "Node", conversation_id: activeThreadId || 'pending' }]);
 
-    // 🛑 MANUAL SCROLL ONLY ONCE
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Only scroll manually when sending, preventing the "banshee" effect
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
@@ -122,10 +113,7 @@ export default function NexusPrimeEngine() {
       });
       const data = await res.json();
       if (data.conversationId) setActiveThreadId(data.conversationId);
-    } catch (e) { 
-      setIsSynthesizing(false); 
-      setChatThread(prev => prev.filter(m => m.id !== tempId));
-    }
+    } catch (e) { setIsSynthesizing(false); }
   };
 
   const handleRefuel = async (priceId: string, hours: number) => {
@@ -137,13 +125,12 @@ export default function NexusPrimeEngine() {
     } catch (err) { console.error("Stripe Error", err); }
   };
 
-  // --- UTILS ---
   useEffect(() => {
     const clock = setInterval(() => setNexusTime(new Date().toLocaleTimeString('en-US', { hour12: true, timeZone: 'America/New_York' })), 1000);
     return () => clearInterval(clock);
   }, []);
 
-  // --- RENDER FILTER (🚀 TOTAL VISIBILITY FIX) ---
+  // --- RENDER FILTER (BROADENED FOR COUNCIL VISIBILITY) ---
   const displayMessages = activeThreadId 
     ? chatThread.filter(m => 
         m.conversation_id === activeThreadId || 
@@ -161,15 +148,23 @@ export default function NexusPrimeEngine() {
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveThreadId(null)}>
           <Globe className="text-indigo-500 animate-pulse" size={18}/><span className="text-[10px] font-black uppercase italic tracking-widest">Janus Forge Nexus</span>
         </div>
-        <button onClick={() => setIsTrayOpen(true)} className="px-5 py-2 rounded-full border border-indigo-500/20 text-indigo-400 text-[10px] font-black tracking-widest">{timeLeft}</button>
+        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-widest ${isExpired && !isAdminAccess ? 'border-amber-500 text-amber-500' : 'border-indigo-500/20 text-indigo-400'}`}>{timeLeft}</button>
       </header>
 
       <main className="w-full max-w-4xl px-4 pt-32 pb-48">
         {!activeThreadId && (
-          <div className="text-center mb-16">
-            <h3 className="text-5xl font-black uppercase italic tracking-tighter">NEXUS PRIME</h3>
-            <p className="text-zinc-500 text-sm mt-4 font-medium italic">Synchronized transmission feed.</p>
-          </div>
+          <>
+            {/* 🎥 LOGO VIDEO RESTORED */}
+            <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
+              <video autoPlay loop muted playsInline className="w-full h-full object-contain">
+                <source src="/janus-logo-video.mp4" type="video/mp4" />
+              </video>
+            </div>
+            <div className="text-center mb-16">
+              <h3 className="text-5xl font-black uppercase italic tracking-tighter">NEXUS PRIME</h3>
+              <p className="text-zinc-500 text-sm mt-4 font-medium italic">Synchronized transmission feed.</p>
+            </div>
+          </>
         )}
 
         <div className="space-y-12 w-full">
