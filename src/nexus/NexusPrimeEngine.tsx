@@ -16,11 +16,7 @@ import FlowViewer from '@/components/ui/FlowViewer';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://janusforgenexus-backend.onrender.com';
 
 interface NexusUser {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  access_expiry?: string | Date;
+  id: string; username: string; email: string; role: string; access_expiry?: string | Date;
 }
 
 export default function NexusPrimeEngine() {
@@ -28,7 +24,7 @@ export default function NexusPrimeEngine() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // --- STATE MANAGEMENT ---
+  // --- STATE ---
   const [userMessage, setUserMessage] = useState('');
   const [chatThread, setChatThread] = useState<any[]>([]);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
@@ -38,89 +34,71 @@ export default function NexusPrimeEngine() {
   const [isExpired, setIsExpired] = useState(true);
   const [showSuccess, setShowSuccess] = useState(false);
   const [nexusTime, setNexusTime] = useState<string>("");
-  
-  // 🛰️ OBSERVERS: Initialized at 0 for "Syncing..." state
   const [observerCount, setObserverCount] = useState<number>(0); 
 
   const allNodes = useRef<any[]>([]);
   const allEdges = useRef<any[]>([]);
-
   const [userIsAtBottom, setUserIsAtBottom] = useState(true);
   const [hasNewMessages, setHasNewMessages] = useState(false);
-
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [activeParentPostId, setActiveParentPostId] = useState<string | null>(null);
-
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // --- HYDRATION & STREAMING ---
+  // --- HYDRATION ---
   const fetchStream = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
       const data = await res.json();
       if (Array.isArray(data)) setChatThread(data);
-    } catch (err) { console.error("Transmission Hydration Failed:", err); }
+    } catch (err) { console.error("Sync Failed:", err); }
   };
 
-  useEffect(() => {
-    fetchStream();
-  }, []);
+  useEffect(() => { fetchStream(); }, []);
 
-  // 🛡️ HARDENED SOCKET ENGINE: Deduplication & Observer Logic
+  // 🛡️ PRIORITY SOCKET ENGINE
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
 
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // 🛡️ DEDUPLICATION: Prevents double/triple posts
-        const existing = prev.find(m => m.id === entry.id || (m.conversation_id === 'pending' && m.content === entry.content));
-        
-        if (existing) {
-          return prev.map(m => (m.id === existing.id || m.content === entry.content) ? entry : m);
+        // 1. DEDUPLICATION: Strict check on ID or Content
+        if (prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && m.id.startsWith('pending')))) {
+          // Replace optimistic pending with real data
+          return prev.map(m => (m.content === entry.content && m.id.startsWith('pending')) ? entry : m);
         }
 
-        // 🚀 FORCE ANCHOR: If a response comes for a pending thread, snap into view immediately
-        if (!activeThreadId && entry.conversation_id && !entry.is_human) {
+        // 🚀 THE PRIORITY ANCHOR: If we are 'Thinking' but not anchored, FORCE anchor to this ID
+        if (entry.conversation_id && !entry.is_human && !activeThreadId) {
             setActiveThreadId(entry.conversation_id);
+            setIsSynthesizing(false);
         }
 
-        if (!entry.is_human) setIsSynthesizing(false);
         return [...prev, entry];
       });
       if (!userIsAtBottom) setHasNewMessages(true);
     });
 
     socket.on('nexus:new_root', (newRoot: any) => { 
-      if (!activeThreadId) {
-        setChatThread(prev => {
-          if (prev.find(m => m.id === newRoot.id)) return prev;
-          return [newRoot, ...prev];
-        });
-      }
+      setChatThread(prev => (prev.find(m => m.id === newRoot.id)) ? prev : [newRoot, ...prev]);
     });
 
-    // 🛰️ REAL-TIME OBSERVER UPDATES
     socket.on('pulse-update', (data: { count: number }) => {
-      if (data.count !== undefined) {
-        setObserverCount(data.count);
-      }
+      if (data.count !== undefined) setObserverCount(data.count);
     });
 
     return () => { socket.disconnect(); };
   }, [activeThreadId, userIsAtBottom]);
 
-  // --- TIME & ACCESS LOGIC ---
+  // --- TIME/SCROLL ---
   useEffect(() => {
     const timer = setInterval(() => {
-      if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN') {
-        setTimeLeft("ETERNAL ACCESS"); setIsExpired(false); return;
-      }
+      if (user?.role === 'GOD_MODE' || user?.role === 'ADMIN') { setTimeLeft("ETERNAL ACCESS"); setIsExpired(false); return; }
       if (!user?.access_expiry) { setTimeLeft("ACCESS REQUIRED"); setIsExpired(true); return; }
       const diff = new Date(user.access_expiry).getTime() - new Date().getTime();
       if (diff <= 0) { setTimeLeft("EXPIRED"); setIsExpired(true); }
       else {
         setIsExpired(false);
-        const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000);
+        const h = Math.floor(diff/3600000); const m = Math.floor((diff%3600000)/60000); const s = Math.floor((diff%60000)/1000);
         setTimeLeft(`${h}h ${m}m ${s}s`);
       }
     }, 1000);
@@ -128,13 +106,10 @@ export default function NexusPrimeEngine() {
   }, [user]);
 
   useEffect(() => {
-    const clockTimer = setInterval(() => {
-      setNexusTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZone: 'America/New_York' }));
-    }, 1000);
-    return () => clearInterval(clockTimer);
+    const clock = setInterval(() => setNexusTime(new Date().toLocaleTimeString('en-US', { hour12: true, timeZone: 'America/New_York' })), 1000);
+    return () => clearInterval(clock);
   }, []);
 
-  // --- SCROLL MANAGEMENT ---
   useEffect(() => {
     const handleScroll = () => {
       const isBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 150;
@@ -146,14 +121,10 @@ export default function NexusPrimeEngine() {
   }, []);
 
   useEffect(() => {
-    if (userIsAtBottom && chatThread.length > 0) {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (userIsAtBottom && chatThread.length > 0) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatThread, userIsAtBottom]);
 
-  const scrollToBottom = () => { setUserIsAtBottom(true); setHasNewMessages(false); chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
-  
-  // --- CORE IGNITION ---
+  // --- IGNITION ---
   const handleIgnition = async () => {
     if (!userMessage.trim() || isSynthesizing) return;
     if (isExpired && user?.role !== 'ADMIN') { setIsTrayOpen(true); return; }
@@ -162,76 +133,50 @@ export default function NexusPrimeEngine() {
     setIsSynthesizing(true);
     setUserMessage('');
 
-    // Optimistic post for immediate UI feedback
+    // OPTIMISTIC POST
     const tempId = 'pending-' + Date.now();
     if (!activeThreadId) {
       setChatThread(prev => [...prev, {
-        id: tempId,
-        content: originalMsg,
-        is_human: true,
-        name: user?.username || "Sovereign Node",
-        conversation_id: 'pending'
+        id: tempId, content: originalMsg, is_human: true,
+        name: user?.username || "Sovereign Node", conversation_id: 'pending'
       }]);
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
+      const res = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: originalMsg,
-          models: selectedModels,
-          userId: user?.id,
-          conversationId: activeThreadId,
-          parentPostId: activeParentPostId
+          prompt: originalMsg, models: selectedModels, userId: user?.id,
+          conversationId: activeThreadId, parentPostId: activeParentPostId
         }),
       });
-
-      const data = await response.json();
-      
-      // 🚀 THE FIX: If starting a new thread, set the ID immediately.
-      // Socket listener will handle the incoming AI responses.
-      if (data.conversationId) {
-        setActiveThreadId(data.conversationId);
-      }
+      const data = await res.json();
+      if (data.conversationId) setActiveThreadId(data.conversationId);
     } catch (e) {
       setIsSynthesizing(false);
       setChatThread(prev => prev.filter(m => m.id !== tempId));
     }
   };
 
-  const handleRefuel = async (priceId: string, hours: number) => {
-    try {
-      const tier = hours === 24 ? '24H' : hours === 168 ? '7D' : '30D';
-      const response = await fetch(`${API_BASE_URL}/api/stripe/create-session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier, userId: user?.id }) });
-      const data = await response.json(); if (data.url) window.location.href = data.url;
-    } catch (err) { console.error("Stripe Error:", err); }
-  };
+  const scrollToBottom = () => { setUserIsAtBottom(true); setHasNewMessages(false); chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); };
+  const handleAction = (action: string, content: string) => { if (action === 'share') navigator.share?.({ title: 'Janus Forge', text: content, url: window.location.href }); };
 
-  const toggleAnchor = (id: string) => { setChatThread(prev => prev.map(msg => msg.id === id ? { ...msg, isAnchored: !msg.isAnchored } : msg )); };
-  const handleAction = (action: string, content: string) => { if (action === 'share') navigator.share?.({ title: 'Janus Forge Transmission', text: content, url: window.location.href }); };
-
-  // --- RENDER LOGIC ---
+  // 🚀 RENDER FILTER
   const displayMessages = activeThreadId 
-    ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId) 
+    ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId || m.conversation_id === 'pending') 
     : chatThread.filter(m => !m.parent_post_id);
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden font-sans">
-      {hasNewMessages && !userIsAtBottom && ( <button onClick={scrollToBottom} className="fixed bottom-32 z-[160] bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_30px_rgba(79,70,229,0.4)] animate-in slide-in-from-bottom-4 duration-300 border border-white/20"><ArrowDown size={16} className="animate-bounce" /><span className="text-[10px] font-black uppercase tracking-widest">New Transmissions</span></button> )}
+      {hasNewMessages && !userIsAtBottom && ( <button onClick={scrollToBottom} className="fixed bottom-32 z-[160] bg-indigo-600 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_30px_rgba(79,70,229,0.4)] border border-white/20"><ArrowDown size={16} /><span className="text-[10px] font-black uppercase tracking-widest">New Transmissions</span></button> )}
       
       <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setActiveThreadId(null); allNodes.current=[]; allEdges.current=[]; }}>
-          <Globe className="text-indigo-500 animate-pulse" size={18}/>
-          <span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span>
-        </div>
-        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all flex items-center gap-3 ${isExpired ? 'border-amber-500 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5'}`}>
-          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired ? 'bg-amber-500' : 'bg-indigo-500'}`} />
-          {timeLeft}
-        </button>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setActiveThreadId(null); allNodes.current=[]; allEdges.current=[]; }}><Globe className="text-indigo-500 animate-pulse" size={18}/><span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span></div>
+        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all flex items-center gap-3 ${isExpired ? 'border-amber-500 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5'}`}><div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired ? 'bg-amber-500' : 'bg-indigo-500'}`} />{timeLeft}</button>
       </header>
 
-      <main className={`w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48 transition-all duration-1000 ${showSuccess ? 'blur-2xl opacity-20' : 'opacity-100'}`}>
+      <main className="w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48">
         {!activeThreadId && (
           <div className="text-center mb-16">
             <h3 className="text-4xl md:text-7xl font-black uppercase tracking-tighter text-white italic drop-shadow-2xl">NEXUS PRIME</h3>
@@ -241,13 +186,11 @@ export default function NexusPrimeEngine() {
 
         <div className="space-y-12 w-full">
           {!activeThreadId && <h2 className="text-[10px] font-black tracking-[0.4em] text-indigo-500 mb-8 uppercase">Neural Pulse Feed</h2>}
-          {activeThreadId && ( <button onClick={() => { setActiveThreadId(null); setActiveParentPostId(null); allNodes.current=[]; allEdges.current=[]; }} className="mb-12 flex items-center gap-3 text-zinc-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"><X size={14} /> Return to Neural Feed</button> )}
+          {activeThreadId && ( <button onClick={() => { setActiveThreadId(null); setActiveParentPostId(null); allNodes.current=[]; allEdges.current=[]; }} className="mb-12 flex items-center gap-3 text-zinc-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"><X size={14} /> Return to Feed</button> )}
 
           {displayMessages.map((msg) => {
-            const content = msg.content || "";
             const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
-            const match = content.match(flowRegex);
-
+            const match = msg.content?.match(flowRegex);
             if (match && match[1]) {
               try {
                 const data = JSON.parse(match[1].trim());
@@ -256,28 +199,16 @@ export default function NexusPrimeEngine() {
                 return (
                   <div key={msg.id} className="w-full space-y-4 my-8 animate-in zoom-in duration-500">
                     <div className="flex items-center gap-2 mb-2"><Zap size={14} className="text-indigo-500 animate-pulse" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 italic">Neural Manifest: {msg.ai_model || msg.sender}</span></div>
-                    <div className="relative z-10 w-full rounded-[2.5rem] border border-white/10 bg-zinc-900/40 backdrop-blur-3xl overflow-hidden shadow-2xl" style={{ height: '500px' }}>
-                      <FlowViewer nodes={[...allNodes.current]} edges={[...allEdges.current]} />
-                    </div>
+                    <div className="w-full rounded-[2.5rem] border border-white/10 bg-zinc-900/40 backdrop-blur-3xl overflow-hidden shadow-2xl" style={{ height: '500px' }}><FlowViewer nodes={[...allNodes.current]} edges={[...allEdges.current]} /></div>
                   </div>
                 );
               } catch (err) { return null; }
             }
 
             return (
-              <div key={msg.id}
-                onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined}
-                className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}
-              >
-                <div className="mb-3 px-2 flex items-center gap-3">
-                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>
-                    {msg.name || msg.sender || msg.ai_model}
-                  </span>
-                  {!activeThreadId && <ChevronRight size={10} className="text-zinc-800 group-hover:text-indigo-500 transition-all" />}
-                </div>
-                <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}>
-                  <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{content}</p>
-                </div>
+              <div key={msg.id} onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined} className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}>
+                <div className="mb-3 px-2 flex items-center gap-3"><span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>{msg.name || msg.sender || msg.ai_model}</span>{!activeThreadId && <ChevronRight size={10} className="text-zinc-800" />}</div>
+                <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}><p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content}</p></div>
               </div>
             );
           })}
@@ -286,19 +217,12 @@ export default function NexusPrimeEngine() {
       </main>
 
       <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center z-[150]">
-        <div onClick={() => isExpired && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${ isExpired ? 'bg-amber-500/5 border-amber-500/20' : 'bg-zinc-950 border-indigo-500/30 shadow-[0_0_50px_rgba(79,70,229,0.1)]' }`}>
+        <div onClick={() => isExpired && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${ isExpired ? 'bg-amber-500/5 border-amber-500/20' : 'bg-zinc-950 border-indigo-500/30' }`}>
           <textarea value={userMessage} readOnly={isExpired && user?.role !== 'ADMIN'} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())} placeholder={isExpired ? "Unlock access to contribute..." : "Start a new neural pattern..."} className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white" />
-          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white hover:bg-indigo-500' }`}> {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />} </button>
+          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white' }`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4">
-            <span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human).length}</span>
-            <span className="opacity-30">•</span>
-            {/* 🛰️ REAL-TIME OBSERVER STATUS */}
-            <span className="text-amber-500/70 animate-pulse">
-               Observers: {observerCount > 0 ? observerCount : "Syncing..."}
-            </span>
-          </p>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4"><span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human).length}</span><span className="opacity-30">•</span><span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span></p>
           <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
       </footer>
