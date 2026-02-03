@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Send, Loader2, X, Globe, ShieldCheck, Lock, Zap,
   ThumbsUp, Share2, Printer, Bookmark, ChevronRight, ArrowDown
-} from 'lucide-center'; // Note: check your lucide-react import name
+} from 'lucide-react'; // 🛡️ FIXED IMPORT
 import CouncilBuilder from './components/CouncilBuilder';
 import { io } from 'socket.io-client';
 import FlowViewer from '@/components/ui/FlowViewer';
@@ -53,18 +53,15 @@ export default function NexusPrimeEngine() {
 
   useEffect(() => { fetchStream(); }, []);
 
-  // --- SOCKET ENGINE (HARDENED) ---
+  // --- SOCKET ENGINE ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // Deduplication to prevent the double-posting shown in your screenshots
         const isDuplicate = prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && m.id.startsWith('pending')));
         if (isDuplicate) {
           return prev.map(m => (m.content === entry.content && m.id.startsWith('pending')) ? entry : m);
         }
-        
-        // Auto-Anchor view if we get a response for a thread we just started
         if (entry.conversation_id && !entry.is_human && !activeThreadId) {
             setActiveThreadId(entry.conversation_id);
         }
@@ -73,27 +70,34 @@ export default function NexusPrimeEngine() {
       });
       if (!userIsAtBottom) setHasNewMessages(true);
     });
-
     socket.on('pulse-update', (data: { count: number }) => {
       if (data.count !== undefined) setObserverCount(data.count);
     });
-
     return () => { socket.disconnect(); };
   }, [activeThreadId, userIsAtBottom]);
 
-  // --- ADMIN/GOD OVERRIDE ---
+  // --- ADMIN & ACCESS OVERRIDE ---
   useEffect(() => {
     const timer = setInterval(() => {
       const isAdmin = user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai';
-      if (isAdmin) { setTimeLeft("ETERNAL ACCESS"); setIsExpired(false); return; }
-      if (!user?.access_expiry) { setTimeLeft("ACCESS REQUIRED"); setIsExpired(true); return; }
-      
+      if (isAdmin) {
+        setTimeLeft("ETERNAL ACCESS");
+        setIsExpired(false);
+        return;
+      }
+      if (!user?.access_expiry) {
+        setTimeLeft("ACCESS REQUIRED");
+        setIsExpired(true);
+        return;
+      }
       const diff = new Date(user.access_expiry).getTime() - new Date().getTime();
-      if (diff <= 0) { setTimeLeft("EXPIRED"); setIsExpired(true); }
-      else {
+      if (diff <= 0) {
+        setTimeLeft("EXPIRED");
+        setIsExpired(true);
+      } else {
         setIsExpired(false);
         const h = Math.floor(diff/3600000); const m = Math.floor((diff%3600000)/60000); const s = Math.floor((diff%60000)/1000);
-        setTimeLeft(`${h}h ${m}s ${s}s`);
+        setTimeLeft(`${h}h ${m}m ${s}s`);
       }
     }, 1000);
     return () => clearInterval(timer);
@@ -179,7 +183,6 @@ export default function NexusPrimeEngine() {
       <main className="w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48">
         {!activeThreadId && (
           <>
-            {/* 🎥 LOGO VIDEO RESTORED */}
             <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
               <video autoPlay loop muted playsInline className="w-full h-full object-contain">
                 <source src="/janus-logo-video.mp4" type="video/mp4" />
@@ -196,7 +199,6 @@ export default function NexusPrimeEngine() {
           {!activeThreadId && <h2 className="text-[10px] font-black tracking-[0.4em] text-indigo-500 mb-8 uppercase">Neural Pulse Feed</h2>}
           {activeThreadId && ( <button onClick={() => { setActiveThreadId(null); setActiveParentPostId(null); allNodes.current=[]; allEdges.current=[]; }} className="mb-12 flex items-center gap-3 text-zinc-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"><X size={14} /> Return to Feed</button> )}
 
-          {/* 🚀 THE FIXED RENDERER: Restored AI visibility logic */}
           {displayMessages.map((msg) => {
             const content = msg.content || "";
             const flowRegex = /```(?:json-flow|json)\s*([\s\S]*?)```/;
@@ -221,15 +223,15 @@ export default function NexusPrimeEngine() {
             return (
               <div key={msg.id}
                 onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined}
-                className={`flex flex-col ${msg.is_human || msg.type === 'user' ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}
+                className={`flex flex-col ${msg.is_human ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}
               >
                 <div className="mb-3 px-2 flex items-center gap-3">
-                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.is_human || msg.type === 'user' ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>
+                  <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400 italic'}`}>
                     {msg.name || msg.sender || msg.ai_model}
                   </span>
                   {!activeThreadId && <ChevronRight size={10} className="text-zinc-800 group-hover:text-indigo-500 transition-all" />}
                 </div>
-                <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human || msg.type === 'user' ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}>
+                <div className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}>
                   <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{content}</p>
                 </div>
               </div>
@@ -245,7 +247,7 @@ export default function NexusPrimeEngine() {
           <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ isExpired && !isAdminAccess ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white hover:bg-indigo-500' }`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4"><span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human || m.type === 'user').length}</span><span className="opacity-30">•</span><span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span></p>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4"><span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human).length}</span><span className="opacity-30">•</span><span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span></p>
           <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
       </footer>
