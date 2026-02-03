@@ -53,17 +53,15 @@ export default function NexusPrimeEngine() {
 
   useEffect(() => { fetchStream(); }, []);
 
-  // --- SOCKET ENGINE (Surgically Fixed) ---
+  // --- SOCKET ENGINE ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
-
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // 🛡️ Deduplication Shield
+        // 🛡️ Deduplication
         if (prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && m.id.startsWith('pending')))) {
           return prev.map(m => (m.content === entry.content && m.id.startsWith('pending')) ? entry : m);
         }
-        // Snap anchor if first AI response arrives
         if (entry.conversation_id && !entry.is_human && !activeThreadId) {
             setActiveThreadId(entry.conversation_id);
         }
@@ -72,15 +70,45 @@ export default function NexusPrimeEngine() {
       });
       if (!userIsAtBottom) setHasNewMessages(true);
     });
-
     socket.on('pulse-update', (data: { count: number }) => {
       if (data.count !== undefined) setObserverCount(data.count);
     });
-
     return () => { socket.disconnect(); };
   }, [activeThreadId, userIsAtBottom]);
 
-  // --- REFUEL LOGIC (Build Fix) ---
+  // --- ADMIN & ACCESS OVERRIDE (RE-STABILIZED) ---
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const isAdmin = user?.role === 'GOD_MODE' || user?.role === 'ADMIN' || user?.email === 'admin@janusforge.ai';
+
+      if (isAdmin) {
+        setTimeLeft("ETERNAL ACCESS");
+        setIsExpired(false);
+        return;
+      }
+
+      if (!user?.access_expiry) {
+        setTimeLeft("ACCESS REQUIRED");
+        setIsExpired(true);
+        return;
+      }
+
+      const diff = new Date(user.access_expiry).getTime() - new Date().getTime();
+      if (diff <= 0) {
+        setTimeLeft("EXPIRED");
+        setIsExpired(true);
+      } else {
+        setIsExpired(false);
+        const h = Math.floor(diff/3600000); 
+        const m = Math.floor((diff%3600000)/60000); 
+        const s = Math.floor((diff%60000)/1000);
+        setTimeLeft(`${h}h ${m}m ${s}s`);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [user]);
+
+  // --- REFUEL ---
   const handleRefuel = async (priceId: string, hours: number) => {
     try {
       const tier = hours === 24 ? '24H' : hours === 168 ? '7D' : '30D';
@@ -96,8 +124,10 @@ export default function NexusPrimeEngine() {
 
   // --- IGNITION ---
   const handleIgnition = async () => {
+    const isAdmin = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
+    
     if (!userMessage.trim() || isSynthesizing) return;
-    if (isExpired && user?.role !== 'ADMIN') { setIsTrayOpen(true); return; }
+    if (isExpired && !isAdmin) { setIsTrayOpen(true); return; }
 
     const originalMsg = userMessage;
     setIsSynthesizing(true);
@@ -154,13 +184,15 @@ export default function NexusPrimeEngine() {
     ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId || m.conversation_id === 'pending') 
     : chatThread.filter(m => !m.parent_post_id);
 
+  const isAdminAccess = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
+
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden font-sans">
       {hasNewMessages && !userIsAtBottom && ( <button onClick={scrollToBottom} className="fixed bottom-32 z-[160] bg-indigo-600 text-white px-6 py-3 rounded-full flex items-center gap-3 border border-white/20 shadow-2xl"><ArrowDown size={16} /><span className="text-[10px] font-black uppercase tracking-widest">New Transmissions</span></button> )}
       
       <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setActiveThreadId(null); allNodes.current=[]; allEdges.current=[]; }}><Globe className="text-indigo-500 animate-pulse" size={18}/><span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span></div>
-        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] flex items-center gap-3 ${isExpired ? 'border-amber-500 text-amber-500' : 'border-indigo-500/20 text-indigo-400'}`}><div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired ? 'bg-amber-500' : 'bg-indigo-500'}`} />{timeLeft}</button>
+        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] flex items-center gap-3 ${isExpired && !isAdminAccess ? 'border-amber-500 text-amber-500' : 'border-indigo-500/20 text-indigo-400'}`}><div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired && !isAdminAccess ? 'bg-amber-500' : 'bg-indigo-500'}`} />{timeLeft}</button>
       </header>
 
       <main className="w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48">
@@ -185,9 +217,9 @@ export default function NexusPrimeEngine() {
       </main>
 
       <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center z-[150]">
-        <div onClick={() => isExpired && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${ isExpired ? 'bg-amber-500/5 border-amber-500/20' : 'bg-zinc-950 border-indigo-500/30' }`}>
-          <textarea value={userMessage} readOnly={isExpired && user?.role !== 'ADMIN'} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())} placeholder={isExpired ? "Unlock access to contribute..." : "Start a new neural pattern..."} className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white" />
-          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center ${ isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white' }`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
+        <div onClick={() => (isExpired && !isAdminAccess) && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl transition-all duration-500 cursor-pointer ${ isExpired && !isAdminAccess ? 'bg-amber-500/5 border-amber-500/20' : 'bg-zinc-950 border-indigo-500/30' }`}>
+          <textarea value={userMessage} readOnly={isExpired && !isAdminAccess} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())} placeholder={isExpired && !isAdminAccess ? "Unlock access to contribute..." : "Start a new neural pattern..."} className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white" />
+          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center ${ isExpired && !isAdminAccess ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white' }`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
           <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4"><span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human).length}</span><span className="opacity-30">•</span><span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span></p>
