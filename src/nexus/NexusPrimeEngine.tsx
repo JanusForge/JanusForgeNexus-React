@@ -39,7 +39,7 @@ export default function NexusPrimeEngine() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [nexusTime, setNexusTime] = useState<string>("");
   
-  // 🛰️ REAL-TIME OBSERVERS: Initialized at 1, but updated via socket
+  // 🛰️ REAL-TIME OBSERVERS
   const [observerCount, setObserverCount] = useState<number>(1);
 
   const allNodes = useRef<any[]>([]);
@@ -53,6 +53,7 @@ export default function NexusPrimeEngine() {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // --- EFFECTS ---
   useEffect(() => {
     if (searchParams.get('payment_success') === 'true') {
       setShowSuccess(true);
@@ -75,19 +76,22 @@ export default function NexusPrimeEngine() {
     fetchStream();
   }, []);
 
-  // 🛡️ SOCKET ENGINE: Synchronizing Transmissions & Observer Counts
+  // 🛡️ HARDENED SOCKET LISTENER
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
-    
+
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // Prevent duplicate renders
         if (prev.find(m => m.id === entry.id)) return prev;
         
-        // If this is an AI response, stop the synthesis loader
+        // 🚀 RACE CONDITION SHIELD
+        // If we receive an AI response while synthesizing but haven't anchored the thread yet,
+        // we take the incoming conversation_id as the anchor.
+        if (!activeThreadId && entry.conversation_id && !entry.is_human) {
+          setActiveThreadId(entry.conversation_id);
+        }
+
         if (!entry.is_human) setIsSynthesizing(false);
-        
-        // Check for new message alert
         if (!userIsAtBottom) setHasNewMessages(true);
         
         return [...prev, entry];
@@ -98,7 +102,7 @@ export default function NexusPrimeEngine() {
       if (!activeThreadId) setChatThread(prev => [newRoot, ...prev]); 
     });
 
-    // 🛰️ DYNAMIC OBSERVER UPDATE
+    // 🛰️ REAL OBSERVER COUNT
     socket.on('pulse-update', (data: { count: number }) => {
       if (data.count) setObserverCount(data.count);
     });
@@ -158,7 +162,6 @@ export default function NexusPrimeEngine() {
     } catch (err) { console.error("Stripe Error:", err); }
   };
 
-  // 🏛️ HARDENED IGNITION: Ensuring thread anchoring before AI responses arrive
   const handleIgnition = async () => {
     if (!userMessage.trim() || isSynthesizing) return;
     if (isExpired && user?.role !== 'ADMIN') { setIsTrayOpen(true); return; }
@@ -167,10 +170,12 @@ export default function NexusPrimeEngine() {
     setIsSynthesizing(true);
     setUserMessage('');
 
-    // Optimistic user post for immediate feedback
+    // Optimistic temporary ID to help filtering before real ID arrives
+    const tempId = 'pending-' + Date.now();
+
     if (!activeThreadId) {
       setChatThread(prev => [...prev, {
-        id: 'temp-' + Date.now(),
+        id: tempId,
         content: originalMsg,
         is_human: true,
         name: user?.username || "Sovereign Node",
@@ -192,12 +197,10 @@ export default function NexusPrimeEngine() {
       });
 
       const data = await response.json();
-      
-      // 🚀 CRITICAL FIX: Set the thread anchor immediately so socket matches filter
       if (data.conversationId) {
         setActiveThreadId(data.conversationId);
-        // Clean up the 'pending' temporary post to allow the real DB post to take over
-        setChatThread(prev => prev.filter(m => m.conversation_id !== 'pending'));
+        // Clean up the optimistic pending tag
+        setChatThread(prev => prev.map(m => m.conversation_id === 'pending' ? { ...m, conversation_id: data.conversationId } : m));
       }
     } catch (e) {
       setIsSynthesizing(false);
@@ -205,13 +208,25 @@ export default function NexusPrimeEngine() {
     }
   };
 
-  const displayMessages = activeThreadId ? chatThread.filter(m => m.conversation_id === activeThreadId) : chatThread.filter(m => !m.parent_post_id);
+  // 🚀 AGGRESSIVE FILTER
+  const displayMessages = activeThreadId 
+    ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId) 
+    : chatThread.filter(m => !m.parent_post_id);
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center overflow-x-hidden font-sans">
       {hasNewMessages && !userIsAtBottom && ( <button onClick={scrollToBottom} className="fixed bottom-32 z-[160] bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full flex items-center gap-3 shadow-[0_0_30px_rgba(79,70,229,0.4)] animate-in slide-in-from-bottom-4 duration-300 border border-white/20"><ArrowDown size={16} className="animate-bounce" /><span className="text-[10px] font-black uppercase tracking-widest">New Transmissions</span></button> )}
-      {showSuccess && ( <div className="fixed inset-0 z-[500] bg-black flex flex-col items-center justify-center transition-all animate-in fade-in duration-700 backdrop-blur-3xl"><div className="relative w-48 h-48 mb-12"><div className="absolute inset-0 bg-indigo-600 rounded-full blur-[60px] animate-pulse opacity-30"></div><div className="relative border border-indigo-500/40 w-full h-full rounded-full flex items-center justify-center bg-zinc-900/40 backdrop-blur-xl shadow-[inset_0_0_40px_rgba(79,70,229,0.2)]"><div className="text-7xl animate-[bounce_2s_infinite]">⚡</div></div></div><div className="text-center z-10"><h1 className="text-5xl md:text-6xl font-black tracking-tighter mb-4 bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent uppercase">Forge Refueled</h1><p className="text-indigo-500 uppercase tracking-[0.5em] text-[10px] font-bold mb-10">Nexus Energy Synchronized</p><div className="bg-zinc-900/80 border border-zinc-800 p-8 rounded-3xl max-w-md mx-auto shadow-2xl backdrop-blur-md"><p className="text-zinc-400 text-xs leading-relaxed mb-8 uppercase tracking-widest font-bold italic">The Pentarchy has acknowledged your contribution.</p><div className="relative w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden"><div className="absolute top-0 left-0 bg-indigo-500 h-full animate-[loading_8s_linear] shadow-[0_0_15px_rgba(79,70,229,1)]"></div></div></div><button onClick={() => setShowSuccess(false)} className="mt-12 px-10 py-4 bg-white text-black font-black rounded-full hover:bg-indigo-500 hover:text-white transition-all uppercase text-[10px] tracking-widest">Enter the Nexus</button></div></div> )}
-      <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5"><div className="flex items-center gap-2 cursor-pointer" onClick={() => {setActiveThreadId(null); allNodes.current=[]; allEdges.current=[]; }}><Globe className="text-indigo-500 animate-pulse" size={18}/><span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span></div><button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all flex items-center gap-3 ${isExpired ? 'border-amber-500 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5'}`}><div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired ? 'bg-amber-500' : 'bg-indigo-500'}`} />{timeLeft}</button></header>
+      
+      <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setActiveThreadId(null); allNodes.current=[]; allEdges.current=[]; }}>
+          <Globe className="text-indigo-500 animate-pulse" size={18}/>
+          <span className="text-[10px] font-black tracking-[0.3em] uppercase italic">Janus Forge Nexus</span>
+        </div>
+        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-[0.3em] transition-all flex items-center gap-3 ${isExpired ? 'border-amber-500 text-amber-500 bg-amber-500/5' : 'border-indigo-500/20 text-indigo-400 bg-indigo-500/5'}`}>
+          <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isExpired ? 'bg-amber-500' : 'bg-indigo-500'}`} />
+          {timeLeft}
+        </button>
+      </header>
 
       <main className={`w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48 transition-all duration-1000 ${showSuccess ? 'blur-2xl opacity-20' : 'opacity-100'}`}>
         {!activeThreadId && (
@@ -295,7 +310,11 @@ export default function NexusPrimeEngine() {
           <button onClick={(e) => { e.stopPropagation(); handleIgnition(); }} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${ isExpired ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white hover:bg-indigo-500' }`}> {isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : (isExpired ? <Lock size={20}/> : <Send size={20} />)} </button>
         </div>
         <div className="mt-4 flex flex-col items-center gap-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4"><span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human || m.type === 'user').length}</span><span className="opacity-30">•</span><span className="text-amber-500/70 animate-pulse">Observers: {observerCount}</span></p>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4">
+            <span className="text-indigo-400">Nodes Active: {chatThread.filter(m => m.is_human || m.type === 'user').length}</span>
+            <span className="opacity-30">•</span>
+            <span className="text-amber-500/70 animate-pulse">Observers: {observerCount}</span>
+          </p>
           <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
       </footer>
