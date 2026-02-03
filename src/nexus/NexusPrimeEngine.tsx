@@ -36,37 +36,41 @@ export default function NexusPrimeEngine() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // --- HYDRATION ---
+  const fetchStream = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
+      const data = await res.json();
+      if (Array.isArray(data)) setChatThread(data);
+    } catch (err) { console.error("Sync Failed", err); }
+  };
+
   useEffect(() => {
-    const fetchStream = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/nexus/stream`);
-        const data = await res.json();
-        if (Array.isArray(data)) setChatThread(data);
-      } catch (err) { console.error("Sync Failed", err); }
-    };
     fetchStream();
   }, []);
 
-  // --- SOCKET ENGINE ---
+  // --- SOCKET ENGINE (FIXED DEDUPLICATION & SNAP) ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // Deduplication
-        const isDuplicate = prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && m.id.startsWith('pending')));
-        if (isDuplicate) {
-          return prev.map(m => (m.content === entry.content && m.id.startsWith('pending')) ? entry : m);
-        }
+        // Check if message exists by ID or by matching content to an optimistic 'pending' user post
+        const isDuplicate = prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && (m.conversation_id === 'pending' || m.id.startsWith('pending'))));
         
-        // 🚀 CRITICAL FIX: Ensure view anchors to the thread when the Council starts talking
+        if (isDuplicate) {
+          // Replace the 'pending' optimistic post with the real server post
+          return prev.map(m => (m.content === entry.content && (m.id.startsWith('pending') || m.conversation_id === 'pending')) ? entry : m);
+        }
+
+        // 🚀 THE BRIDGE: Force the UI to look at this conversation ID if it's the first AI reply
         if (entry.conversation_id && !entry.is_human && !activeThreadId) {
             setActiveThreadId(entry.conversation_id);
         }
-        
+
         if (!entry.is_human) setIsSynthesizing(false);
         return [...prev, entry];
       });
     });
+
     socket.on('pulse-update', (data: { count: number }) => setObserverCount(data.count));
     return () => { socket.disconnect(); };
   }, [activeThreadId]);
@@ -88,7 +92,7 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(timer);
   }, [user]);
 
-  // --- IGNITION ---
+  // --- IGNITION (STOP BANSHEE SCROLL) ---
   const handleIgnition = async () => {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
     if (!userMessage.trim() || isSynthesizing) return;
@@ -98,11 +102,17 @@ export default function NexusPrimeEngine() {
     setIsSynthesizing(true);
     setUserMessage('');
 
-    // Optimistic Post
+    // Optimistic Post - Use 'pending' for ID to ensure deduplication catches it
     const tempId = 'pending-' + Date.now();
-    setChatThread(prev => [...prev, { id: tempId, content: originalMsg, is_human: true, name: user?.username || "Node", conversation_id: activeThreadId || 'pending' }]);
+    setChatThread(prev => [...prev, { 
+      id: tempId, 
+      content: originalMsg, 
+      is_human: true, 
+      name: user?.username || "Node", 
+      conversation_id: activeThreadId || 'pending' 
+    }]);
 
-    // 🛑 SCROLL FIX: Only scroll to bottom ONCE when the user sends the message
+    // 🛑 MANUAL SCROLL ONLY ONCE
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
     try {
@@ -112,7 +122,10 @@ export default function NexusPrimeEngine() {
       });
       const data = await res.json();
       if (data.conversationId) setActiveThreadId(data.conversationId);
-    } catch (e) { setIsSynthesizing(false); }
+    } catch (e) { 
+      setIsSynthesizing(false); 
+      setChatThread(prev => prev.filter(m => m.id !== tempId));
+    }
   };
 
   const handleRefuel = async (priceId: string, hours: number) => {
@@ -130,9 +143,14 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(clock);
   }, []);
 
-  // --- RENDER FILTER (🚀 CRITICAL FIX: Broadened for Council visibility) ---
+  // --- RENDER FILTER (🚀 TOTAL VISIBILITY FIX) ---
   const displayMessages = activeThreadId 
-    ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId || m.conversation_id === 'pending') 
+    ? chatThread.filter(m => 
+        m.conversation_id === activeThreadId || 
+        m.id === activeThreadId || 
+        m.conversation_id === 'pending' || 
+        m.id.toString().startsWith('pending')
+      ) 
     : chatThread.filter(m => !m.parent_post_id);
 
   const isAdminAccess = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
@@ -143,7 +161,7 @@ export default function NexusPrimeEngine() {
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveThreadId(null)}>
           <Globe className="text-indigo-500 animate-pulse" size={18}/><span className="text-[10px] font-black uppercase italic tracking-widest">Janus Forge Nexus</span>
         </div>
-        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-widest ${isExpired && !isAdminAccess ? 'border-amber-500 text-amber-500' : 'border-indigo-500/20 text-indigo-400'}`}>{timeLeft}</button>
+        <button onClick={() => setIsTrayOpen(true)} className="px-5 py-2 rounded-full border border-indigo-500/20 text-indigo-400 text-[10px] font-black tracking-widest">{timeLeft}</button>
       </header>
 
       <main className="w-full max-w-4xl px-4 pt-32 pb-48">
@@ -156,6 +174,7 @@ export default function NexusPrimeEngine() {
 
         <div className="space-y-12 w-full">
           {activeThreadId && ( <button onClick={() => setActiveThreadId(null)} className="mb-8 text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><X size={14}/> Return to Feed</button> )}
+          
           {displayMessages.map((msg) => (
             <div key={msg.id} onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined} className={`flex flex-col ${msg.is_human || msg.type === 'user' ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer' : ''}`}>
               <span className={`text-[9px] font-black uppercase tracking-widest mb-2 ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400'}`}>{msg.name || msg.ai_model || msg.sender}</span>
