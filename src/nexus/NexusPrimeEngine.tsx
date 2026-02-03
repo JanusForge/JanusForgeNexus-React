@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -47,33 +48,27 @@ export default function NexusPrimeEngine() {
     fetchStream();
   }, []);
 
-  // --- SOCKET ENGINE (HARDENED VISIBILITY) ---
+  // --- SOCKET ENGINE (RESTORED BRIDGE) ---
   useEffect(() => {
     const socket = io(API_BASE_URL, { withCredentials: true });
     socket.on('nexus:transmission', (entry: any) => {
       setChatThread(prev => {
-        // Deduplication to prevent the double/triple-posts seen in screenshots
         const isDuplicate = prev.find(m => m.id === entry.id || (m.is_human && m.content === entry.content && m.id.toString().startsWith('pending')));
-        
         if (isDuplicate) {
           return prev.map(m => (m.content === entry.content && m.id.toString().startsWith('pending')) ? entry : m);
         }
-
-        // Bridge: If we get a response for a thread we just started, snap into it
         if (entry.conversation_id && !entry.is_human && !activeThreadId) {
             setActiveThreadId(entry.conversation_id);
         }
-
         if (!entry.is_human) setIsSynthesizing(false);
         return [...prev, entry];
       });
     });
-
     socket.on('pulse-update', (data: { count: number }) => setObserverCount(data.count));
     return () => { socket.disconnect(); };
   }, [activeThreadId]);
 
-  // --- ADMIN/ACCESS OVERRIDE ---
+  // --- ADMIN OVERRIDE ---
   useEffect(() => {
     const timer = setInterval(() => {
       const isAdmin = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
@@ -90,7 +85,7 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(timer);
   }, [user]);
 
-  // --- IGNITION (CONTROLLED SCROLL) ---
+  // --- IGNITION (RESTORED CONTROLS) ---
   const handleIgnition = async () => {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
     if (!userMessage.trim() || isSynthesizing) return;
@@ -102,9 +97,6 @@ export default function NexusPrimeEngine() {
 
     const tempId = 'pending-' + Date.now();
     setChatThread(prev => [...prev, { id: tempId, content: originalMsg, is_human: true, name: user?.username || "Node", conversation_id: activeThreadId || 'pending' }]);
-
-    // Only scroll manually when sending, preventing the "banshee" effect
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/nexus/ignite`, {
@@ -130,51 +122,50 @@ export default function NexusPrimeEngine() {
     return () => clearInterval(clock);
   }, []);
 
-  // --- RENDER FILTER (BROADENED FOR COUNCIL VISIBILITY) ---
+  // --- RENDER FILTER ---
   const displayMessages = activeThreadId 
-    ? chatThread.filter(m => 
-        m.conversation_id === activeThreadId || 
-        m.id === activeThreadId || 
-        m.conversation_id === 'pending' || 
-        m.id.toString().startsWith('pending')
-      ) 
+    ? chatThread.filter(m => m.conversation_id === activeThreadId || m.id === activeThreadId || m.id.toString().startsWith('pending')) 
     : chatThread.filter(m => !m.parent_post_id);
 
   const isAdminAccess = user?.role === 'ADMIN' || user?.role === 'GOD_MODE' || user?.email === 'admin@janusforge.ai';
 
   return (
     <div className="w-full min-h-screen bg-black text-white flex flex-col items-center font-sans overflow-x-hidden">
+      {/* HEADER SECTION */}
       <header className="fixed top-0 w-full p-6 flex justify-between items-center z-[100] bg-black/60 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center gap-2 cursor-pointer" onClick={() => setActiveThreadId(null)}>
-          <Globe className="text-indigo-500 animate-pulse" size={18}/><span className="text-[10px] font-black uppercase italic tracking-widest">Janus Forge Nexus</span>
+          <Globe className="text-indigo-500 animate-pulse" size={18}/>
+          <span className="text-[10px] font-black uppercase italic tracking-widest">Janus Forge Nexus</span>
         </div>
-        <button onClick={() => setIsTrayOpen(true)} className={`px-5 py-2 rounded-full border text-[10px] font-black tracking-widest ${isExpired && !isAdminAccess ? 'border-amber-500 text-amber-500' : 'border-indigo-500/20 text-indigo-400'}`}>{timeLeft}</button>
+        <button onClick={() => setIsTrayOpen(true)} className="px-5 py-2 rounded-full border border-indigo-500/20 text-indigo-400 text-[10px] font-black tracking-widest">{timeLeft}</button>
       </header>
 
-      <main className="w-full max-w-4xl px-4 pt-32 pb-48">
+      <main className="w-full max-w-4xl px-4 flex flex-col items-center pt-32 pb-48">
+        {/* LOGO SECTION - CENTERING FIXED */}
         {!activeThreadId && (
-          <>
-            {/* 🎥 LOGO VIDEO RESTORED */}
+          <div className="flex flex-col items-center w-full">
             <div className="w-full max-w-sm aspect-video mb-8 overflow-hidden rounded-2xl opacity-80 contrast-125 grayscale hover:grayscale-0 transition-all duration-1000">
               <video autoPlay loop muted playsInline className="w-full h-full object-contain">
                 <source src="/janus-logo-video.mp4" type="video/mp4" />
               </video>
             </div>
             <div className="text-center mb-16">
-              <h3 className="text-5xl font-black uppercase italic tracking-tighter">NEXUS PRIME</h3>
+              <h3 className="text-5xl md:text-7xl font-black uppercase italic tracking-tighter drop-shadow-2xl">NEXUS PRIME</h3>
               <p className="text-zinc-500 text-sm mt-4 font-medium italic">Synchronized transmission feed.</p>
             </div>
-          </>
+          </div>
         )}
 
+        {/* FEED SECTION - FORCED VISIBILITY */}
         <div className="space-y-12 w-full">
-          {activeThreadId && ( <button onClick={() => setActiveThreadId(null)} className="mb-8 text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2"><X size={14}/> Return to Feed</button> )}
+          {!activeThreadId && <h2 className="text-[10px] font-black tracking-[0.4em] text-indigo-500 mb-8 uppercase text-center">Neural Pulse Feed</h2>}
+          {activeThreadId && ( <button onClick={() => setActiveThreadId(null)} className="mb-12 flex items-center gap-3 text-zinc-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"><X size={14} /> Return to Neural Feed</button> )}
           
           {displayMessages.map((msg) => (
-            <div key={msg.id} onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined} className={`flex flex-col ${msg.is_human || msg.type === 'user' ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer' : ''}`}>
-              <span className={`text-[9px] font-black uppercase tracking-widest mb-2 ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400'}`}>{msg.name || msg.ai_model || msg.sender}</span>
+            <div key={msg.id} onClick={!activeThreadId ? () => setActiveThreadId(msg.conversation_id || msg.id) : undefined} className={`flex flex-col ${msg.is_human || msg.type === 'user' ? 'items-end' : 'items-start'} ${!activeThreadId ? 'cursor-pointer group' : ''} animate-in fade-in slide-in-from-bottom-4`}>
+              <span className={`text-[9px] font-black uppercase tracking-[0.2em] mb-2 ${msg.is_human ? 'text-zinc-500' : 'text-indigo-400'}`}>{msg.name || msg.ai_model || msg.sender}</span>
               <div className={`p-8 rounded-[2rem] border transition-all duration-500 ${msg.is_human ? 'bg-zinc-900/40 border-white/10' : 'bg-zinc-950 border-white/5 shadow-2xl'}`}>
-                <p className="text-sm text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content || ""}</p>
+                <p className="text-sm md:text-base text-zinc-200 leading-relaxed whitespace-pre-wrap">{msg.content || ""}</p>
               </div>
             </div>
           ))}
@@ -182,17 +173,23 @@ export default function NexusPrimeEngine() {
         </div>
       </main>
 
-      <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center">
+      {/* FOOTER SECTION - RESTORED & HARDENED */}
+      <footer className="fixed bottom-0 w-full p-8 bg-gradient-to-t from-black via-black to-transparent flex flex-col items-center z-[150]">
         <div onClick={() => (isExpired && !isAdminAccess) && setIsTrayOpen(true)} className={`w-full max-w-3xl border rounded-[3rem] p-3 flex items-center gap-4 backdrop-blur-3xl bg-zinc-950 border-indigo-500/30`}>
           <textarea value={userMessage} readOnly={isExpired && !isAdminAccess} onChange={(e) => setUserMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleIgnition())} placeholder={isExpired && !isAdminAccess ? "Unlock access to contribute..." : "Start a new neural pattern..."} className="flex-1 bg-transparent outline-none resize-none h-12 py-3 px-6 text-sm text-white" />
-          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isExpired && !isAdminAccess ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white'}`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
+          <button onClick={handleIgnition} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isExpired && !isAdminAccess ? 'bg-amber-600/20 text-amber-500' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}>{isSynthesizing ? <Loader2 className="animate-spin" size={20}/> : <Send size={20} />}</button>
         </div>
-        <div className="mt-4 text-[10px] font-black uppercase tracking-widest text-white/40 flex items-center gap-4">
-          <span className="text-indigo-400">Nodes Active: {chatThread.length}</span>
-          <span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span>
+        <div className="mt-4 flex flex-col items-center gap-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 flex items-center gap-4">
+            <span className="text-indigo-400">Nodes Active: {chatThread.length}</span>
+            <span className="opacity-30">•</span>
+            <span className="text-amber-500/70 animate-pulse">Observers: {observerCount > 0 ? observerCount : "Syncing..."}</span>
+          </p>
+          <p className="text-[12px] font-black font-mono text-indigo-500 tracking-widest">{nexusTime} EST</p>
         </div>
       </footer>
 
+      {/* ACCESS TRAY SECTION */}
       {isTrayOpen && (
         <div className="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-4" onClick={() => setIsTrayOpen(false)}>
           <div className="w-full max-w-xl bg-zinc-950 border border-white/10 rounded-[3rem] p-10" onClick={e => e.stopPropagation()}>
